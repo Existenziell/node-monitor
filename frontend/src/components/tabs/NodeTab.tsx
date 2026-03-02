@@ -39,7 +39,8 @@ export function NodeTab() {
 
   const loadBoth = useCallback(
     () => Promise.all([nodeState.load(), networkState.load()]),
-    [nodeState, networkState]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [nodeState.load, networkState.load]
   );
   useTabData(loadBoth, 'node');
 
@@ -72,7 +73,7 @@ export function NodeTab() {
   const memory = (data?.memory ?? {}) as Record<string, unknown>;
   const indexing = data?.indexing ?? {};
   const hashrate = data?.hashrate as number | undefined;
-  const peers = (data?.peers ?? []) as Array<Record<string, unknown>>;
+  const peers = (data?.peers ?? []) as Array<{ addr?: string; id?: string | number }>;
 
   const networkCardItems = [
     { label: 'Connections', value: network.connections },
@@ -166,10 +167,16 @@ export function NodeTab() {
       </div>
       {peers.length > 0 && (
         <div className="rounded-lg bg-white dark:bg-white/5 border border-gray-200 dark:border-gold/20 p-4">
-          <h3 className="text-accent-light dark:text-gold font-medium mb-2">Peers ({peers.length})</h3>
-          <div className="text-sm text-gray-600 dark:text-gray-400">
-            First 10: {peers.slice(0, 10).map((p) => p.addr ?? p.id).join(', ')}
-          </div>
+          <h3 className="text-accent-light dark:text-gold font-medium mb-2">
+            Peers ({peers.length})
+          </h3>
+          <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+            {peers.slice(0, 10).map((peer, index) => (
+              <li key={String(peer.id ?? peer.addr ?? index)} className="truncate">
+                {peer.addr ?? `Peer ${index + 1}`}
+              </li>
+            ))}
+          </ul>
         </div>
       )}
       <div className="rounded-lg bg-white dark:bg-white/5 border border-gray-200 dark:border-gold/20 p-4">

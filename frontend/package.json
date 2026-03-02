@@ -1,12 +1,13 @@
 {
-  "name": "chain-monitor",
+  "name": "node-monitor",
   "version": "1.0.0",
   "description": "Real-time blockchain monitoring dashboard",
   "type": "module",
   "scripts": {
-    "dev": "concurrently -n v,api \"npm run dev:vite\" \"npm run dev:api\"",
+    "dev": "concurrently -n v,api,block \"npm run dev:vite\" \"npm run dev:api\" \"npm run dev:block\"",
     "dev:vite": "vite",
     "dev:api": "cd .. && python3 backend/api_server.py",
+    "dev:block": "cd .. && python3 backend/block_monitor.py --continuous",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "test": "vitest run",

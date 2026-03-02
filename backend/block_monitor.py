@@ -48,8 +48,6 @@ class BlockchainMonitor:
         self.last_block_height = 0
         self.last_mempool_size = 0
         self.last_block_time = None
-        self.sound_enabled = True
-        self.sound_volume = 0.6
         self.running = False
         self.zmq_context = None
         self.zmq_socket = None
@@ -178,114 +176,10 @@ class BlockchainMonitor:
             print(f"❌ Failed to setup ZMQ connection: {e}")
             return False
 
-    def play_block_sound(self) -> None:
-        """Play a sound notification when a new block is found"""
-        if not self.sound_enabled:
-            return
-
-        try:
-            system = platform.system()
-            # Check for custom sound files first
-            custom_sound_path = self._find_custom_sound()
-            if custom_sound_path:
-                self._play_custom_sound(custom_sound_path, system, volume=self.sound_volume)
-                return
-
-            # Fallback to system sounds
-            if system == "Darwin":  # macOS
-                # Use afplay to play a system sound
-                os.system("afplay /System/Library/Sounds/Glass.aiff")
-            elif system == "Windows":
-                # Use winsound for Windows
-                try:
-                    import winsound
-                    winsound.PlaySound("SystemExclamation", winsound.SND_ALIAS)
-                except ImportError:
-                    print("\a", end="", flush=True)
-            elif system == "Linux":
-                # Use paplay for Linux (PulseAudio)
-                os.system("paplay /usr/share/sounds/alsa/Front_Left.wav 2>/dev/null || echo -e '\a'")
-            else:
-                # Fallback: use terminal bell
-                print("\a", end="", flush=True)
-
-        except Exception as e:
-            # If sound fails, just print a message
-            print(f"🔊 Sound notification (error: {e})")
-
-    def _find_custom_sound(self) -> Optional[str]:
-        """Find custom sound files in the data/sounds directory"""
-        sounds_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "sounds")
-        if not os.path.exists(sounds_dir):
-            return None
-        # Look for audio files in order of preference
-        audio_extensions = ['.mp3', '.wav', '.ogg', '.m4a', '.aiff', '.aac']
-        for ext in audio_extensions:
-            for file in os.listdir(sounds_dir):
-                if file.lower().endswith(ext):
-                    return os.path.join(sounds_dir, file)
-        return None
-
-    def _play_custom_sound(self, sound_path: str, system: str, volume: float = 0.6) -> None:
-        """Play a custom sound file with volume control"""
-        try:
-            if system == "Darwin":  # macOS
-                # afplay supports MP3, WAV, AIFF, M4A, AAC with volume control
-                os.system(f"afplay -v {volume} '{sound_path}'")
-            elif system == "Windows":
-                # Use winsound for WAV files, or try to use system default player
-                if sound_path.lower().endswith('.wav'):
-                    try:
-                        import winsound
-                        winsound.PlaySound(sound_path, winsound.SND_FILENAME)
-                    except ImportError:
-                        os.system(f'start "" "{sound_path}"')
-                else:
-                    # Use system default player for other formats
-                    os.system(f'start "" "{sound_path}"')
-            elif system == "Linux":
-                # Try different players in order of preference with volume control
-                players = ['paplay', 'aplay', 'mpg123', 'mpv', 'vlc']
-                for player in players:
-                    if os.system(f"which {player} >/dev/null 2>&1") == 0:
-                        if player == 'paplay':
-                            # paplay supports volume control
-                            os.system(f"paplay --volume={int(volume * 65536)} '{sound_path}' 2>/dev/null")
-                        elif player == 'aplay':
-                            # aplay doesn't have direct volume control, but we can use amixer
-                            os.system(f"aplay '{sound_path}' 2>/dev/null")
-                        elif player == 'mpg123':
-                            os.system(f"mpg123 -g {int(volume * 100)} '{sound_path}' 2>/dev/null")
-                        elif player == 'mpv':
-                            os.system(f"mpv --volume={int(volume * 100)} '{sound_path}' --no-video 2>/dev/null")
-                        elif player == 'vlc':
-                            os.system(f"vlc --intf dummy --play-and-exit --volume={int(volume * 100)} '{sound_path}' 2>/dev/null")
-                        return
-                # Fallback to terminal bell
-                print("\a", end="", flush=True)
-            else:
-                # Fallback: use terminal bell
-                print("\a", end="", flush=True)
-        except Exception as e:
-            print(f"🔊 Custom sound notification (error: {e})")
-
-    def toggle_sound(self) -> bool:
-        """Toggle sound notifications on/off"""
-        self.sound_enabled = not self.sound_enabled
-        status = "ON" if self.sound_enabled else "OFF"
-        print(f"Sound notifications: {status}")
-        return self.sound_enabled
-
-    def set_volume(self, volume: float) -> None:
-        """Set sound volume (0.0 to 1.0)"""
-        self.sound_volume = max(0.0, min(1.0, volume))
-
     def display_header(self) -> None:
         """Display monitoring header"""
         print(f"Started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         print(f"Monitoring mode: {self.monitoring_mode}")
-        sound_status = "ON" if self.sound_enabled else "OFF"
-        print(f"Sound notifications: {sound_status}")
         print()
 
 
@@ -346,7 +240,6 @@ class BlockchainMonitor:
                 # No message received (timeout)
                 pass
             except KeyboardInterrupt:
-                print("\n🛑 Monitoring stopped by user")
                 self.running = False
                 break
             except Exception as e:
@@ -393,9 +286,6 @@ class BlockchainMonitor:
         print()
         print("╔" + "═" * 80 + "╗")
         print(f"  Block Height: {current_height:,}")
-
-        # Play sound notification
-        self.play_block_sound()
 
         try:
             # Handle both ZMQ (block object) and polling (blockchain_info) inputs
@@ -1150,22 +1040,11 @@ def main():
                        help='Start continuous monitoring (default: 10 seconds)')
     parser.add_argument('--status', '-s', action='store_true',
                        help='Show current status once and exit')
-    parser.add_argument('--no-sound', action='store_true',
-                       help='Disable sound notifications')
-    parser.add_argument('--volume', type=float, default=0.6, metavar='VOLUME',
-                       help='Set sound volume (0.0 to 1.0, default: 0.6)')
 
     args = parser.parse_args()
 
     # Create monitor instance
     monitor = BlockchainMonitor(args.zmq_endpoint)
-
-    if args.no_sound:
-        monitor.sound_enabled = False
-
-    # Set volume if specified
-    if hasattr(args, 'volume') and args.volume is not None:
-        monitor.sound_volume = max(0.0, min(1.0, args.volume))  # Clamp between 0.0 and 1.0
 
     if args.status:
         monitor.show_current_status()

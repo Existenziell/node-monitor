@@ -5,6 +5,35 @@ import { useConsole } from '@/contexts/ConsoleContext';
 import { useApiData } from '@/hooks/useApiData';
 import { useTabData } from '@/hooks/useTabData';
 
+function formatDuration(seconds: number): string {
+  if (!Number.isFinite(seconds) || seconds <= 0) {
+    return '-';
+  }
+
+  const totalSeconds = Math.round(seconds);
+  if (totalSeconds < 60) {
+    return `${totalSeconds}s`;
+  }
+
+  const minutes = Math.floor(totalSeconds / 60);
+  const remainingSeconds = totalSeconds % 60;
+
+  if (minutes < 60) {
+    if (remainingSeconds === 0) {
+      return `${minutes}m`;
+    }
+    return `${minutes}m ${remainingSeconds}s`;
+  }
+
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+
+  if (remainingMinutes === 0) {
+    return `${hours}h`;
+  }
+  return `${hours}h ${remainingMinutes}m`;
+}
+
 export function BlocksTab() {
   const { fetchBlocks } = useApi();
   const { data, loading, error, load } = useApiData<BlocksData>(fetchBlocks);
@@ -32,6 +61,11 @@ export function BlocksTab() {
   }
 
   const blocks = data?.blocks ?? [];
+  const avgBlockTimeSeconds = data?.avg_block_time_seconds ?? null;
+  const avgBlockTimeDisplay =
+    avgBlockTimeSeconds && avgBlockTimeSeconds > 0
+      ? formatDuration(avgBlockTimeSeconds)
+      : '-';
   const avgTx =
     blocks.length > 0
       ? Math.round(
@@ -47,7 +81,9 @@ export function BlocksTab() {
     <div className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="rounded-lg bg-white dark:bg-white/5 border border-gray-200 dark:border-gold/20 p-4">
-          <div className="text-2xl font-bold text-accent-light dark:text-gold">-</div>
+          <div className="text-2xl font-bold text-accent-light dark:text-gold">
+            {avgBlockTimeDisplay}
+          </div>
           <div className="text-sm text-gray-600 dark:text-gray-400">Avg Block Time</div>
         </div>
         <div className="rounded-lg bg-white dark:bg-white/5 border border-gray-200 dark:border-gold/20 p-4">

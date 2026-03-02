@@ -358,6 +358,38 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
         """Return the path to the data directory (project/data)."""
         return os.path.join(os.path.dirname(_backend_dir), "data")
 
+    def _compute_avg_block_time(self, blocks):
+        """Compute average block time in seconds from block_time strings."""
+        try:
+            from datetime import datetime
+        except ImportError:
+            return None
+
+        times = []
+        for block in blocks:
+            ts = block.get('block_time')
+            if not ts:
+                continue
+            try:
+                dt = datetime.strptime(ts, '%Y-%m-%d %H:%M:%S')
+            except (TypeError, ValueError):
+                continue
+            times.append(dt.timestamp())
+
+        if len(times) < 2:
+            return None
+
+        times.sort()
+        deltas = []
+        for i in range(1, len(times)):
+            if times[i] > times[i - 1]:
+                deltas.append(times[i] - times[i - 1])
+
+        if not deltas:
+            return None
+
+        return sum(deltas) / len(deltas)
+
     def handle_blocks_data(self):
         """Handle blocks data requests with caching (reduces disk/CPU on Pi)."""
         try:
@@ -365,12 +397,14 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
             now = datetime.now()
             if (self._blocks_cache is not None and self._blocks_cache_time is not None and
                     (now - self._blocks_cache_time).total_seconds() < BLOCKS_CACHE_SECONDS):
+                avg_block_time = self._compute_avg_block_time(self._blocks_cache or [])
                 response = {
                     "status": "success",
                     "data": {
                         "blocks": self._blocks_cache,
                         "total_blocks": len(self._blocks_cache),
-                        "cached": True
+                        "cached": True,
+                        "avg_block_time_seconds": avg_block_time
                     }
                 }
                 self.wfile.write(json.dumps(response, indent=2).encode())
@@ -396,6 +430,8 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
             # Return at most BLOCKS_DISPLAY_LIMIT (20)
             blocks_data = blocks_data[:BLOCKS_DISPLAY_LIMIT]
 
+            avg_block_time = self._compute_avg_block_time(blocks_data)
+
             self._blocks_cache = blocks_data
             self._blocks_cache_time = now
 
@@ -404,7 +440,8 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
                 "data": {
                     "blocks": blocks_data,
                     "total_blocks": len(blocks_data),
-                    "cached": False
+                    "cached": False,
+                    "avg_block_time_seconds": avg_block_time
                 }
             }
 

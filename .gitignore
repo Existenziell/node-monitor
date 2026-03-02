@@ -65,7 +65,7 @@ fee_estimates.dat
 mempool.dat
 peers.dat
 
-# Secure configuration (contains sensitive data)
+# Secure configuration
 .bitcoin_secure/
 
 # Bitcoin node data (symlink to external volume)
@@ -78,7 +78,7 @@ data/graph/cache/
 data/graph/*.pkl
 *.pkl
 
-# Monitor JSON data (blocks, difficulty history, pool distribution)
+# Monitor JSON data
 data/blocks.json
 data/difficulty.json
 data/distribution.json
@@ -86,6 +86,3 @@ data/distribution.json
 # Temporary files
 *.tmp
 *.temp
-
-# Audio files
-data/sounds/

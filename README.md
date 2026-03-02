@@ -1,4 +1,4 @@
-# Chain Monitor – Bitcoin Blockchain Monitoring Tools
+# Node Monitor – Bitcoin Node Monitoring Tools
 
 A suite of tools for monitoring Bitcoin blockchain activity.
 
@@ -116,9 +116,6 @@ python3 backend/block_monitor.py --status
 
 # Custom ZMQ endpoint
 python3 backend/block_monitor.py --continuous --zmq-endpoint tcp://127.0.0.1:28332
-
-# Disable sound notifications
-python3 backend/block_monitor.py --continuous --no-sound
 ```
 
 **Troubleshooting ZMQ:**

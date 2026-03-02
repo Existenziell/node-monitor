@@ -86,6 +86,7 @@ export interface BlocksData {
   blocks: BlockRow[];
   total_blocks?: number;
   cached?: boolean;
+  avg_block_time_seconds?: number | null;
 }
 
 export interface WalletData {

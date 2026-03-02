@@ -48,15 +48,15 @@ describe('useApiData', () => {
   });
 
   it('load sets error on failure', async () => {
+    vi.useFakeTimers();
     (fetch as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('Network error'));
     const { result } = renderHook(() => useNodeDataWithApi(), { wrapper });
     await act(async () => {
-      try {
-        await result.current.load();
-      } catch {
-        // expected
-      }
+      const loadPromise = result.current.load().catch(() => {});
+      await vi.runAllTimersAsync();
+      await loadPromise;
     });
+    vi.useRealTimers();
     expect(result.current.data).toBeNull();
     expect(result.current.error).toBeInstanceOf(Error);
     expect((result.current.error as Error).message).toBe('Network error');

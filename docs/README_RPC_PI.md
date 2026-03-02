@@ -1,6 +1,6 @@
 # RPC configuration for Raspberry Pi / Start9
 
-This guide explains how to run the chain-monitor dashboard against a Bitcoin node on a Raspberry Pi (e.g. Start9 with Bitcoin Knots), with minimal load on the node.
+This guide explains how to run the node-monitor dashboard against a Bitcoin node on a Raspberry Pi (e.g. Start9 with Bitcoin Knots), with minimal load on the node.
 
 ## Overview
 
@@ -64,7 +64,7 @@ Use the same structure whether the dashboard runs on the Pi or on another machin
 2. **Find RPC host and port**  
    Usually `127.0.0.1` and `8332` if the dashboard runs on the same host as the node. If the node runs in a container, use the host/port that expose RPC (e.g. `127.0.0.1` and the mapped port).
 
-3. **Create chain-monitor config on the Pi**
+3. **Create node-monitor config on the Pi**
    - Create the config directory:
      ```bash
      mkdir -p ~/.bitcoin_secure

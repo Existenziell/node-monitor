@@ -17,7 +17,7 @@ def start_server(port=None):
     """Start the web server"""
     if port is None:
         port = DASHBOARD_PORT
-    # Change to the chain-monitor directory (two levels up from frontend)
+    # Change to the node-monitor directory (two levels up from frontend)
     os.chdir(Path(__file__).parent.parent)
 
     # Create a custom handler that serves files from the current directory
