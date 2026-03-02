@@ -1,0 +1,148 @@
+{
+  "pools": [
+    {
+      "name": "Antpool",
+      "identifier": "antpool",
+      "signatures": ["Antpool", "ANTPOOL", "AntPool", "antpool.com", "Antpool Pool", "AntPool"],
+      "icon": "antpool.svg"
+    },
+    {
+      "name": "Binance Pool",
+      "identifier": "binance",
+      "signatures": ["Binance Pool", "BINANCE POOL", "binancepool", "binance.com", "BinancePool", "Binance", "/Binance/", "binance"],
+      "icon": "binance.svg"
+    },
+    {
+      "name": "Braiins Pool",
+      "identifier": "braiins",
+      "signatures": ["Slush Pool", "SLUSH POOL", "slushpool", "slushpool.com", "SlushPool", "Slush", "Braiins", "BRAIINS"],
+      "icon": "braiins.svg"
+    },
+    {
+      "name": "BTC.com",
+      "identifier": "btc.com",
+      "signatures": ["BTC.com", "BTC.COM", "btc.com", "BTC.com Pool", "/BTC.COM/", "/BTC.com/", "btccom"],
+      "icon": "btc.com.svg"
+    },
+    {
+      "name": "BTC.TOP",
+      "identifier": "btc.top",
+      "signatures": ["BTC.TOP", "btc.top", "BTC.TOP Pool"],
+      "icon": "btc.top.svg"
+    },
+    {
+      "name": "Est3lar",
+      "identifier": "est3lar",
+      "signatures": ["/Est3lar/", "est3lar", "Est3lar", "EST3LAR"],
+      "icon": "default.svg"
+    },
+    {
+      "name": "F2Pool",
+      "identifier": "f2pool",
+      "signatures": ["F2Pool", "F2POOL", "f2pool", "f2pool.com", "F2Pool Pool"],
+      "icon": "f2pool.svg"
+    },
+    {
+      "name": "Foundry USA",
+      "identifier": "foundryusa",
+      "signatures": ["Foundry USA", "FOUNDRY USA", "foundryusa", "foundryusa.com", "FoundryUSA", "Foundry USA Pool", "Foundry"],
+      "icon": "foundryusa.svg"
+    },
+    {
+      "name": "Huobi Pool",
+      "identifier": "huobi",
+      "signatures": ["Huobi Pool", "HUOBI POOL", "huobipool", "huobi.com", "HuobiPool", "Huobi"],
+      "icon": "huobi.svg"
+    },
+    {
+      "name": "Innopolis Tech",
+      "identifier": "innopolis",
+      "signatures": ["Innopolis Tech", "INNOPOLIS TECH", "innopolis", "innopolis.tech", "Innopolis", "Innopolis.tech"],
+      "icon": "innopolistech.svg"
+    },
+    {
+      "name": "Luxor",
+      "identifier": "luxor",
+      "signatures": ["Luxor", "LUXOR", "luxor", "luxor.tech", "Luxor Pool"],
+      "icon": "luxor.svg"
+    },
+    {
+      "name": "MARA Pool",
+      "identifier": "mara",
+      "signatures": ["MARA Pool", "MARA POOL", "marapool", "marathon", "Marathon Digital", "MaraPool", "Mara", "MARA Made in USA", "MARA"],
+      "icon": "mara.svg"
+    },
+    {
+      "name": "Mining Squared",
+      "identifier": "miningsquared",
+      "signatures": ["MiningSquared", "BSquared Network", "/bsquared/", "BSquared", "Mining Squared", "bsquared"],
+      "icon": "miningsquared.svg"
+    },
+    {
+      "name": "Ocean.xyz",
+      "identifier": "ocean",
+      "signatures": ["Ocean.xyz", "OCEAN.XYZ", "ocean", "ocean.xyz", "Ocean", "OCEAN"],
+      "icon": "ocean.svg"
+    },
+    {
+      "name": "OKEx Pool",
+      "identifier": "okex",
+      "signatures": ["OKEx Pool", "OKEX POOL", "okexpool", "okex.com", "OKExPool", "OKEx", "OKX"],
+      "icon": "okex.svg"
+    },
+    {
+      "name": "Public Pool",
+      "identifier": "publicpool",
+      "signatures": ["Public Pool", "PUBLIC POOL", "publicpool", "Public-Pool", "Public Pool on Umbrel"],
+      "icon": "publicpool.svg"
+    },
+    {
+      "name": "RedRock",
+      "identifier": "redrock",
+      "signatures": ["RedRock", "REDRock", "redrock", "redrock.com", "RedRock Pool", "RedRock"],
+      "icon": "default.svg"
+    },
+    {
+      "name": "SBICrypto.com",
+      "identifier": "sbi",
+      "signatures": ["SBICrypto.com", "SBICRYPTO.COM", "sbi", "sbi.com", "SBICrypto.com Pool", "SBI"],
+      "icon": "sbi.svg"
+    },
+    {
+      "name": "SecPool",
+      "identifier": "secpool",
+      "signatures": ["SecPool", "SEC POOL", "secpool", "secpool.com"],
+      "icon": "secpool.svg"
+    },
+    {
+      "name": "Spider Pool",
+      "identifier": "spiderpool",
+      "signatures": ["Spider Pool", "SPIDER POOL", "spiderpool", "spiderpool.com", "SpiderPool", "Spider", "SPIDER", "spider", "spiderpool"],
+      "icon": "spiderpool.svg"
+    },
+    {
+      "name": "Ultimus Pool",
+      "identifier": "ultimus",
+      "signatures": ["Ultimus", "ULTIMUS", "ultimus", "ultimus.com", "Ultimus Pool", "Ultimus"],
+      "icon": "ultimuspool.svg"
+    },
+    {
+      "name": "Unknown Pool",
+      "identifier": "unknown",
+      "signatures": ["Unknown Pool", "UNKNOWN POOL", "unknown", "Unknown", "Unknown Mining Pool"],
+      "icon": "unknown.svg"
+    },
+    {
+      "name": "ViaBTC",
+      "identifier": "viabtc",
+      "signatures": ["ViaBTC", "VIABTC", "viabtc", "viabtc.com", "ViaBTC Pool"],
+      "icon": "viabtc.svg"
+    },
+    {
+      "name": "WhitePool",
+      "identifier": "whitepool",
+      "signatures": ["WhitePool", "WHITE POOL", "whitepool", "whitepool.com", "White Pool", "bzbk_zFm"],
+      "icon": "whitepool.svg"
+    }
+  ]
+}
