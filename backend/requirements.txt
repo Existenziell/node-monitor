@@ -1,5 +1,5 @@
 # Bitcoin Project - Python Dependencies
-# Install with: pip3 install -r requirements.txt
+# Install with: pip3 install -r backend/requirements.txt
 
 # Core Bitcoin Monitoring Dependencies
 requests>=2.31.0

@@ -2,7 +2,7 @@
 
 A suite of tools for monitoring Bitcoin blockchain activity.
 
-## 🚀 Features
+## Features
 
 ### Blockchain Monitoring
 - **Real-time blockchain monitoring** with ZMQ notifications (instant) or polling fallback
@@ -34,7 +34,7 @@ The project includes a **BitcoinPriceService** that consolidates all Bitcoin pri
 ### Python Dependencies
 All Python dependencies can be installed with:
 ```bash
-pip3 install -r requirements.txt
+pip3 install -r backend/requirements.txt
 ```
 
 **Core packages** (monitoring): `requests`, `keyring`, `cryptography`, `pyzmq`  
@@ -60,7 +60,7 @@ npm install
 
 2. **Install Python dependencies:**
    ```bash
-   pip3 install -r requirements.txt
+   pip3 install -r backend/requirements.txt
    ```
 
 3. **Configure ZMQ for real-time monitoring (optional but recommended):**
@@ -90,9 +90,6 @@ npm install
 5. **Tor Integration (Optional but Recommended):**
    Your Bitcoin node is already configured for Tor support. Start Tor if needed (e.g. `brew services start tor` on macOS). 
    This allows your node to accept both clearnet and Tor connections simultaneously.
-
-6. **Running the dashboard on Raspberry Pi (e.g. Start9 / Bitcoin Knots):**  
-   See [RPC configuration for Pi](docs/README_RPC_PI.md) for config location, cache tuning, and Pi/Start9-specific setup.
 
 ## Usage
 
@@ -133,9 +130,9 @@ The project uses automated code quality checks:
 **Python (Pylint)**
 ```bash
 # Check all Python files
-pylint backend/*.py
+cd backend && pylint *.py
 
-# Configuration in pylint.ini
+# Configuration in backend/pylint.ini
 ```
 
 **JavaScript (ESLint)**
