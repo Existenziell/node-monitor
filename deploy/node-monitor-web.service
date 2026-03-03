@@ -1,0 +1,18 @@
+[Unit]
+Description=Node Monitor Dashboard (frontend on port 8002)
+After=network-online.target node-monitor-api.service
+Wants=network-online.target
+Wants=node-monitor-api.service
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/projects/node-monitor/frontend
+ExecStart=/usr/bin/npx vite preview --port 8002
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

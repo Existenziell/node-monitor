@@ -1,0 +1,17 @@
+[Unit]
+Description=Node Monitor block monitor (feeds blocks/difficulty data)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/projects/node-monitor
+ExecStart=/home/pi/projects/node-monitor/venv/bin/python backend/block_monitor.py --continuous
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
