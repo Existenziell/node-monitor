@@ -3,10 +3,7 @@
  * Based on Bitcoin Core 26.x RPC API. Used for Console tab clickable method list.
  */
 
-/** Pretty-print a params array as JSON for the Params textarea. */
-function formatParams(arr: unknown[]): string {
-  return JSON.stringify(arr, null, 2);
-}
+import { formatParams } from '@/utils';
 
 export const RPC_COMMANDS_BY_CATEGORY: Record<string, string[]> = {
   Blockchain: [

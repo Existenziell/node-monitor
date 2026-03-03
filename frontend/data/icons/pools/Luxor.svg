@@ -1,6 +1,7 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg width="80px" height="70px" viewBox="0 0 80 70" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-    <title>Luxor</title>
+<svg viewBox="0 0 32 32" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g transform="translate(16, 16) scale(1) translate(-16, -16)">
+<g transform="translate(16, 16) scale(0.4) translate(-40, -35)">
+<title>Luxor</title>
     <defs>
         <radialGradient cx="64.6036328%" cy="0.0477138606%" fx="64.6036328%" fy="0.0477138606%" r="115.030049%" gradientTransform="translate(0.646036,0.000477),scale(1.000000,0.880576),rotate(97.347940),translate(-0.646036,-0.000477)" id="radialGradient-1">
             <stop stop-color="#E5AA12" offset="0%"/>
@@ -21,4 +22,6 @@
             </g>
         </g>
     </g>
+</g>
+</g>
 </svg>

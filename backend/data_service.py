@@ -28,6 +28,8 @@ class DataService:
     def safe_get(self, data: Dict[str, Any], key: str, default: Any = None) -> Any:
         """Safely get a value from a dictionary with error handling."""
         try:
+            if data is None or not isinstance(data, dict):
+                return default
             return data.get(key, default)
         except (KeyError, TypeError):
             return default

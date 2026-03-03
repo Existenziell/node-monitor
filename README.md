@@ -39,7 +39,8 @@ pip3 install -r backend/requirements.txt
 
 **Core packages** (monitoring): `requests`, `keyring`, `cryptography`, `pyzmq`  
 **Graph visualization**: `yfinance`, `pandas`, `matplotlib`, `numpy`  
-**Development**: `pylint` (optional)
+**Development**: `pylint` (optional)  
+**Testing**: `pytest`, `pytest-cov` (see [Testing](#testing))
 
 ### JavaScript Dependencies
 For the web dashboard, JavaScript dependencies can be installed with:
@@ -121,6 +122,29 @@ python3 backend/block_monitor.py --continuous --zmq-endpoint tcp://127.0.0.1:283
 - Check that ZMQ is enabled in Bitcoin logs: `grep -i zmq ~/.bitcoin/debug.log`
 
 **Configuration:** To set up RPC credentials (e.g. before first use), run: `python3 backend/config_service.py --setup`.
+
+## Testing
+
+Backend Python tests use **pytest** and live in `backend/tests/`.
+
+**Run all backend tests (from repo root):**
+```bash
+pip3 install -r backend/requirements-dev.txt
+python3 -m pytest backend/tests -v
+```
+
+**Run with coverage:**
+```bash
+python3 -m pytest backend/tests -v --cov=backend --cov-report=term-missing
+```
+
+**Layout and conventions:**
+- Test files: `backend/tests/test_*.py` (e.g. `test_data_service.py`, `test_error_service.py`, `test_rpc_service.py`).
+- Shared fixtures (sample data, mocks): `backend/tests/conftest.py`.
+- Helpers/fakes: `backend/tests/helpers/` (e.g. `FakeRPCService` for tests that need an in-memory RPC).
+- External I/O (RPC, HTTP, filesystem) is mocked via `monkeypatch` and `unittest.mock` so tests run without a live node or network.
+
+See `pytest.ini` at the repo root for `testpaths` and `pythonpath`.
 
 ## Code Quality
 

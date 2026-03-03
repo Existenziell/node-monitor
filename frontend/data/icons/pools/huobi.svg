@@ -1,7 +1,7 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg version="1.2" width="21.43mm" height="21.43mm" viewBox="0 0 2143 2143" preserveAspectRatio="xMidYMid" fill-rule="evenodd" stroke-width="28.222" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg" xmlns:ooo="http://xml.openoffice.org/svg/export" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:presentation="http://sun.com/xmlns/staroffice/presentation" xmlns:smil="http://www.w3.org/2001/SMIL20/" xmlns:anim="urn:oasis:names:tc:opendocument:xmlns:animation:1.0" xml:space="preserve">
- <defs class="ClipPathGroup">
+<svg version="1.2" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid" fill-rule="evenodd" stroke- stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg" xmlns:ooo="http://xml.openoffice.org/svg/export" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:presentation="http://sun.com/xmlns/staroffice/presentation" xmlns:smil="http://www.w3.org/2001/SMIL20/" xmlns:anim="urn:oasis:names:tc:opendocument:xmlns:animation:1.0" xml:space="preserve">
+<g transform="translate(16, 16) scale(1) translate(-16, -16)">
+<g transform="translate(16, 16) scale(0.014932337844143724) translate(-1071.5, -1071.5)">
+<defs class="ClipPathGroup">
   <clipPath id="presentation_clip_path" clipPathUnits="userSpaceOnUse">
    <rect x="0" y="0" width="2143" height="2143"/>
   </clipPath>
@@ -72,4 +72,6 @@
    </g>
   </g>
  </g>
+</g>
+</g>
 </svg>

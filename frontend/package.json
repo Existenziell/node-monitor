@@ -10,7 +10,7 @@
     "dev:block": "cd .. && python3 backend/block_monitor.py --continuous",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "test": "vitest run",
+    "test": "vitest run && cd .. && python3 -m pytest backend/tests -v",
     "test:watch": "vitest",
     "lint": "eslint src && cd .. && pylint --rcfile=backend/pylint.ini backend/",
     "lint:fix": "eslint src --fix",
@@ -22,7 +22,8 @@
   "dependencies": {
     "date-fns": "^2.30.0",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "recharts": "^2.12.0"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",

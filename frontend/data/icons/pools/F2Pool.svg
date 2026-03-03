@@ -1,6 +1,7 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg width="80px" height="80px" viewBox="0 0 80 80" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-    <title>F2Pool</title>
+<svg viewBox="0 0 32 32" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g transform="translate(16, 16) scale(1) translate(-16, -16)">
+<g transform="translate(16, 16) scale(0.4) translate(-40, -40)">
+<title>F2Pool</title>
     <defs>
         <polygon id="path-1" points="0 0 80 0 80 80.0002963 0 80.0002963"/>
     </defs>
@@ -20,4 +21,6 @@
             </g>
         </g>
     </g>
+</g>
+</g>
 </svg>

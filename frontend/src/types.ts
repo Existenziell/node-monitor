@@ -48,6 +48,42 @@ export interface DistributionData {
   by_percentage: Record<string, number>;
 }
 
+/** Peer entry from getpeerinfo (all fields optional for different node versions). */
+export interface Peer {
+  id?: number;
+  addr?: string;
+  addrbind?: string;
+  addrlocal?: string;
+  network?: string;
+  mapped_as?: number;
+  services?: string;
+  servicesnames?: string[];
+  relaytxes?: boolean;
+  lastsend?: number;
+  lastrecv?: number;
+  last_transaction?: number;
+  last_block?: number;
+  bytessent?: number;
+  bytesrecv?: number;
+  conntime?: number;
+  timeoffset?: number;
+  pingtime?: number;
+  minping?: number;
+  pingwait?: number;
+  version?: number;
+  subver?: string;
+  inbound?: boolean;
+  bip152_hb_to?: boolean;
+  bip152_hb_from?: boolean;
+  startingheight?: number;
+  synced_headers?: number;
+  synced_blocks?: number;
+  connection_type?: string;
+  transport_protocol_type?: string;
+  permissions?: string[];
+  [key: string]: unknown;
+}
+
 export interface NodeData {
   blockchain?: Record<string, unknown>;
   network?: Record<string, unknown>;
@@ -55,7 +91,7 @@ export interface NodeData {
   memory?: Record<string, unknown>;
   indexing?: Record<string, unknown>;
   hashrate?: number;
-  peers?: Array<Record<string, unknown>>;
+  peers?: Peer[];
 }
 
 export interface ConfigStatus {
@@ -89,15 +125,44 @@ export interface BlocksData {
   avg_block_time_seconds?: number | null;
 }
 
+/** Bitcoin Core listunspent response item */
+export interface UtxoEntry {
+  txid?: string;
+  vout?: number;
+  address?: string;
+  amount?: number;
+  confirmations?: number;
+  [key: string]: unknown;
+}
+
+/** Bitcoin Core listtransactions response item */
+export interface WalletTransaction {
+  txid?: string;
+  category?: string;
+  amount?: number;
+  confirmations?: number;
+  time?: number;
+  blocktime?: number;
+  address?: string;
+  [key: string]: unknown;
+}
+
 export interface WalletData {
   wallet?: Record<string, unknown>;
   balance?: number;
-  unspent?: unknown[];
-  transactions?: unknown[];
+  unspent?: UtxoEntry[];
+  transactions?: WalletTransaction[];
+}
+
+export interface NetworkHistoryEntry {
+  timestamp: string;
+  blockHeight?: number;
+  hashRate?: number;
+  difficulty?: number;
 }
 
 export interface NetworkData {
-  network_history?: Array<Record<string, unknown>>;
+  network_history?: NetworkHistoryEntry[];
   total_records?: number;
 }
 
