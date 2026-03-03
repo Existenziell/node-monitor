@@ -1,5 +1,6 @@
 import { TABS } from '@/constants';
 import type { TabNavProps } from '@/types';
+import { RefreshIcon } from './Icons';
 
 export function TabNav({ activeTab, onTabChange, onRefresh }: TabNavProps) {
   return (
@@ -23,10 +24,10 @@ export function TabNav({ activeTab, onTabChange, onRefresh }: TabNavProps) {
       <button
         type="button"
         onClick={onRefresh}
-        className="p-2 rounded hover:bg-gray-200 dark:hover:bg-white/10"
+        className="p-2 rounded-md hover:bg-gray-200 dark:hover:bg-white/10"
         title="Refresh"
       >
-        ↻
+        <RefreshIcon />
       </button>
     </div>
   );

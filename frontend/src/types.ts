@@ -2,6 +2,8 @@
  * Centralized type and interface definitions for the frontend.
  */
 
+import { SVGProps } from "react";
+
 // --- Tab navigation ---
 
 export type TabId = 'node' | 'blocks' | 'wallet' | 'console' | 'settings';
@@ -208,4 +210,8 @@ export interface ThemeContextValue {
   theme: Theme;
   toggleTheme: () => void;
   isDark: boolean;
+}
+
+export interface IconProps extends SVGProps<SVGSVGElement> {
+  className?: string
 }

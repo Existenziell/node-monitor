@@ -10,3 +10,14 @@
     @apply bg-gradient-to-br from-[#f8f9fa] to-[#e9ecef] text-[#212529];
   }
 }
+
+@layer components {
+  .radio-setting {
+    @apply h-5 w-5 shrink-0 cursor-pointer rounded-full border-2 border-gray-300 dark:border-gold/40
+           bg-white dark:bg-white/10
+           transition-[border-color,box-shadow] duration-200
+           focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-transparent
+           focus:ring-blue-500/60 dark:focus:ring-gold/50
+           accent-blue-600 dark:accent-gold;
+  }
+}

@@ -1,4 +1,5 @@
 import { useTheme } from '@/contexts/ThemeContext';
+import { MoonIcon, SunIcon } from './Icons';
 
 const LogoSvg = () => (
   <svg
@@ -51,10 +52,10 @@ export function Header() {
       <button
         type="button"
         onClick={toggleTheme}
-        className="p-2 rounded hover:bg-gray-200 dark:hover:bg-white/10"
+        className="p-2 rounded-md hover:bg-gray-200 dark:hover:bg-white/10"
         title={theme === 'dark' ? 'Switch to light' : 'Switch to dark'}
       >
-        {theme === 'dark' ? '☀️' : '🌙'}
+        {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
       </button>
     </header>
   );
