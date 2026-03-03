@@ -100,7 +100,7 @@ cd frontend && npm install && npm run dev
 ```
 This starts the Vite dev server and the Python API server (`python3 backend/api_server.py`). The dashboard proxies `/api` to the API server.
 
-**Production / systemd (e.g. Raspberry Pi):** Run three processes: (1) API server: `python3 backend/api_server.py`, (2) frontend dev or built static (e.g. Vite or nginx serving `frontend/dist`), (3) block monitor for live data: `python3 backend/block_monitor.py --continuous`.
+**Production / systemd (e.g. Raspberry Pi):** Use the service files in `deploy/` for API (port 8003), dashboard (port 8002), and block monitor. See [deploy/README.md](deploy/README.md) for install steps. Copy the three `.service` files to `/etc/systemd/system/`, run `npm run build` in `frontend/`, then enable and start the services.
 
 **Production build:** `cd frontend && npm run build` — then serve the contents of `frontend/dist/`.
 
