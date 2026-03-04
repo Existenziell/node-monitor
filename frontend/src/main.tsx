@@ -4,7 +4,6 @@ import App from '@/App';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { ConsoleProvider } from '@/contexts/ConsoleContext';
 import { ApiProvider } from '@/contexts/ApiContext';
-import { LoadingProvider } from '@/contexts/LoadingContext';
 import '@/index.css';
 
 const rootEl = document.getElementById('root');
@@ -16,9 +15,7 @@ ReactDOM.createRoot(rootEl).render(
     <ThemeProvider>
       <ConsoleProvider>
         <ApiProvider>
-          <LoadingProvider>
-            <App />
-          </LoadingProvider>
+          <App />
         </ApiProvider>
       </ConsoleProvider>
     </ThemeProvider>

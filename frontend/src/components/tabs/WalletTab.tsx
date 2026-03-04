@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useApi } from '@/contexts/ApiContext';
 import type { UtxoEntry, WalletData, WalletTransaction } from '@/types';
 import { formatTxTime, truncateTxid } from '@/utils';
-import { useLoading } from '@/contexts/LoadingContext';
+import { getRefreshTabId, clearRefreshTabId } from '@/refreshState';
 import { useApiData } from '@/hooks/useApiData';
 import { useTabData } from '@/hooks/useTabData';
 import { LoadingOverlay } from '@/components/LoadingOverlay';
@@ -10,7 +10,6 @@ import { LoadingOverlay } from '@/components/LoadingOverlay';
 export function WalletTab() {
   const { fetchWallet, callRpc, saveWalletName } = useApi();
   const { data, loading, error, load } = useApiData<WalletData>(fetchWallet);
-  const { setLoading: setGlobalLoading } = useLoading();
   const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [createName, setCreateName] = useState('');
@@ -20,9 +19,10 @@ export function WalletTab() {
   useTabData(load, 'wallet');
 
   useEffect(() => {
-    setGlobalLoading(loading);
-    return () => setGlobalLoading(false);
-  }, [loading, setGlobalLoading]);
+    if (!loading) {
+      clearRefreshTabId('wallet');
+    }
+  }, [loading]);
 
   const unspent: UtxoEntry[] = useMemo(
     () => (Array.isArray(data?.unspent) ? data.unspent : []),
@@ -103,7 +103,12 @@ export function WalletTab() {
   };
 
   if (loading && !data) {
-    return <div className="p-4 text-level-4">Loading wallet data...</div>;
+    return (
+      <div className="p-4 text-level-4 flex items-center gap-2">
+        <span className="h-4 w-4 animate-spin rounded-full border-2 border-level-3 border-t-accent" aria-hidden />
+        Loading wallet…
+      </div>
+    );
   }
 
   if (error && !data) {
@@ -194,7 +199,7 @@ export function WalletTab() {
 
   return (
     <div className="relative space-y-4">
-      <LoadingOverlay show={loading && !!data} />
+      <LoadingOverlay show={loading && !!data && getRefreshTabId() === 'wallet'} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="rounded-lg bg-level-2 border border-level-3 p-4">
           <h3 className="text-sm font-medium text-accent mb-2">Wallet</h3>

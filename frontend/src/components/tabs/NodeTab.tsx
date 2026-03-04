@@ -2,7 +2,7 @@ import { useCallback, useEffect } from 'react';
 import { useApi } from '@/contexts/ApiContext';
 import type { NodeData, NetworkData, Peer } from '@/types';
 import { useConsole } from '@/contexts/ConsoleContext';
-import { useLoading } from '@/contexts/LoadingContext';
+import { getRefreshTabId, clearRefreshTabId } from '@/refreshState';
 import { useApiData } from '@/hooks/useApiData';
 import { useTabData } from '@/hooks/useTabData';
 import { NetworkHistoryChart } from '@/components/NetworkHistoryChart';
@@ -158,12 +158,12 @@ export function NodeTab() {
 
   const { data, loading, error } = nodeState;
   const { data: networkData, loading: networkLoading, error: networkError } = networkState;
-  const { setLoading: setGlobalLoading } = useLoading();
 
   useEffect(() => {
-    setGlobalLoading(loading || networkLoading);
-    return () => setGlobalLoading(false);
-  }, [loading, networkLoading, setGlobalLoading]);
+    if (!loading && !networkLoading) {
+      clearRefreshTabId('node');
+    }
+  }, [loading, networkLoading]);
 
   useEffect(() => {
     if (data?.blockchain && typeof data.blockchain.blocks === 'number') {
@@ -173,7 +173,10 @@ export function NodeTab() {
 
   if (loading && !data) {
     return (
-      <div className="p-4 text-level-4">Loading node data...</div>
+      <div className="p-4 text-level-4 flex items-center gap-2">
+        <span className="h-4 w-4 animate-spin rounded-full border-2 border-level-3 border-t-accent" aria-hidden />
+        Loading node…
+      </div>
     );
   }
 
@@ -434,7 +437,8 @@ export function NodeTab() {
     indexingEntries.push({ label: 'No indexes', value: 'N/A' });
   }
 
-  const isRefreshing = (loading || networkLoading) && !!data;
+  const isRefreshing =
+    (loading || networkLoading) && !!data && getRefreshTabId() === 'node';
 
   return (
     <div className="relative space-y-4">
@@ -511,7 +515,7 @@ export function NodeTab() {
       <div className="rounded-lg bg-level-2 border border-level-3 p-4">
         <h3 className="text-sm font-medium text-accent mb-2">Network history</h3>
         {networkLoading && !networkData ? (
-          <p className="text-sm text-level-4">Loading network data...</p>
+          <div className="min-h-[240px]" aria-hidden />
         ) : networkError && !networkData ? (
           <p className="text-sm text-red-400">
             Error loading network data: {networkError.message}. Ensure the block monitor is running and network data is being recorded.

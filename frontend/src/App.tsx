@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useRef } from 'react';
 import { useTabFromUrl } from '@/hooks/useTabFromUrl';
 import { useConsole } from '@/contexts/ConsoleContext';
 import { useApi } from '@/contexts/ApiContext';
-import { useLoading } from '@/contexts/LoadingContext';
+import { setRefreshTabId } from '@/refreshState';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { TabNav } from '@/components/TabNav';
@@ -34,7 +34,6 @@ export default function App() {
   const { activeTab, setTab } = useTabFromUrl();
   const { log } = useConsole();
   const { fetchConfigStatus } = useApi();
-  const { isLoading } = useLoading();
   const hasCheckedConfig = useRef(false);
 
   React.useEffect(() => {
@@ -60,22 +59,23 @@ export default function App() {
 
   const handleRefresh = useCallback(() => {
     log(`Loading ${activeTab} data...`, 'info');
+    setRefreshTabId(activeTab);
     setTab(activeTab);
     window.dispatchEvent(new CustomEvent('tab-refresh', { detail: activeTab }));
   }, [activeTab, setTab, log]);
 
   return (
-    <div className="container max-w-[1400px] mx-auto p-5">
+    <div className="container max-w-[1400px] mx-auto p-5 min-h-screen flex flex-col">
       <Header />
       <TabNav
         activeTab={activeTab}
         onTabChange={setTab}
         onRefresh={handleRefresh}
       />
-      <section className="min-h-[200px]">
+      <section className="min-h-[200px] flex-1">
         <TabContent tab={activeTab} />
       </section>
-      {!isLoading && <Footer />}
+      <Footer />
     </div>
   );
 }

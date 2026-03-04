@@ -5,7 +5,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import type { BlockRow, BlocksData, DistributionData } from '@/types';
 import { formatBytes, formatWeight } from '@/utils';
 import { useConsole } from '@/contexts/ConsoleContext';
-import { useLoading } from '@/contexts/LoadingContext';
+import { getRefreshTabId, clearRefreshTabId } from '@/refreshState';
 import { useApiData } from '@/hooks/useApiData';
 import { useTabData } from '@/hooks/useTabData';
 import { LoadingOverlay } from '@/components/LoadingOverlay';
@@ -138,12 +138,12 @@ export function BlocksTab() {
   const { log } = useConsole();
 
   useTabData(load, 'blocks');
-  const { setLoading: setGlobalLoading } = useLoading();
 
   useEffect(() => {
-    setGlobalLoading(loading);
-    return () => setGlobalLoading(false);
-  }, [loading, setGlobalLoading]);
+    if (!loading) {
+      clearRefreshTabId('blocks');
+    }
+  }, [loading]);
 
   useEffect(() => {
     loadPools().catch(() => {});
@@ -199,7 +199,12 @@ export function BlocksTab() {
       : '-';
 
   if (loading && !data) {
-    return <div className="p-4 text-level-4">Loading blockchain data...</div>;
+    return (
+      <div className="p-4 text-level-4 flex items-center gap-2">
+        <span className="h-4 w-4 animate-spin rounded-full border-2 border-level-3 border-t-accent" aria-hidden />
+        Loading blocks…
+      </div>
+    );
   }
 
   if (error && !data) {
@@ -216,7 +221,7 @@ export function BlocksTab() {
 
   return (
     <div className="relative space-y-4">
-      <LoadingOverlay show={loading && !!data} />
+      <LoadingOverlay show={loading && !!data && getRefreshTabId() === 'blocks'} />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="rounded-lg bg-level-2 border border-level-3 p-4 space-y-4">
           <section>

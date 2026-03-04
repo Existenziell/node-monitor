@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useApi } from '@/contexts/ApiContext';
 import { useConsole } from '@/contexts/ConsoleContext';
-import { useLoading } from '@/contexts/LoadingContext';
 import type { ConfigStatus, ConfigSavePayload } from '@/types';
 
 /** Baseline values from last load/save for dirty checking. rpcUser is null when masked. */
@@ -82,17 +81,11 @@ function getPendingChanges(
 export function SettingsTab() {
   const { fetchConfigStatus, saveConfig } = useApi();
   const { log } = useConsole();
-  const { setLoading: setGlobalLoading } = useLoading();
   const [status, setStatus] = useState<ConfigStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [lastSaved, setLastSaved] = useState<SettingsBaseline | null>(null);
-
-  useEffect(() => {
-    setGlobalLoading(loading);
-    return () => setGlobalLoading(false);
-  }, [loading, setGlobalLoading]);
 
   const [authMethod, setAuthMethod] = useState<'password' | 'cookie'>('password');
   const [rpcHost, setRpcHost] = useState('127.0.0.1');
@@ -281,7 +274,7 @@ export function SettingsTab() {
                   value={rpcUser}
                   onChange={(e) => setRpcUser(e.target.value)}
                   className="w-full rounded border border-level-3 bg-level-2 px-3 py-2 text-level-5"
-                  placeholder="bitcoinrpc"
+                  placeholder={status?.rpc_user_masked ? `${status.rpc_user_masked} (current)` : 'bitcoinrpc'}
                   autoComplete="username"
                 />
               </div>
@@ -330,9 +323,6 @@ export function SettingsTab() {
               className="w-full rounded border border-level-3 bg-level-2 px-3 py-2 text-level-5"
               placeholder="127.0.0.1 or Bitcoin node IP/hostname"
             />
-            <p className="text-xs text-level-4 mt-1">
-              Use the Bitcoin node&apos;s IP or hostname when node-monitor runs on a different machine (e.g. Pi3 + Pi5).
-            </p>
           </div>
 
           <div>
