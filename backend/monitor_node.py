@@ -10,6 +10,8 @@ import sys
 import os
 import base64
 import signal
+import traceback
+import sqlite3
 from datetime import datetime
 from typing import Dict, Any, Optional, List
 import requests
@@ -82,6 +84,9 @@ class BlockchainMonitor:
             self._last_logged_block_height = get_last_logged_block_height(self._db_path)
             if self._last_logged_block_height > 0:
                 print(f"Loaded last logged block height: {self._last_logged_block_height}")
+            print(f"Block monitor DB path: {self._db_path}")
+        else:
+            print("Block store unavailable; blocks will not be persisted")
 
     def _get_data_dir(self) -> str:
         """Return the absolute path to the data directory."""
@@ -237,8 +242,9 @@ class BlockchainMonitor:
             print(f"ZMQ block received: {current_height:,}")
             self._process_new_block(block, current_height)
 
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"Block processing error: {type(e).__name__}: {e}")
+            print(traceback.format_exc())
 
     def check_for_new_block(self, blockchain_info):
         """Check if a new block was found"""
@@ -327,7 +333,7 @@ class BlockchainMonitor:
             block_details = self.calculate_block_btc(block)
         except (requests.RequestException, KeyError, ValueError):
             error_service.handle_api_error("Block fees calculation", None)
-        self.log_block_to_json(block, mining_pool, block_details, time_since_last_block)
+        self._persist_block(block, mining_pool, block_details, time_since_last_block)
 
     def _get_time_since_last_block(self, current_block_time):
         """Return formatted time since last block (no output)."""
@@ -680,12 +686,13 @@ class BlockchainMonitor:
             'time_since_last_block': time_since_last_block
         }
 
-    def log_block_to_json(self, block, mining_pool, block_details, time_since_last_block):
+    def _persist_block(self, block, mining_pool, block_details, time_since_last_block):
         """Persist block to SQLite (block_store)."""
         if not BLOCK_STORE_AVAILABLE:
             return
         block_height = block.get('height', 0)
         if block_height <= self._last_logged_block_height:
+            print(f"Block {block_height:,} already logged, skipping")
             return
         try:
             block_dict = self._prepare_block_dict(
@@ -706,10 +713,11 @@ class BlockchainMonitor:
                 db_path=self._db_path,
             )
             self._last_logged_block_height = block_height
-        except (OSError, IOError, KeyError, ValueError) as e:
+            print(f"Block {block_height:,} written to DB")
+        except (OSError, IOError, KeyError, ValueError, sqlite3.Error) as e:
             error_service.handle_file_error("block_store", "write", e)
 
-    def log_difficulty_to_json(self, hashrate: Optional[float], difficulty: Optional[float]) -> None:
+    def _persist_network_snapshot(self, hashrate: Optional[float], difficulty: Optional[float]) -> None:
         """Append one difficulty/hashrate record to SQLite (block_store)."""
         if not BLOCK_STORE_AVAILABLE:
             return
@@ -750,7 +758,7 @@ class BlockchainMonitor:
 
             # Persist to SQLite (block_store) if we have valid data
             if hashrate is not None or difficulty is not None:
-                self.log_difficulty_to_json(hashrate, difficulty)
+                self._persist_network_snapshot(hashrate, difficulty)
                 self._last_network_log_time = current_time
 
                 # Update cached values
