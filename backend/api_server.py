@@ -598,6 +598,10 @@ def start_api_server(port=None):
     os.makedirs(data_dir, exist_ok=True)
     init_schema(db_path)
 
+    # Block monitor uses this API for pool signatures (data/pools.json) when running in-process
+    if "POOLS_API_URL" not in os.environ:
+        os.environ["POOLS_API_URL"] = f"http://127.0.0.1:{port}"
+
     try:
         from monitor_node import BlockchainMonitor
         zmq_endpoint = os.environ.get("ZMQ_ENDPOINT", "tcp://127.0.0.1:28332")

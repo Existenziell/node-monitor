@@ -117,7 +117,7 @@ flowchart LR
 
 ### Block and network data (SQLite)
 
-Blocks, network history (hashrate/difficulty), and pool distribution are stored in `**data/node_monitor.db`** (SQLite). When you run the dashboard with `npm run dev`, the API server starts the block monitor in a background thread and writes to this DB. No separate block-monitor process is required. The DB is created automatically; the last 100 blocks and 100 network snapshots are kept.
+Blocks, network history (hashrate/difficulty), and pool distribution are stored in `**data/node_monitor.db`** (SQLite). When you run the dashboard with `npm run dev`, the API server starts the block monitor in a background thread and writes to this DB. No separate block-monitor process is required. The DB is created automatically; the last 100 blocks and 100 network snapshots are kept. **Mining pool names** in the blocks table come from **`data/pools.json`**; the API serves pool signatures at `/api/pools/signatures` and the block monitor uses that when running in-process (or set `POOLS_API_URL` for standalone monitoring).
 
 **Viewing the DB (e.g. on the Pi):** From the project root, use the `sqlite3` CLI (install with `sudo apt install sqlite3` if needed):
 
