@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
 import { useApi } from '@/contexts/ApiContext';
 import type { BlockRow, BlocksData, DistributionData } from '@/types';
@@ -23,7 +23,13 @@ const PIE_COLORS = [
   'oklch(0.7 0.12 60)',
 ];
 
-const POOL_ICON_SIZE = 20;
+const POOL_ICON_SIZE = 16;
+
+function formatTimeSince(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
 
 function PoolCell({
   identifier,
@@ -149,6 +155,31 @@ export function BlocksTab() {
     }
   }, [data, log]);
 
+  const secondsSinceLastBlock = data?.seconds_since_last_block ?? null;
+  const timerBaseRef = useRef({ baseSeconds: 0, fetchedAt: 0 });
+  const [, setTimerTick] = useState(0);
+
+  useEffect(() => {
+    if (secondsSinceLastBlock === null || secondsSinceLastBlock === undefined || secondsSinceLastBlock < 0) return;
+    timerBaseRef.current = { baseSeconds: secondsSinceLastBlock, fetchedAt: Date.now() };
+  }, [secondsSinceLastBlock]);
+
+  useEffect(() => {
+    if (secondsSinceLastBlock === null || secondsSinceLastBlock === undefined || secondsSinceLastBlock < 0) return;
+    const id = setInterval(() => setTimerTick((t) => t + 1), 1000);
+    return () => clearInterval(id);
+  }, [secondsSinceLastBlock]);
+
+  const timeSinceLastFormatted =
+    secondsSinceLastBlock !== null && secondsSinceLastBlock !== undefined && secondsSinceLastBlock >= 0
+      ? formatTimeSince(
+          Math.floor(
+            timerBaseRef.current.baseSeconds +
+              (Date.now() - timerBaseRef.current.fetchedAt) / 1000
+          )
+        )
+      : '-';
+
   if (loading && !data) {
     return <div className="p-4 text-level-4">Loading blockchain data...</div>;
   }
@@ -162,14 +193,8 @@ export function BlocksTab() {
   }
 
   const blocks = data?.blocks ?? [];
-  const latestBlock = blocks.length > 0 ? (blocks[0] as BlockRow) : null;
   const chainHeight = data?.chain_height ?? null;
   const nextBlockHeight = chainHeight !== null && chainHeight !== undefined ? chainHeight + 1 : null;
-  const secondsSinceLastBlock = data?.seconds_since_last_block ?? null;
-  const timeSinceLastFormatted =
-    secondsSinceLastBlock !== null && secondsSinceLastBlock !== undefined && secondsSinceLastBlock >= 0
-      ? `${secondsSinceLastBlock}s`
-      : '-';
 
   return (
     <div className="relative space-y-4">
@@ -188,39 +213,6 @@ export function BlocksTab() {
               <dt className="text-level-4">Time since last block</dt>
               <dd className="text-level-5 tabular-nums">{timeSinceLastFormatted}</dd>
             </dl>
-          </section>
-          <section>
-            <h3 className="text-sm font-medium text-level-4 mb-3">Latest found block</h3>
-            {latestBlock ? (
-              <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                <dt className="text-level-4">Height</dt>
-                <dd className="text-level-5 font-medium tabular-nums">{latestBlock.block_height}</dd>
-                <dt className="text-level-4">Hash</dt>
-                <dd className="text-level-5 font-mono text-xs truncate" title={latestBlock.block_hash}>{latestBlock.block_hash ?? '-'}</dd>
-                <dt className="text-level-4">Time</dt>
-                <dd className="text-level-5">{latestBlock.block_time ?? '-'}</dd>
-                <dt className="text-level-4">Time since previous</dt>
-                <dd className="text-level-5">{latestBlock.time_since_last_block || '-'}</dd>
-                <dt className="text-level-4">Pool</dt>
-                <dd className="text-level-5">
-                  <PoolCell identifier={latestBlock.mining_pool} poolByIdentifier={poolByIdentifier} iconSize={POOL_ICON_SIZE} />
-                </dd>
-                <dt className="text-level-4">Tx count</dt>
-                <dd className="text-level-5 tabular-nums">{latestBlock.transaction_count ?? '-'}</dd>
-                <dt className="text-level-4">Weight</dt>
-                <dd className="text-level-5 tabular-nums">{formatWeight(latestBlock.block_weight as number | undefined)}</dd>
-                <dt className="text-level-4">Size</dt>
-                <dd className="text-level-5 tabular-nums">{formatBytes(latestBlock.block_size as number | undefined)}</dd>
-                <dt className="text-level-4">Reward</dt>
-                <dd className="text-level-5 tabular-nums">{latestBlock.block_reward !== null && latestBlock.block_reward !== undefined ? Number(latestBlock.block_reward).toFixed(4) : '-'}</dd>
-                <dt className="text-level-4">Fees</dt>
-                <dd className="text-level-5 tabular-nums">{latestBlock.total_fees !== null && latestBlock.total_fees !== undefined ? Number(latestBlock.total_fees).toFixed(4) : '-'}</dd>
-                <dt className="text-level-4">Fees (USD)</dt>
-                <dd className="text-level-5 tabular-nums">{latestBlock.total_fees_usd !== null && latestBlock.total_fees_usd !== undefined ? Number(latestBlock.total_fees_usd).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}</dd>
-              </dl>
-            ) : (
-              <p className="text-sm text-level-4">No block data</p>
-            )}
           </section>
         </div>
         <div className="rounded-lg bg-level-2 border border-level-3 p-4">
