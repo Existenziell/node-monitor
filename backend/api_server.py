@@ -284,6 +284,8 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
             index_info = self.rpc_service.get_index_info()
             hashrate_info = self.rpc_service.get_network_hashrate()
             peer_info = self.rpc_service.get_peer_info()
+            host_memory = self._get_host_memory()
+            host_architecture = self._get_host_architecture()
 
             # Check if any RPC call returned a connection error (indicating node is down)
             if self._check_connection_error(blockchain_info, "blockchain info"):
@@ -299,6 +301,8 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
                     "network": network_info.get('result') if 'result' in network_info else None,
                     "mempool": mempool_info.get('result') if 'result' in mempool_info else None,
                     "memory": memory_info.get('result') if 'result' in memory_info else None,
+                    "host_memory": host_memory,
+                    "host_architecture": host_architecture,
                     "indexing": index_info.get('result') if 'result' in index_info else None,
                     "hashrate": hashrate_info.get('result') if 'result' in hashrate_info else None,
                     "peers": peer_info.get('result') if 'result' in peer_info else []
@@ -369,6 +373,34 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
     def _get_db_path(self):
         """Return the path to the SQLite DB (blocks/network/distribution)."""
         return os.path.join(self._get_data_dir(), "node_monitor.db")
+
+    def _get_host_memory(self):
+        """Return host system memory stats (total, used, available, percent, swap). None if unavailable."""
+        try:
+            import psutil
+            vmem = psutil.virtual_memory()
+            swap = psutil.swap_memory()
+            return {
+                "total": vmem.total,
+                "available": vmem.available,
+                "used": vmem.used,
+                "percent": round(vmem.percent, 1),
+                "swap_total": swap.total,
+                "swap_free": swap.free,
+                "swap_used": swap.used,
+            }
+        except ImportError:
+            return None
+        except Exception:
+            return None
+
+    def _get_host_architecture(self):
+        """Return host system architecture (e.g. x86_64, aarch64, armv7l)."""
+        try:
+            import platform
+            return platform.machine()
+        except Exception:
+            return None
 
     def _compute_avg_block_time(self, blocks):
         """Compute average block time in seconds from block_time strings."""

@@ -4,6 +4,7 @@
 # Core Bitcoin Monitoring Dependencies
 requests>=2.31.0
 pyzmq>=25.0.0
+psutil>=5.9.0
 
 # Security Dependencies
 keyring>=24.0.0

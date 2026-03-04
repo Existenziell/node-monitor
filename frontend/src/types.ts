@@ -92,6 +92,8 @@ export interface NodeData {
   network?: Record<string, unknown>;
   mempool?: Record<string, unknown>;
   memory?: Record<string, unknown>;
+  host_memory?: Record<string, unknown>;
+  host_architecture?: string | null;
   indexing?: Record<string, unknown>;
   hashrate?: number;
   peers?: Peer[];

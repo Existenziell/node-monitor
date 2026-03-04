@@ -139,6 +139,8 @@ export function NodeTab() {
   const network = (data?.network ?? {}) as Record<string, unknown>;
   const mempool = (data?.mempool ?? {}) as Record<string, unknown>;
   const memory = (data?.memory ?? {}) as Record<string, unknown>;
+  const hostMemory = (data?.host_memory ?? {}) as Record<string, unknown>;
+  const hostArchitecture = data?.host_architecture;
   const indexing = data?.indexing ?? {};
   const hashrate = data?.hashrate as number | undefined;
   const peers: Peer[] = data?.peers ?? [];
@@ -231,7 +233,30 @@ export function NodeTab() {
   const heapUsed = memory.used !== null && memory.used !== undefined ? Number(memory.used) : null;
   const heapFree = memory.free !== null && memory.free !== undefined ? Number(memory.free) : null;
   const heapTotal = heapUsed !== null && heapFree !== null ? heapUsed + heapFree : (memory.total !== null && memory.total !== undefined ? Number(memory.total) : null);
-  const memoryCardItems = [
+
+  const hostMemoryItems: { label: string; value: unknown }[] = [];
+  if (hostArchitecture != null && hostArchitecture !== '') {
+    hostMemoryItems.push({ label: 'Architecture', value: hostArchitecture });
+  }
+  if (hostMemory && typeof hostMemory.total === 'number') {
+    hostMemoryItems.push(
+      { label: 'Total', value: formatBytes(hostMemory.total as number) },
+      { label: 'Used', value: formatBytes(hostMemory.used as number) },
+      { label: 'Available', value: formatBytes(hostMemory.available as number) },
+      {
+        label: 'Percent used',
+        value: hostMemory.percent != null ? `${Number(hostMemory.percent)}%` : 'N/A',
+      }
+    );
+    if (typeof hostMemory.swap_total === 'number' && hostMemory.swap_total > 0) {
+      hostMemoryItems.push(
+        { label: 'Swap total', value: formatBytes(hostMemory.swap_total as number) },
+        { label: 'Swap free', value: formatBytes(hostMemory.swap_free as number) }
+      );
+    }
+  }
+
+  const processMemoryItems: { label: string; value: unknown }[] = [
     ...(heapUsed !== null || heapFree !== null
       ? [
           { label: 'Heap used', value: heapUsed !== null ? formatBytes(heapUsed) : 'N/A' },
@@ -258,6 +283,15 @@ export function NodeTab() {
       ? [{ label: 'Chunks free', value: Number(memory.chunks_free).toLocaleString() }]
       : []),
   ];
+
+  const memoryCardItems =
+    hostMemoryItems.length > 0
+      ? [
+          ...hostMemoryItems,
+          { label: 'Process (bitcoind)', value: '' },
+          ...processMemoryItems,
+        ]
+      : processMemoryItems;
 
   const mempoolCardItems = [
     {
@@ -335,7 +369,7 @@ export function NodeTab() {
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <InfoCard title="Indexing Status" items={indexingEntries} />
-        <InfoCard title="Memory Usage" items={memoryCardItems} />
+        <InfoCard title="Host System" items={memoryCardItems} />
       </div>
       {peers.length > 0 && (
         <div className="rounded-lg bg-white dark:bg-white/5 border border-gray-200 dark:border-gold/20 overflow-hidden">
