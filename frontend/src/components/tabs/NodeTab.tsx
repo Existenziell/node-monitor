@@ -132,6 +132,11 @@ export function NodeTab() {
   const hashrate = data?.hashrate as number | undefined;
   const peers: Peer[] = data?.peers ?? [];
 
+  const hasOnionPeers = peers.some((p) => p.network === 'onion');
+  const allPeersOnion = peers.length > 0 && peers.every((p) => p.network === 'onion');
+  const torLabel =
+    peers.length === 0 ? 'N/A' : hasOnionPeers ? (allPeersOnion ? 'Yes (Tor only)' : 'Yes') : 'No';
+
   const networkCardItems = [
     { label: 'Version', value: network.version },
     {
@@ -147,6 +152,7 @@ export function NodeTab() {
             ? String((network as Record<string, unknown>).ua_comment)
             : parseUaComment(network.subversion as string | undefined),
     },
+    { label: 'Tor', value: torLabel },
     { label: 'Protocol version', value: network.protocolversion },
     { label: 'Connections', value: network.connections },
     { label: 'Connections in', value: network.connections_in },
