@@ -352,7 +352,7 @@ class BlockchainMonitor:
             if not coinbase_txid:
                 return None
 
-            tx = self._get_transaction_details(coinbase_txid)
+            tx = self._get_transaction_details(coinbase_txid, block.get('hash'))
             if not tx:
                 return None
 
@@ -372,9 +372,12 @@ class BlockchainMonitor:
             return None
         return block['tx'][0]
 
-    def _get_transaction_details(self, coinbase_txid):
-        """Get transaction details from RPC call"""
-        tx_result = self.rpc_service.rpc_call('getrawtransaction', [coinbase_txid, True])
+    def _get_transaction_details(self, coinbase_txid, block_hash=None):
+        """Get transaction details from RPC call. Pass block_hash to fetch from block (not mempool)."""
+        params = [coinbase_txid, True]
+        if block_hash:
+            params.append(block_hash)
+        tx_result = self.rpc_service.rpc_call('getrawtransaction', params)
         if 'result' not in tx_result:
             return None
         return tx_result['result']
@@ -456,7 +459,12 @@ class BlockchainMonitor:
                 return None
 
             coinbase_txid = block['tx'][0]
-            tx_result = self.rpc_service.rpc_call('getrawtransaction', [coinbase_txid, True])
+            block_hash = block.get('hash')
+            if not block_hash:
+                return None
+            tx_result = self.rpc_service.rpc_call(
+                'getrawtransaction', [coinbase_txid, True, block_hash]
+            )
 
             if 'result' not in tx_result:
                 return None
