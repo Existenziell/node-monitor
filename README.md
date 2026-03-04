@@ -86,24 +86,26 @@ cd frontend && npm run dev
 
 Or in one line: `RPC_HOST=node.local ZMQ_ENDPOINT=tcp://node.local:28332 npm run dev`. Auth (cookie or user/password) still comes from your saved config; only the host/port are overridden.
 
-**Production / systemd (e.g. Raspberry Pi):** Use the service files in `deploy/` for the API (port 8003) and dashboard (port 8002). The block monitor runs inside the API process and writes to SQLite. See [deploy/README.md](deploy/README.md) and [deploy/PI_PREPARATION.md](deploy/PI_PREPARATION.md) for install steps. Copy the two `.service` files to `/etc/systemd/system/`, run `npm run build` in `frontend/`, then enable and start the services.
+**Production / systemd (e.g. Raspberry Pi):** Use the service files in `deploy/` for the API (port 8003) and dashboard (port 8002). The block monitor runs inside the API process and writes to SQLite. Copy the two `.service` files to `/etc/systemd/system/`, run `npm run build` in `frontend/`, then enable and start the services.
 
 Two-Pi setup (node on one Pi, dashboard on another):
 
 ```mermaid
 flowchart LR
-  subgraph NodePi["Raspberry Pi (Node)"]
-    bitcoind["bitcoind"]
-    tor["Tor"]
-    zmq["ZMQ :28332"]
+  subgraph NodePi[Raspberry Pi 5 (Node)]
+    bitcoind[bitcoind]
+    tor[Tor]
+    zmq[ZMQ :28332]
   end
 
-  subgraph DashboardPi["Raspberry Pi (Dashboard)"]
-    api["node-monitor-api\n(API + block monitor)\n:8003"]
-    web["node-monitor-web\n(Vite preview)\n:8002"]
-    db[("SQLite\nnode_monitor.db")]
+  subgraph DashboardPi[Raspberry Pi 3 (Dashboard)]
+    api[node-monitor-api:8003]
+    web[node-monitor-web:8002]
+    db[(SQLite:node_monitor.db)]
+    miner[miner-dasboard:8001]
   end
 
+  miner -->|RPC| bitcoind
   api -->|RPC| bitcoind
   api -->|ZMQ| zmq
   api --> db
