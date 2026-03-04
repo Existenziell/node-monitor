@@ -699,10 +699,11 @@ class BlockchainMonitor:
     def _persist_block(self, block, mining_pool, block_details, time_since_last_block):
         """Persist block to SQLite (block_store)."""
         if not BLOCK_STORE_AVAILABLE:
+            print("[DB] block store unavailable, skip persist")
             return
         block_height = block.get('height', 0)
         if block_height <= self._last_logged_block_height:
-            print(f"Block {block_height:,} already logged, skipping")
+            print(f"[DB] block {block_height:,} already logged, skipping")
             return
         try:
             block_dict = self._prepare_block_dict(
@@ -723,26 +724,34 @@ class BlockchainMonitor:
                 db_path=self._db_path,
             )
             self._last_logged_block_height = block_height
-            print(f"Block {block_height:,} written to DB")
+            bh = block_dict['block_hash'][:16] if block_dict.get('block_hash') else '?'
+            print(
+                f"[DB] blocks: inserted height={block_height:,} hash={bh}… "
+                f"pool={block_dict['mining_pool']} reward={block_dict['block_reward']} fees={block_dict['total_fees']}"
+            )
         except (OSError, IOError, KeyError, ValueError, sqlite3.Error) as e:
             error_service.handle_file_error("block_store", "write", e)
 
     def _persist_network_snapshot(self, hashrate: Optional[float], difficulty: Optional[float]) -> None:
         """Append one difficulty/hashrate record to SQLite (block_store)."""
         if not BLOCK_STORE_AVAILABLE:
+            print("[DB] block store unavailable, skip network snapshot")
             return
         try:
             blockchain_info = self.get_blockchain_info()
             block_height = blockchain_info.get('blocks', 0) if blockchain_info else 0
             timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            hr = round(hashrate, 2) if hashrate is not None else None
+            diff = round(difficulty, 2) if difficulty is not None else None
             insert_network_snapshot(
                 timestamp=timestamp,
                 block_height=block_height,
-                hash_rate=round(hashrate, 2) if hashrate is not None else None,
-                difficulty=round(difficulty, 2) if difficulty is not None else None,
+                hash_rate=hr,
+                difficulty=diff,
                 db_path=self._db_path,
             )
-        except (OSError, IOError, KeyError, ValueError) as e:
+            print(f"[DB] network_history: inserted block_height={block_height:,} hashrate={hr} difficulty={diff}")
+        except (OSError, IOError, KeyError, ValueError, sqlite3.Error) as e:
             error_service.handle_file_error("block_store", "write", e)
 
     def check_mempool_changes(self, mempool_info):

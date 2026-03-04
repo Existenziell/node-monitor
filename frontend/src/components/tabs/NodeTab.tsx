@@ -62,6 +62,17 @@ function subversionWithoutUaComment(subversion: string | undefined | null): stri
   return String(subversion).replace(/\s*\([^)]*\)\s*/, '').trim() || 'N/A';
 }
 
+/** Format difficulty with T (trillion), G (billion), M (million) suffix. */
+function formatDifficulty(n: number | undefined | null): string {
+  if (n === null || n === undefined || !Number.isFinite(n) || n <= 0) return 'N/A';
+  const num = Number(n);
+  if (num >= 1e12) return `${(num / 1e12).toFixed(2)} T`;
+  if (num >= 1e9) return `${(num / 1e9).toFixed(2)} G`;
+  if (num >= 1e6) return `${(num / 1e6).toFixed(2)} M`;
+  if (num >= 1e3) return `${(num / 1e3).toFixed(2)} K`;
+  return num.toLocaleString();
+}
+
 function InfoCard({
   title,
   items,
@@ -154,9 +165,6 @@ export function NodeTab() {
     },
     { label: 'Tor', value: torLabel },
     { label: 'Protocol version', value: network.protocolversion },
-    { label: 'Connections', value: network.connections },
-    { label: 'Connections in', value: network.connections_in },
-    { label: 'Connections out', value: network.connections_out },
     { label: 'Network active', value: network.networkactive === true ? 'Yes' : network.networkactive === false ? 'No' : 'N/A' },
     { label: 'Local relay', value: network.localrelay === true ? 'Yes' : network.localrelay === false ? 'No' : 'N/A' },
     { label: 'Time offset (s)', value: network.timeoffset },
@@ -211,7 +219,7 @@ export function NodeTab() {
     },
     {
       label: 'Difficulty',
-      value: typeof blockchain.difficulty === 'number' ? blockchain.difficulty.toLocaleString() : 'N/A',
+      value: formatDifficulty(blockchain.difficulty as number | undefined | null),
     },
     {
       label: 'Warnings',
@@ -220,11 +228,15 @@ export function NodeTab() {
   ];
 
   const memLocked = memory.locked as Record<string, unknown> | undefined;
+  const heapUsed = memory.used !== null && memory.used !== undefined ? Number(memory.used) : null;
+  const heapFree = memory.free !== null && memory.free !== undefined ? Number(memory.free) : null;
+  const heapTotal = heapUsed !== null && heapFree !== null ? heapUsed + heapFree : (memory.total !== null && memory.total !== undefined ? Number(memory.total) : null);
   const memoryCardItems = [
-    ...(memory.used !== null && memory.used !== undefined || memory.free !== null && memory.free !== undefined
+    ...(heapUsed !== null || heapFree !== null
       ? [
-          { label: 'Heap used', value: memory.used !== null && memory.used !== undefined ? formatBytes(Number(memory.used)) : 'N/A' },
-          { label: 'Heap free', value: memory.free !== null && memory.free !== undefined ? formatBytes(Number(memory.free)) : 'N/A' },
+          { label: 'Heap used', value: heapUsed !== null ? formatBytes(heapUsed) : 'N/A' },
+          { label: 'Heap free', value: heapFree !== null ? formatBytes(heapFree) : 'N/A' },
+          ...(heapTotal !== null ? [{ label: 'Heap total', value: formatBytes(heapTotal) }] : []),
         ]
       : []),
     {
@@ -239,6 +251,12 @@ export function NodeTab() {
       label: 'Locked total',
       value: memLocked?.total !== null && memLocked?.total !== undefined ? formatBytes(Number(memLocked.total)) : 'N/A',
     },
+    ...(memory.chunks_used !== null && memory.chunks_used !== undefined
+      ? [{ label: 'Chunks used', value: Number(memory.chunks_used).toLocaleString() }]
+      : []),
+    ...(memory.chunks_free !== null && memory.chunks_free !== undefined
+      ? [{ label: 'Chunks free', value: Number(memory.chunks_free).toLocaleString() }]
+      : []),
   ];
 
   const mempoolCardItems = [
