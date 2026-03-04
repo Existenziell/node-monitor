@@ -157,7 +157,11 @@ export function BlocksTab() {
     const map = new Map<string, { name: string; icon?: string }>();
     if (!pools) return map;
     for (const p of pools) {
-      map.set(p.identifier, { name: p.name, icon: p.icon });
+      const entry = { name: p.name, icon: p.icon };
+      map.set(p.identifier, entry);
+      for (const sig of p.signatures ?? []) {
+        map.set(sig, entry);
+      }
     }
     return map;
   }, [pools]);
