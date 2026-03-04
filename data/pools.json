@@ -91,6 +91,12 @@
       "icon": "okex.svg"
     },
     {
+      "name": "Poolin",
+      "identifier": "poolin",
+      "signatures": ["Poolin", "POOLIN", "poolin", "poolin.com", "Poolin Pool", "Poolin"],
+      "icon": "poolin.svg"
+    },
+    {
       "name": "Public Pool",
       "identifier": "publicpool",
       "signatures": ["Public Pool", "PUBLIC POOL", "publicpool", "Public-Pool", "Public Pool on Umbrel"],
