@@ -8,6 +8,7 @@ Type=simple
 User=pi
 WorkingDirectory=/home/pi/projects/node-monitor
 Environment=PYTHONUNBUFFERED=1
+Environment=ZMQ_ENDPOINT=tcp://192.168.1.102:28332
 ExecStart=/home/pi/projects/node-monitor/venv/bin/python backend/api_server.py
 Restart=on-failure
 RestartSec=5
