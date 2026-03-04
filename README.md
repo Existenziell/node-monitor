@@ -7,7 +7,7 @@ A suite of tools for monitoring Bitcoin blockchain activity.
 ### Blockchain Monitoring
 - **Real-time blockchain monitoring** with ZMQ notifications (instant) or polling fallback
 - **Enhanced block detection** - catches blocks immediately as they're found
-- **Block statistics** with JSON storage (last 100 blocks) and pool distribution
+- **Block statistics** with SQLite storage (`data/node_monitor.db`, last 100 blocks) and pool distribution
 - **Mining pool identification** from coinbase transactions
 - **OP_RETURN data extraction** and analysis
 
@@ -100,21 +100,26 @@ cd frontend && npm install && npm run dev
 ```
 This starts the Vite dev server and the Python API server (`python3 backend/api_server.py`). The dashboard proxies `/api` to the API server.
 
-**Production / systemd (e.g. Raspberry Pi):** Use the service files in `deploy/` for API (port 8003), dashboard (port 8002), and block monitor. See [deploy/README.md](deploy/README.md) for install steps. Copy the three `.service` files to `/etc/systemd/system/`, run `npm run build` in `frontend/`, then enable and start the services.
+**Production / systemd (e.g. Raspberry Pi):** Use the service files in `deploy/` for the API (port 8003) and dashboard (port 8002). The block monitor runs inside the API process and writes to SQLite. See [deploy/README.md](deploy/README.md) and [deploy/PI_PREPARATION.md](deploy/PI_PREPARATION.md) for install steps. Copy the two `.service` files to `/etc/systemd/system/`, run `npm run build` in `frontend/`, then enable and start the services.
 
 **Production build:** `cd frontend && npm run build` — then serve the contents of `frontend/dist/`.
 
-### Block monitoring (feeds blocks/difficulty/distribution data to the dashboard)
+### Block and network data (SQLite)
+Blocks, network history (hashrate/difficulty), and pool distribution are stored in **`data/node_monitor.db`** (SQLite). When you run the dashboard with `npm run dev`, the API server starts the block monitor in a background thread and writes to this DB. No separate block-monitor process is required. The DB is created automatically; the last 100 blocks and 100 network snapshots are kept.
+
+### Block monitoring (standalone, optional)
+For standalone monitoring (e.g. without the dashboard), or to show status once:
 ```bash
 # Continuous monitoring (tries ZMQ first, falls back to polling)
-python3 backend/block_monitor.py --continuous
+python3 backend/monitor_node.py --continuous
 
 # Show current status once
-python3 backend/block_monitor.py --status
+python3 backend/monitor_node.py --status
 
 # Custom ZMQ endpoint
-python3 backend/block_monitor.py --continuous --zmq-endpoint tcp://127.0.0.1:28332
+python3 backend/monitor_node.py --continuous --zmq-endpoint tcp://127.0.0.1:28332
 ```
+Standalone mode also writes to `data/node_monitor.db` if the API is not running.
 
 **Troubleshooting ZMQ:**
 - If ZMQ connection fails, the monitor automatically falls back to polling
@@ -122,6 +127,38 @@ python3 backend/block_monitor.py --continuous --zmq-endpoint tcp://127.0.0.1:283
 - Check that ZMQ is enabled in Bitcoin logs: `grep -i zmq ~/.bitcoin/debug.log`
 
 **Configuration:** To set up RPC credentials (e.g. before first use), run: `python3 backend/config_service.py --setup`.
+
+### Running node-monitor on a different machine (e.g. Pi3 + Pi5)
+You can run node-monitor (and miner-dashboard) on one Pi while the Bitcoin node runs on another.
+
+**Example:** Pi5 = Bitcoin node, Pi3 = node-monitor + miner-dashboard.
+
+1. **On the Bitcoin node (Pi5)** – allow RPC and ZMQ from the monitor’s IP (e.g. Pi3’s LAN IP). In `bitcoin.conf`:
+   ```ini
+   # Allow RPC from Pi3 only (use Pi3's actual IP)
+   rpcallowip=192.168.1.10
+   rpcbind=0.0.0.0
+   rpcuser=youruser
+   rpcpassword=yourpassword
+
+   # ZMQ for block notifications (bind all so Pi3 can connect)
+   zmqpubhashblock=tcp://0.0.0.0:28332
+   ```
+   Restart the node. Ensure the firewall on Pi5 allows port **8332** (RPC) and **28332** (ZMQ) from Pi3.
+
+2. **On the monitor (Pi3)** – configure node-monitor to use the node’s IP:
+   - **Settings tab:** set **RPC Host** to Pi5’s IP or hostname (e.g. `192.168.1.5` or `bitcoin-pi.local`), **RPC Port** to `8332`, and use **Username / Password** with the same `rpcuser` / `rpcpassword` as on Pi5. (Cookie auth is file-based on the node; for a remote client, username/password is simpler.)
+   - **ZMQ:** the block monitor (inside the API) connects to ZMQ for instant block notifications. Set the environment variable **`ZMQ_ENDPOINT`** before starting the API, e.g. in your systemd service file:
+     ```ini
+     [Service]
+     Environment="ZMQ_ENDPOINT=tcp://192.168.1.5:28332"
+     ExecStart=...
+     ```
+     Replace `192.168.1.5` with Pi5’s IP. If `ZMQ_ENDPOINT` is not set, it defaults to `tcp://127.0.0.1:28332` (local node). Without ZMQ, the monitor falls back to polling the RPC every 10 seconds.
+
+3. **Result:** Pi3 runs only the two services (API + dashboard). All RPC and ZMQ traffic goes over the LAN to Pi5. Block and network data are stored in SQLite on Pi3 (`data/node_monitor.db`).
+
+**Security:** Restrict `rpcallowip` to the monitor’s IP only; use a strong RPC password; keep both devices on a trusted network.
 
 ## Testing
 

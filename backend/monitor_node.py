@@ -10,7 +10,6 @@ import sys
 import os
 import base64
 import signal
-import fcntl
 from datetime import datetime
 from typing import Dict, Any, Optional, List
 import requests
@@ -24,25 +23,31 @@ except ImportError:
 from rpc_service import create_rpc_connection
 from price_service import get_bitcoin_price
 from error_service import error_service
-from constants import (
-    BLOCKS_JSON_MAX_ENTRIES,
-    DEFAULT_BLOCKS_JSON,
-    DEFAULT_DIFFICULTY_JSON,
-    DEFAULT_DISTRIBUTION_JSON,
-    DIFFICULTY_JSON_MAX_ENTRIES,
-)
+try:
+    from block_store import (
+        init_schema,
+        insert_block,
+        insert_network_snapshot,
+        get_last_logged_block_height,
+    )
+    BLOCK_STORE_AVAILABLE = True
+except ImportError:
+    BLOCK_STORE_AVAILABLE = False
 
 class BlockchainMonitor:
     """Monitor Bitcoin blockchain activity and new blocks with ZMQ and polling support."""
 
-    def __init__(self, zmq_endpoint: str = "tcp://127.0.0.1:28332"):
-        """Initialize the monitor with RPC connection."""
+    def __init__(self, zmq_endpoint: str = "tcp://127.0.0.1:28332", exit_on_rpc_failure: bool = True):
+        """Initialize the monitor with RPC connection.
+        If exit_on_rpc_failure is True (standalone), exit process when RPC is unavailable.
+        If False (embedded e.g. in API), leave rpc_service None and run_loop will no-op until RPC is up."""
         self.zmq_endpoint = zmq_endpoint
         self.rpc_service = create_rpc_connection()
         if not self.rpc_service:
             print("❌ Failed to create RPC connection")
             print("   Make sure Bitcoin node is running and configured properly")
-            sys.exit(1)
+            if exit_on_rpc_failure:
+                sys.exit(1)
 
         self.last_block_height = 0
         self.last_mempool_size = 0
@@ -71,42 +76,18 @@ class BlockchainMonitor:
         self.start_time = None
         self.monitoring_mode = "unknown"
 
-        # Initialize last block time and logged height from blocks.json if available
-        self._initialize_from_blocks_json()
+        self._db_path = os.path.join(self._get_data_dir(), "node_monitor.db")
+        if BLOCK_STORE_AVAILABLE:
+            init_schema(self._db_path)
+            self._last_logged_block_height = get_last_logged_block_height(self._db_path)
+            if self._last_logged_block_height > 0:
+                print(f"Loaded last logged block height: {self._last_logged_block_height}")
 
     def _get_data_dir(self) -> str:
         """Return the absolute path to the data directory."""
         script_dir = os.path.dirname(os.path.abspath(__file__))
         data_dir = os.path.join(os.path.dirname(script_dir), "data")
         return os.path.abspath(data_dir)
-
-    def _initialize_from_blocks_json(self) -> None:
-        """Initialize last block time and last logged height from blocks.json if available."""
-        try:
-            data_dir = self._get_data_dir()
-            json_file = os.path.join(data_dir, os.path.basename(DEFAULT_BLOCKS_JSON))
-            if not os.path.isfile(json_file):
-                return
-            with open(json_file, 'r', encoding='utf-8') as f:
-                content = f.read().replace('\x00', '')
-                data = json.loads(content)
-            blocks = data.get('blocks') or []
-            if not blocks:
-                return
-            last_block = blocks[-1]
-            height = last_block.get('block_height', 0)
-            self._last_logged_block_height = int(height)
-            block_time_str = last_block.get('block_time')
-            if block_time_str and block_time_str != 'N/A':
-                try:
-                    self.last_block_time = datetime.strptime(
-                        block_time_str, '%Y-%m-%d %H:%M:%S'
-                    )
-                except ValueError as e:
-                    print(f"Could not parse last block time from JSON: {e}")
-            print(f"Loaded last logged block height: {self._last_logged_block_height}")
-        except (OSError, IOError, ValueError, json.JSONDecodeError):
-            pass
 
     def get_blockchain_info(self) -> Optional[Dict[str, Any]]:
         """Get current blockchain information"""
@@ -788,130 +769,52 @@ class BlockchainMonitor:
             'time_since_last_block': time_since_last_block
         }
 
-    def _load_blocks_json(self) -> Dict[str, Any]:
-        """Load blocks.json; return {'blocks': [...]} or {'blocks': []}."""
-        data_dir = self._get_data_dir()
-        json_file = os.path.join(data_dir, os.path.basename(DEFAULT_BLOCKS_JSON))
-        if not os.path.isfile(json_file):
-            return {'blocks': []}
-        try:
-            with open(json_file, 'r', encoding='utf-8') as f:
-                content = f.read().replace('\x00', '')
-                data = json.loads(content)
-            return {'blocks': data.get('blocks') or []}
-        except (OSError, json.JSONDecodeError):
-            return {'blocks': []}
-
-    def _save_blocks_json(self, data: Dict[str, Any]) -> None:
-        """Write blocks.json with file locking."""
-        data_dir = self._get_data_dir()
-        os.makedirs(data_dir, exist_ok=True)
-        json_file = os.path.join(data_dir, os.path.basename(DEFAULT_BLOCKS_JSON))
-        json_file = os.path.abspath(json_file)
-        with open(json_file, 'w', encoding='utf-8') as f:
-            fcntl.flock(f.fileno(), fcntl.LOCK_EX)
-            try:
-                json.dump(data, f, indent=2)
-                f.flush()
-            finally:
-                fcntl.flock(f.fileno(), fcntl.LOCK_UN)
-
     def log_block_to_json(self, block, mining_pool, block_details, time_since_last_block):
-        """Append block to blocks.json (keep last BLOCKS_JSON_MAX_ENTRIES), then update distribution.json."""
+        """Persist block to SQLite (block_store)."""
+        if not BLOCK_STORE_AVAILABLE:
+            return
         block_height = block.get('height', 0)
         if block_height <= self._last_logged_block_height:
             return
         try:
-            data = self._load_blocks_json()
-            blocks = list(data.get('blocks') or [])
-            for b in blocks:
-                if int(b.get('block_height', 0)) == block_height:
-                    return
             block_dict = self._prepare_block_dict(
                 block, mining_pool, block_details, time_since_last_block
             )
-            blocks.append(block_dict)
-            blocks = blocks[-BLOCKS_JSON_MAX_ENTRIES:]
-            self._save_blocks_json({'blocks': blocks})
+            insert_block(
+                block_height=block_dict['block_height'],
+                block_hash=block_dict['block_hash'],
+                mining_pool=block_dict['mining_pool'],
+                transaction_count=block_dict['transaction_count'],
+                block_size=block_dict['block_size'],
+                block_weight=block_dict['block_weight'],
+                block_reward=block_dict['block_reward'],
+                total_fees=block_dict['total_fees'],
+                total_fees_usd=block_dict['total_fees_usd'],
+                block_time=block_dict['block_time'],
+                time_since_last_block=block_dict.get('time_since_last_block', ''),
+                db_path=self._db_path,
+            )
             self._last_logged_block_height = block_height
-            self._update_distribution_json(blocks)
         except (OSError, IOError, KeyError, ValueError) as e:
-            error_service.handle_file_error("blocks.json", "write", e)
-
-    def _update_distribution_json(self, blocks: List[Dict[str, Any]]) -> None:
-        """Compute pool distribution from blocks and write distribution.json."""
-        by_pool: Dict[str, int] = {}
-        for b in blocks:
-            pool = (b.get('mining_pool') or 'unknown').strip() or 'unknown'
-            by_pool[pool] = by_pool.get(pool, 0) + 1
-        total = sum(by_pool.values()) or 1
-        by_percentage = {p: round(count * 100.0 / total, 2) for p, count in by_pool.items()}
-        data_dir = self._get_data_dir()
-        os.makedirs(data_dir, exist_ok=True)
-        json_file = os.path.join(data_dir, os.path.basename(DEFAULT_DISTRIBUTION_JSON))
-        payload = {
-            'updated': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
-            'blocks_count': len(blocks),
-            'by_pool': by_pool,
-            'by_percentage': by_percentage
-        }
-        try:
-            with open(json_file, 'w', encoding='utf-8') as f:
-                fcntl.flock(f.fileno(), fcntl.LOCK_EX)
-                try:
-                    json.dump(payload, f, indent=2)
-                    f.flush()
-                finally:
-                    fcntl.flock(f.fileno(), fcntl.LOCK_UN)
-        except (OSError, IOError) as e:
-            error_service.handle_file_error("distribution.json", "write", e)
-
-    def _load_difficulty_json(self) -> Dict[str, Any]:
-        """Load difficulty.json; return {'history': [...]} or {'history': []}."""
-        data_dir = self._get_data_dir()
-        json_file = os.path.join(data_dir, os.path.basename(DEFAULT_DIFFICULTY_JSON))
-        if not os.path.isfile(json_file):
-            return {'history': []}
-        try:
-            with open(json_file, 'r', encoding='utf-8') as f:
-                content = f.read().replace('\x00', '')
-                data = json.loads(content)
-            return {'history': data.get('history') or []}
-        except (OSError, json.JSONDecodeError):
-            return {'history': []}
-
-    def _save_difficulty_json(self, data: Dict[str, Any]) -> None:
-        """Write difficulty.json with file locking."""
-        data_dir = self._get_data_dir()
-        os.makedirs(data_dir, exist_ok=True)
-        json_file = os.path.join(data_dir, os.path.basename(DEFAULT_DIFFICULTY_JSON))
-        json_file = os.path.abspath(json_file)
-        with open(json_file, 'w', encoding='utf-8') as f:
-            fcntl.flock(f.fileno(), fcntl.LOCK_EX)
-            try:
-                json.dump(data, f, indent=2)
-                f.flush()
-            finally:
-                fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+            error_service.handle_file_error("block_store", "write", e)
 
     def log_difficulty_to_json(self, hashrate: Optional[float], difficulty: Optional[float]) -> None:
-        """Append one difficulty/hashrate record to difficulty.json (keep last N)."""
+        """Append one difficulty/hashrate record to SQLite (block_store)."""
+        if not BLOCK_STORE_AVAILABLE:
+            return
         try:
             blockchain_info = self.get_blockchain_info()
             block_height = blockchain_info.get('blocks', 0) if blockchain_info else 0
-            data = self._load_difficulty_json()
-            history = list(data.get('history') or [])
-            record = {
-                'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                'blockHeight': block_height,
-                'hashRate': round(hashrate, 2) if hashrate is not None else None,
-                'difficulty': round(difficulty, 2) if difficulty is not None else None
-            }
-            history.append(record)
-            history = history[-DIFFICULTY_JSON_MAX_ENTRIES:]
-            self._save_difficulty_json({'history': history})
+            timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            insert_network_snapshot(
+                timestamp=timestamp,
+                block_height=block_height,
+                hash_rate=round(hashrate, 2) if hashrate is not None else None,
+                difficulty=round(difficulty, 2) if difficulty is not None else None,
+                db_path=self._db_path,
+            )
         except (OSError, IOError, KeyError, ValueError) as e:
-            error_service.handle_file_error("difficulty.json", "write", e)
+            error_service.handle_file_error("block_store", "write", e)
 
     def check_mempool_changes(self, mempool_info):
         """Check for significant mempool changes"""
@@ -934,7 +837,7 @@ class BlockchainMonitor:
             hashrate = self.get_network_hashrate()
             difficulty = self.get_network_difficulty()
 
-            # Log to difficulty.json if we have valid data
+            # Persist to SQLite (block_store) if we have valid data
             if hashrate is not None or difficulty is not None:
                 self.log_difficulty_to_json(hashrate, difficulty)
                 self._last_network_log_time = current_time
@@ -949,56 +852,55 @@ class BlockchainMonitor:
                 diff_str = f"{difficulty:.2f}" if difficulty is not None else "N/A"
                 print(f"📊 Network data logged - Hashrate: {hr_str} TH/s, Difficulty: {diff_str}")
 
-    def monitor_continuous(self, interval=10):
-        """Monitor blockchain continuously with hybrid ZMQ/polling support"""
+    def run_loop(self, interval=10):
+        """Run the block monitoring loop (ZMQ or polling) until self.running is False.
+        Safe to call from a background thread; does not install signal handlers or sys.exit."""
+        if not self.rpc_service:
+            print("Block monitor: RPC not available, skipping run_loop")
+            return
+        self.running = True
+        self.start_time = datetime.now()
 
-        # Try ZMQ first
         if self.setup_zmq():
             self.monitoring_mode = "ZMQ"
             self.display_header()
-
-            # Setup signal handler for graceful shutdown
-            def signal_handler(sig, frame):  # pylint: disable=unused-argument
-                print("\n🛑 Shutting down...")
-                self.running = False
-                self.cleanup_zmq()
-                sys.exit(0)
-
-            signal.signal(signal.SIGINT, signal_handler)
-
             try:
                 self.listen_for_blocks_zmq()
             finally:
                 self.cleanup_zmq()
             return
 
-        # Fallback to polling
         print("❌ ZMQ connection failed. Falling back to polling mode...")
         self.monitoring_mode = "Polling"
         self.display_header()
-
         try:
-            while True:
-                # Get current information
+            while self.running:
                 blockchain_info = self.get_blockchain_info()
                 mempool_info = self.get_mempool_info()
-
-                # Check for new blocks
                 new_block = self.check_for_new_block(blockchain_info)
-
-                # Check for mempool changes
-                if not new_block:  # Don't show mempool changes when there's a new block
+                if not new_block:
                     self.check_mempool_changes(mempool_info)
-
-                # Check and log network data periodically
                 self.check_and_log_network_data()
-
                 time.sleep(interval)
-
-        except KeyboardInterrupt:
-            print("\n🛑 Monitoring stopped by user")
         except (requests.RequestException, KeyError, ValueError) as e:
             error_service.handle_critical_error("Blockchain monitoring", e)
+
+    def monitor_continuous(self, interval=10):
+        """Monitor blockchain continuously (standalone). Use run_loop() when embedded (e.g. in API)."""
+
+        def signal_handler(sig, frame):  # pylint: disable=unused-argument
+            print("\n🛑 Shutting down...")
+            self.running = False
+            self.cleanup_zmq()
+            sys.exit(0)
+
+        signal.signal(signal.SIGINT, signal_handler)
+        try:
+            self.run_loop(interval)
+        except KeyboardInterrupt:
+            print("\n🛑 Monitoring stopped by user")
+        finally:
+            self.cleanup_zmq()
 
     def cleanup_zmq(self):
         """Cleanup ZMQ resources"""

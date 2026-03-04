@@ -267,6 +267,7 @@ class ConfigService:
         status = {
             "config_exists": self.config_file.exists(),
             "auth_method": None,
+            "rpc_host": None,
             "rpc_port": None,
             "rpc_user_masked": None,
             "cookie_file": None,
@@ -278,6 +279,7 @@ class ConfigService:
             with open(self.config_file, 'r', encoding='utf-8') as f:
                 config = json.load(f)
             status["auth_method"] = config.get("auth_method")
+            status["rpc_host"] = config.get("rpc_host", "127.0.0.1")
             status["rpc_port"] = config.get("rpc_port")
             status["cookie_file"] = config.get("cookie_file") if config.get("auth_method") == "cookie" else None
             rpc_user = config.get("rpc_user")
@@ -289,10 +291,11 @@ class ConfigService:
             pass
         return status
 
-    def save_config_from_api(
+    def save_config_from_api(  # pylint: disable=R0914
         self,
         auth_method: str,
         rpc_port: int,
+        rpc_host: Optional[str] = None,
         rpc_user: Optional[str] = None,
         rpc_password: Optional[str] = None,
         cookie_file: Optional[str] = None,
@@ -307,6 +310,9 @@ class ConfigService:
                 return False, "rpc_port must be between 1024 and 65535"
         except (ValueError, TypeError):
             return False, "rpc_port must be a number"
+
+        host = (rpc_host or "").strip() or "127.0.0.1"
+        rpc_url = f"http://{host}:{rpc_port}"
 
         self.config_dir.mkdir(exist_ok=True)
         existing = self.load_config(force_reload=True, silent=True) if self.config_file.exists() else None
@@ -324,8 +330,9 @@ class ConfigService:
                 except Exception:
                     pass
             config = {
+                "rpc_host": host,
                 "rpc_port": rpc_port,
-                "rpc_url": f"http://127.0.0.1:{rpc_port}",
+                "rpc_url": rpc_url,
                 "cookie_file": cookie_path,
                 "auth_method": "cookie",
                 "created_at": self._get_timestamp(),
@@ -385,8 +392,9 @@ class ConfigService:
                     encrypted_password = fernet.encrypt(password.encode())
                     config = {
                         "rpc_user": user,
+                        "rpc_host": host,
                         "rpc_port": rpc_port,
-                        "rpc_url": f"http://127.0.0.1:{rpc_port}",
+                        "rpc_url": rpc_url,
                         "encrypted_password": base64.b64encode(encrypted_password).decode(),
                         "use_keyring": False,
                         "auth_method": "password",
@@ -402,8 +410,9 @@ class ConfigService:
                     return False, f"Failed to store password: {enc_err}"
             config = {
                 "rpc_user": user,
+                "rpc_host": host,
                 "rpc_port": rpc_port,
-                "rpc_url": f"http://127.0.0.1:{rpc_port}",
+                "rpc_url": rpc_url,
                 "use_keyring": use_keyring,
                 "auth_method": "password",
                 "created_at": self._get_timestamp(),

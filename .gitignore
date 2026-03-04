@@ -78,10 +78,13 @@ data/graph/cache/
 data/graph/*.pkl
 *.pkl
 
-# Monitor JSON data
+# Monitor JSON data (legacy) and SQLite
 data/blocks.json
 data/difficulty.json
 data/distribution.json
+data/node_monitor.db
+data/node_monitor.db-wal
+data/node_monitor.db-shm
 
 # Temporary files
 *.tmp

@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """
 API Server for Bitcoin monitoring data
-Provides JSON endpoints for node and wallet data
+Provides JSON endpoints for node and wallet data.
+Runs the block monitor inside this process (SQLite for blocks/network/distribution).
 """
 
 import json
 import sys
 import os
+import threading
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse
 
@@ -24,9 +26,12 @@ try:
         WALLET_CACHE_SECONDS,
         BLOCKS_CACHE_SECONDS,
         BLOCKS_DISPLAY_LIMIT,
-        DEFAULT_BLOCKS_JSON,
-        DEFAULT_DIFFICULTY_JSON,
-        DEFAULT_DISTRIBUTION_JSON,
+    )
+    from block_store import (  # pyright: ignore[reportMissingImports]
+        init_schema,
+        get_recent_blocks,
+        get_network_history,
+        get_distribution,
     )
 
 except Exception as e:
@@ -208,6 +213,7 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
             self.wfile.write(json.dumps({
                 "config_exists": False,
                 "auth_method": None,
+                "rpc_host": None,
                 "rpc_port": None,
                 "rpc_user_masked": None,
                 "cookie_file": None,
@@ -240,12 +246,14 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
         except (ValueError, TypeError):
             self.wfile.write(json.dumps({"ok": False, "error": "rpc_port must be a number"}).encode())
             return
+        rpc_host = (data.get('rpc_host') or '').strip() or None
         rpc_user = data.get('rpc_user') or None
         rpc_password = data.get('rpc_password') or None
         cookie_file = data.get('cookie_file') or None
         ok, err = config_service.save_config_from_api(
             auth_method=auth_method,
             rpc_port=rpc_port,
+            rpc_host=rpc_host,
             rpc_user=rpc_user,
             rpc_password=rpc_password,
             cookie_file=cookie_file,
@@ -358,6 +366,10 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
         """Return the path to the data directory (project/data)."""
         return os.path.join(os.path.dirname(_backend_dir), "data")
 
+    def _get_db_path(self):
+        """Return the path to the SQLite DB (blocks/network/distribution)."""
+        return os.path.join(self._get_data_dir(), "node_monitor.db")
+
     def _compute_avg_block_time(self, blocks):
         """Compute average block time in seconds from block_time strings."""
         try:
@@ -391,7 +403,7 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
         return sum(deltas) / len(deltas)
 
     def handle_blocks_data(self):
-        """Handle blocks data requests with caching (reduces disk/CPU on Pi)."""
+        """Handle blocks data requests from SQLite (with in-memory cache)."""
         try:
             from datetime import datetime
             now = datetime.now()
@@ -410,28 +422,8 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
                 self.wfile.write(json.dumps(response, indent=2).encode())
                 return
 
-            data_dir = self._get_data_dir()
-            json_file = os.path.join(data_dir, os.path.basename(DEFAULT_BLOCKS_JSON))
-
-            if not os.path.exists(json_file):
-                error_response = {
-                    "status": "error",
-                    "message": "Blocks data file not found"
-                }
-                self.wfile.write(json.dumps(error_response).encode())
-                return
-
-            with open(json_file, 'r', encoding='utf-8') as f:
-                content = f.read().replace('\x00', '')
-                data = json.loads(content)
-            blocks_data = data.get('blocks') or []
-            # Sort by block height (newest first)
-            blocks_data.sort(key=lambda x: x.get('block_height', 0), reverse=True)
-            # Return at most BLOCKS_DISPLAY_LIMIT (20)
-            blocks_data = blocks_data[:BLOCKS_DISPLAY_LIMIT]
-
+            blocks_data = get_recent_blocks(BLOCKS_DISPLAY_LIMIT, self._get_db_path())
             avg_block_time = self._compute_avg_block_time(blocks_data)
-
             self._blocks_cache = blocks_data
             self._blocks_cache_time = now
 
@@ -444,7 +436,6 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
                     "avg_block_time_seconds": avg_block_time
                 }
             }
-
             self.wfile.write(json.dumps(response, indent=2).encode())
 
         except Exception as e:
@@ -455,26 +446,10 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
             self.wfile.write(json.dumps(error_response).encode())
 
     def handle_network_data(self):
-        """Handle network data requests (hashrate and difficulty history from difficulty.json)."""
+        """Handle network data requests (hashrate and difficulty history from SQLite)."""
         try:
-            data_dir = self._get_data_dir()
-            json_file = os.path.join(data_dir, os.path.basename(DEFAULT_DIFFICULTY_JSON))
-
-            if not os.path.exists(json_file):
-                error_response = {
-                    "status": "error",
-                    "message": "Network data file not found"
-                }
-                self.wfile.write(json.dumps(error_response).encode())
-                return
-
-            with open(json_file, 'r', encoding='utf-8') as f:
-                content = f.read().replace('\x00', '')
-                data = json.loads(content)
-            network_data = data.get('history') or []
-            # Sort by timestamp (newest first)
-            network_data.sort(key=lambda x: x.get('timestamp', ''), reverse=True)
-
+            from constants import DIFFICULTY_JSON_MAX_ENTRIES
+            network_data = get_network_history(DIFFICULTY_JSON_MAX_ENTRIES, self._get_db_path())
             response = {
                 "status": "success",
                 "data": {
@@ -482,7 +457,6 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
                     "total_records": len(network_data)
                 }
             }
-
             self.wfile.write(json.dumps(response, indent=2).encode())
 
         except Exception as e:
@@ -493,7 +467,7 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
             self.wfile.write(json.dumps(error_response).encode())
 
     def handle_distribution_data(self):
-        """Handle pool distribution data from distribution.json."""
+        """Handle pool distribution data from SQLite."""
         try:
             from datetime import datetime
             now = datetime.now()
@@ -505,20 +479,7 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
                 }, indent=2).encode())
                 return
 
-            data_dir = self._get_data_dir()
-            json_file = os.path.join(data_dir, os.path.basename(DEFAULT_DISTRIBUTION_JSON))
-
-            if not os.path.exists(json_file):
-                self.wfile.write(json.dumps({
-                    "status": "success",
-                    "data": {"updated": None, "blocks_count": 0, "by_pool": {}, "by_percentage": {}}
-                }, indent=2).encode())
-                return
-
-            with open(json_file, 'r', encoding='utf-8') as f:
-                content = f.read().replace('\x00', '')
-                data = json.loads(content)
-
+            data = get_distribution(self._get_db_path())
             self._distribution_cache = data
             self._distribution_cache_time = now
 
@@ -628,9 +589,25 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
         # Suppress logging
 
 def start_api_server(port=None):
-    """Start the API server"""
+    """Start the API server and the in-process block monitor thread."""
     if port is None:
         port = API_SERVER_PORT
+
+    data_dir = os.path.join(os.path.dirname(_backend_dir), "data")
+    db_path = os.path.join(data_dir, "node_monitor.db")
+    os.makedirs(data_dir, exist_ok=True)
+    init_schema(db_path)
+
+    try:
+        from monitor_node import BlockchainMonitor
+        zmq_endpoint = os.environ.get("ZMQ_ENDPOINT", "tcp://127.0.0.1:28332")
+        monitor = BlockchainMonitor(zmq_endpoint=zmq_endpoint, exit_on_rpc_failure=False)
+        monitor_thread = threading.Thread(target=monitor.run_loop, kwargs={"interval": 10}, daemon=True)
+        monitor_thread.start()
+        print("Block monitor started in background (ZMQ or polling)")
+    except Exception as e:
+        print(f"Block monitor not started: {e}")
+
     try:
         server = HTTPServer(('localhost', port), BitcoinAPIHandler)
         server.serve_forever()

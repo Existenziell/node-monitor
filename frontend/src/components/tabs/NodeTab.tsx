@@ -260,7 +260,7 @@ export function NodeTab() {
           <p className="text-sm text-gray-600 dark:text-gray-400">Loading network data...</p>
         ) : networkError && !networkData ? (
           <p className="text-sm text-red-400 dark:text-red-400">
-            Error loading network data: {networkError.message}. Ensure network data (difficulty.json) is populated.
+            Error loading network data: {networkError.message}. Ensure the block monitor is running and network data is being recorded.
           </p>
         ) : (networkData?.network_history?.length ?? 0) === 0 ? (
           <p className="text-sm text-gray-600 dark:text-gray-400">

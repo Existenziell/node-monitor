@@ -72,7 +72,7 @@ def mock_rpc_response_error():
 
 @pytest.fixture
 def temp_data_dir(tmp_path):
-    """A temporary directory suitable for data files (e.g. blocks.json)."""
+    """A temporary directory suitable for data files (e.g. node_monitor.db)."""
     data_dir = tmp_path / "data"
     data_dir.mkdir()
     return data_dir

@@ -37,6 +37,7 @@ export interface ApiContextValue {
 
 export interface ConfigSavePayload {
   auth_method: 'password' | 'cookie';
+  rpc_host?: string;
   rpc_port: number;
   rpc_user?: string;
   rpc_password?: string;
@@ -99,6 +100,7 @@ export interface NodeData {
 export interface ConfigStatus {
   config_exists: boolean;
   auth_method: 'password' | 'cookie' | null;
+  rpc_host: string | null;
   rpc_port: number | null;
   rpc_user_masked: string | null;
   cookie_file: string | null;

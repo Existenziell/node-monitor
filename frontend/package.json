@@ -7,7 +7,7 @@
     "dev": "concurrently -n v,api,block \"npm run dev:vite\" \"npm run dev:api\" \"npm run dev:block\"",
     "dev:vite": "vite",
     "dev:api": "cd .. && python3 backend/api_server.py",
-    "dev:block": "cd .. && python3 backend/block_monitor.py --continuous",
+    "dev:block": "cd .. && python3 backend/monitor_node.py --continuous",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "test": "vitest run && cd .. && python3 -m pytest backend/tests -v",

@@ -60,12 +60,12 @@ YAHOO_FINANCE_TICKER = "BTC-USD"
 # File Paths
 DEFAULT_CONFIG_DIR = ".bitcoin_secure"
 DEFAULT_DATA_DIR = "data"
-DEFAULT_BLOCKS_JSON = "data/blocks.json"
 BLOCKS_JSON_MAX_ENTRIES = 100
 BLOCKS_DISPLAY_LIMIT = 20  # Max blocks returned by API / shown in frontend
-DEFAULT_DIFFICULTY_JSON = "data/difficulty.json"
 DIFFICULTY_JSON_MAX_ENTRIES = 100
-DEFAULT_DISTRIBUTION_JSON = "data/distribution.json"
+
+# SQLite (blocks/network/distribution when block monitor runs in API)
+DEFAULT_SQLITE_DB = "data/node_monitor.db"
 
 # Security Constants
 CONFIG_FILE_PERMISSIONS = 0o600  # Owner read/write only
@@ -97,7 +97,7 @@ RETRY_BACKOFF_MULTIPLIER = 2
 # API response cache (reduces RPC load on node, e.g. on Raspberry Pi)
 NODE_CACHE_SECONDS = 30  # /api/node
 WALLET_CACHE_SECONDS = 30  # /api/wallet
-BLOCKS_CACHE_SECONDS = 60  # /api/blocks (JSON-based)
+BLOCKS_CACHE_SECONDS = 60  # /api/blocks (SQLite-based)
 
 # Web Dashboard Constants (DASHBOARD_PORT, API_SERVER_PORT from shared above)
 API_SERVER_URL = f"http://localhost:{API_SERVER_PORT}"

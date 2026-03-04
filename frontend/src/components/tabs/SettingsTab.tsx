@@ -6,6 +6,7 @@ import type { ConfigStatus, ConfigSavePayload } from '@/types';
 /** Baseline values from last load/save for dirty checking. rpcUser is null when masked. */
 interface SettingsBaseline {
   authMethod: 'password' | 'cookie';
+  rpcHost: string;
   rpcPort: string;
   rpcUser: string | null;
   cookieFile: string;
@@ -23,6 +24,7 @@ function getPendingChanges(
   baseline: SettingsBaseline | null,
   current: {
     authMethod: 'password' | 'cookie';
+    rpcHost: string;
     rpcPort: string;
     rpcUser: string;
     rpcPassword: string;
@@ -40,14 +42,18 @@ function getPendingChanges(
       to: authLabel(current.authMethod),
     });
   }
+  const trim = (s: string) => (s || '').trim();
+  if (trim(baseline.rpcHost) !== trim(current.rpcHost)) {
+    changes.push({ field: 'RPC Host', from: baseline.rpcHost || '127.0.0.1', to: current.rpcHost || '127.0.0.1' });
+  }
   const normPort = (s: string) => String(parseInt(s, 10) || 8332);
   if (normPort(baseline.rpcPort) !== normPort(current.rpcPort)) {
     changes.push({ field: 'RPC Port', from: baseline.rpcPort, to: current.rpcPort });
   }
-  const trim = (s: string) => s.trim();
+  const trimHost = (s: string) => (s || '').trim();
   if (current.authMethod === 'password') {
     const baseUser = baseline.rpcUser ?? '';
-    if (trim(baseUser) !== trim(current.rpcUser)) {
+    if (trimHost(baseUser) !== trimHost(current.rpcUser)) {
       changes.push({
         field: 'RPC Username',
         from: baseline.rpcUser !== null ? baseline.rpcUser : 'Not configured',
@@ -62,7 +68,7 @@ function getPendingChanges(
       });
     }
   }
-  if (current.authMethod === 'cookie' && trim(baseline.cookieFile) !== trim(current.cookieFile)) {
+  if (current.authMethod === 'cookie' && trimHost(baseline.cookieFile) !== trimHost(current.cookieFile)) {
     changes.push({
       field: 'Cookie file path',
       from: baseline.cookieFile || 'Not set',
@@ -82,6 +88,7 @@ export function SettingsTab() {
   const [lastSaved, setLastSaved] = useState<SettingsBaseline | null>(null);
 
   const [authMethod, setAuthMethod] = useState<'password' | 'cookie'>('password');
+  const [rpcHost, setRpcHost] = useState('127.0.0.1');
   const [rpcUser, setRpcUser] = useState('');
   const [rpcPassword, setRpcPassword] = useState('');
   const [rpcPort, setRpcPort] = useState('8332');
@@ -94,9 +101,11 @@ export function SettingsTab() {
       const s = await fetchConfigStatus();
       setStatus(s);
       const method = s.auth_method === 'cookie' ? 'cookie' : 'password';
+      const host = (s.rpc_host ?? '127.0.0.1').trim() || '127.0.0.1';
       const port = String(s.rpc_port ?? 8332);
       const cookie = s.cookie_file ?? '';
       setAuthMethod(method);
+      setRpcHost(host);
       setRpcPort(port);
       setCookieFile(cookie);
       if (s.rpc_user_masked) {
@@ -104,6 +113,7 @@ export function SettingsTab() {
       }
       setLastSaved({
         authMethod: method,
+        rpcHost: host,
         rpcPort: port,
         rpcUser: null,
         cookieFile: cookie,
@@ -113,6 +123,7 @@ export function SettingsTab() {
       const fallback: ConfigStatus = {
         config_exists: false,
         auth_method: null,
+        rpc_host: null,
         rpc_port: null,
         rpc_user_masked: null,
         cookie_file: null,
@@ -121,6 +132,7 @@ export function SettingsTab() {
       setStatus(fallback);
       setLastSaved({
         authMethod: 'password',
+        rpcHost: '127.0.0.1',
         rpcPort: '8332',
         rpcUser: null,
         cookieFile: '',
@@ -140,12 +152,13 @@ export function SettingsTab() {
     () =>
       getPendingChanges(lastSaved, {
         authMethod,
+        rpcHost,
         rpcPort,
         rpcUser,
         rpcPassword,
         cookieFile,
       }),
-    [lastSaved, authMethod, rpcPort, rpcUser, rpcPassword, cookieFile]
+    [lastSaved, authMethod, rpcHost, rpcPort, rpcUser, rpcPassword, cookieFile]
   );
   const hasPendingChanges = pendingChanges.length > 0;
 
@@ -156,6 +169,7 @@ export function SettingsTab() {
       setMessage(null);
       const payload: ConfigSavePayload = {
         auth_method: authMethod,
+        rpc_host: rpcHost.trim() || '127.0.0.1',
         rpc_port: parseInt(rpcPort, 10) || 8332,
       };
       if (authMethod === 'password') {
@@ -173,6 +187,7 @@ export function SettingsTab() {
           setRpcPassword('');
           setLastSaved({
             authMethod: payload.auth_method,
+            rpcHost: payload.rpc_host ?? '127.0.0.1',
             rpcPort: String(payload.rpc_port),
             rpcUser: payload.rpc_user ?? null,
             cookieFile: payload.cookie_file ?? '',
@@ -188,7 +203,7 @@ export function SettingsTab() {
         setSaving(false);
       }
     },
-    [authMethod, rpcPort, rpcUser, rpcPassword, cookieFile, saveConfig, loadStatus]
+    [authMethod, rpcHost, rpcPort, rpcUser, rpcPassword, cookieFile, saveConfig, loadStatus]
   );
 
   if (loading && !status) {
@@ -295,6 +310,23 @@ export function SettingsTab() {
               />
             </div>
           )}
+
+          <div>
+            <label htmlFor="rpc_host" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              RPC Host
+            </label>
+            <input
+              id="rpc_host"
+              type="text"
+              value={rpcHost}
+              onChange={(e) => setRpcHost(e.target.value)}
+              className="w-full rounded border border-gray-300 dark:border-gold/30 bg-white dark:bg-white/10 px-3 py-2 text-gray-900 dark:text-gray-100"
+              placeholder="127.0.0.1 or Bitcoin node IP/hostname"
+            />
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Use the Bitcoin node&apos;s IP or hostname when node-monitor runs on a different machine (e.g. Pi3 + Pi5).
+            </p>
+          </div>
 
           <div>
             <label htmlFor="rpc_port" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">

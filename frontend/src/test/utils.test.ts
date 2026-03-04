@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import type { WalletTransaction } from '@/types';
 import {
   formatDuration,
   formatBytes,
@@ -125,7 +126,7 @@ describe('formatTxTime', () => {
   it('returns "-" when tx has no time', () => {
     expect(formatTxTime({})).toBe('-');
     expect(formatTxTime({ time: undefined, blocktime: undefined })).toBe('-');
-    expect(formatTxTime({ time: null, blocktime: null })).toBe('-');
+    expect(formatTxTime({ time: null, blocktime: null } as unknown as WalletTransaction)).toBe('-');
     expect(formatTxTime({ time: NaN })).toBe('-');
   });
 
