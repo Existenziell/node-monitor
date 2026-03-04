@@ -44,7 +44,7 @@ function PoolCell({
       >
         {pool?.icon ? (
           <img
-            src={`/data/icons/pools/${pool.icon}`}
+            src={`/icons/pools/${pool.icon}`}
             alt=""
             width={iconSize}
             height={iconSize}
