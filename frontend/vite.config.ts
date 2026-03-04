@@ -54,6 +54,7 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     emptyOutDir: true,
+    chunkSizeWarningLimit: 800,
   },
   preview: {
     allowedHosts: ['dashboard.local', 'localhost'],
