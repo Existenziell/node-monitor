@@ -130,6 +130,10 @@ export interface BlocksData {
   total_blocks?: number;
   cached?: boolean;
   avg_block_time_seconds?: number | null;
+  /** Current chain tip height (from RPC). Next block being searched = chain_height + 1. */
+  chain_height?: number | null;
+  /** Seconds since the tip block was found (how long we've been waiting for the next block). */
+  seconds_since_last_block?: number | null;
 }
 
 /** Bitcoin Core listunspent response item */

@@ -8,7 +8,7 @@ const logTypeClasses: Record<string, string> = {
   error: 'text-console-error',
   'data-fetch': 'text-console-data',
   webserver: 'text-console-webserver',
-  'block-found': 'text-gold',
+  'block-found': 'text-accent',
 };
 
 export function Console() {
@@ -22,9 +22,9 @@ export function Console() {
   }, [lines]);
 
   return (
-    <div className="rounded border border-green-500/30 bg-black/80 mb-4">
-      <div className="flex items-center justify-between px-3 py-2 border-b border-green-500/30">
-        <span className="text-sm font-medium">System Console</span>
+    <div className="rounded border border-level-3 bg-level-2 mb-4">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-level-3">
+        <span className="text-sm font-medium text-level-5">System Console</span>
         <div className="flex items-center gap-2">
           <span
             className={`inline-block w-3 h-3 rounded-full ${
@@ -35,20 +35,20 @@ export function Console() {
           <button
             type="button"
             onClick={clear}
-            className="px-2 py-1 text-sm rounded hover:bg-white/10"
+            className="px-2 py-1 text-sm rounded hover:bg-level-3"
           >
             Clear
           </button>
         </div>
       </div>
-      <div className="h-32 overflow-y-auto p-2 font-mono text-sm bg-black/90">
+      <div className="h-32 overflow-y-auto p-2 font-mono text-sm bg-level-2">
         {lines.length === 0 ? (
-          <div className="text-gray-500">[No messages]</div>
+          <div className="text-level-4">[No messages]</div>
         ) : (
           lines.map((line) => (
             <div key={line.id} className="flex gap-2 py-0.5">
-              <span className="text-gray-500 shrink-0">[{line.timestamp}]</span>
-              <span className={logTypeClasses[line.type] ?? 'text-green-400'}>
+              <span className="text-level-4 shrink-0">[{line.timestamp}]</span>
+              <span className={logTypeClasses[line.type] ?? 'text-accent'}>
                 {line.message}
               </span>
             </div>

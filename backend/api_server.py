@@ -434,21 +434,55 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
 
         return sum(deltas) / len(deltas)
 
+    def _get_chain_height(self):
+        """Return current chain tip height from RPC, or None if unavailable."""
+        if self.rpc_service is None:
+            return None
+        try:
+            info = self.rpc_service.get_blockchain_info()
+            result = info.get("result") if isinstance(info.get("result"), dict) else None
+            if result is not None and isinstance(result.get("blocks"), int):
+                return result["blocks"]
+        except Exception:
+            pass
+        return None
+
+    def _get_seconds_since_last_block(self, blocks_data, now):
+        """Return seconds since the most recent block's time, or None."""
+        if not blocks_data or not isinstance(blocks_data, list):
+            return None
+        first = blocks_data[0]
+        block_time_str = first.get("block_time") if isinstance(first, dict) else None
+        if not block_time_str:
+            return None
+        try:
+            from datetime import datetime, timezone
+            # block_time is stored as UTC in '%Y-%m-%d %H:%M:%S'
+            block_time = datetime.strptime(block_time_str, "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
+            delta = now - block_time
+            return int(delta.total_seconds()) if delta.total_seconds() >= 0 else None
+        except (ValueError, TypeError):
+            return None
+
     def handle_blocks_data(self):
         """Handle blocks data requests from SQLite (with in-memory cache)."""
         try:
-            from datetime import datetime
-            now = datetime.now()
+            from datetime import datetime, timezone
+            now = datetime.now(timezone.utc)
             if (self._blocks_cache is not None and self._blocks_cache_time is not None and
                     (now - self._blocks_cache_time).total_seconds() < BLOCKS_CACHE_SECONDS):
                 avg_block_time = self._compute_avg_block_time(self._blocks_cache or [])
+                chain_height = self._get_chain_height()
+                seconds_since = self._get_seconds_since_last_block(self._blocks_cache, now)
                 response = {
                     "status": "success",
                     "data": {
                         "blocks": self._blocks_cache,
                         "total_blocks": len(self._blocks_cache),
                         "cached": True,
-                        "avg_block_time_seconds": avg_block_time
+                        "avg_block_time_seconds": avg_block_time,
+                        "chain_height": chain_height,
+                        "seconds_since_last_block": seconds_since
                     }
                 }
                 self.wfile.write(json.dumps(response, indent=2).encode())
@@ -458,6 +492,8 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
             avg_block_time = self._compute_avg_block_time(blocks_data)
             self._blocks_cache = blocks_data
             self._blocks_cache_time = now
+            chain_height = self._get_chain_height()
+            seconds_since = self._get_seconds_since_last_block(blocks_data, now)
 
             response = {
                 "status": "success",
@@ -465,7 +501,9 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
                     "blocks": blocks_data,
                     "total_blocks": len(blocks_data),
                     "cached": False,
-                    "avg_block_time_seconds": avg_block_time
+                    "avg_block_time_seconds": avg_block_time,
+                    "chain_height": chain_height,
+                    "seconds_since_last_block": seconds_since
                 }
             }
             self.wfile.write(json.dumps(response, indent=2).encode())

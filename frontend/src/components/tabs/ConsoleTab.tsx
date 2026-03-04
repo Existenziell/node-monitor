@@ -108,9 +108,9 @@ export function ConsoleTab() {
 
   return (
     <div className="space-y-4">
-      <div className="rounded border border-green-500/30 bg-black/80 overflow-hidden">
-        <div className="px-3 py-2 border-b border-green-500/30">
-          <h3 className="text-sm font-medium text-gray-400">RPC commands — click to set Method</h3>
+      <div className="rounded border border-level-3 bg-level-2 overflow-hidden">
+        <div className="px-3 py-2 border-b border-level-3">
+          <h3 className="text-sm font-medium text-level-4">RPC commands</h3>
         </div>
         <div className="p-3">
           {Object.entries(RPC_COMMANDS_BY_CATEGORY).map(([category, commands]) => {
@@ -120,7 +120,7 @@ export function ConsoleTab() {
                 <button
                   type="button"
                   onClick={() => toggleCategory(category)}
-                  className="flex items-center gap-1.5 w-full text-left text-xs font-medium text-gold/80 hover:text-gold transition-colors mb-1.5"
+                  className="flex items-center gap-1.5 w-full text-left text-xs font-medium text-accent hover:text-accent-hover transition-colors mb-1.5"
                   aria-expanded={!isCollapsed}
                 >
                   <span
@@ -141,8 +141,8 @@ export function ConsoleTab() {
                         onClick={() => handleCommandClick(cmd)}
                         className={`px-2 py-1 rounded text-xs font-mono border transition ${
                           method === cmd
-                            ? 'bg-gold/20 text-gold border-gold/40'
-                            : 'bg-white/5 text-gray-400 border-green-500/20 hover:border-green-500/40 hover:text-green-400'
+                            ? 'text-accent border-accent'
+                            : 'bg-level-2 text-level-4 border-level-3 hover:border-accent hover:text-accent'
                         }`}
                         title={`Set method to ${cmd}`}
                       >
@@ -157,66 +157,68 @@ export function ConsoleTab() {
         </div>
       </div>
 
-      <div className="rounded border border-green-500/30 bg-black/80 p-4">
-        <h3 className="text-gold font-medium mb-3">RPC Console</h3>
-        <p className="text-sm text-gray-400 mb-4">
-          Send a JSON-RPC command to your Bitcoin node. Method (e.g. getblockcount, getblockhash) and params as a JSON array.
-        </p>
-        <div className="space-y-3">
-          <div>
-            <label htmlFor="rpc-method" className="block text-sm text-gray-400 mb-1">
-              Method
-            </label>
-            <input
-              id="rpc-method"
-              type="text"
-              value={method}
-              onChange={(e) => setMethod(e.target.value)}
-              className="w-full rounded border border-green-500/30 bg-black/90 px-3 py-2 font-mono text-sm text-green-400 focus:border-gold/50 focus:outline-none"
-              placeholder="getblockcount"
-            />
+      <div className="flex gap-4 flex-col lg:flex-row">
+        <div className="flex-1 min-w-0 rounded border border-level-3 bg-level-2 p-4">
+          <h3 className="text-sm font-medium text-accent mb-3">RPC Console</h3>
+          <p className="text-sm text-level-4 mb-4">
+            Send a JSON-RPC command to your Bitcoin node.
+          </p>
+          <div className="space-y-3">
+            <div>
+              <label htmlFor="rpc-method" className="block text-sm text-level-4 mb-1">
+                Method
+              </label>
+              <input
+                id="rpc-method"
+                type="text"
+                value={method}
+                onChange={(e) => setMethod(e.target.value)}
+                className="w-full rounded border border-level-3 bg-level-2 px-3 py-2 font-mono text-sm text-level-5 focus:border-accent focus:outline-none"
+                placeholder="getblockcount"
+              />
+            </div>
+            <div>
+              <label htmlFor="rpc-params" className="block text-sm text-level-4 mb-1">
+                Params (JSON array)
+              </label>
+              <textarea
+                id="rpc-params"
+                value={paramsStr}
+                onChange={(e) => setParamsStr(e.target.value)}
+                rows={3}
+                className="w-full rounded border border-level-3 bg-level-2 px-3 py-2 font-mono text-sm text-level-5 focus:border-accent focus:outline-none resize-y"
+                placeholder='[]'
+                spellCheck={false}
+              />
+            </div>
+            <button
+              type="button"
+              onClick={handleExecute}
+              disabled={loading}
+              className="px-4 py-2 rounded font-medium bg-accent text-accent-foreground border border-accent hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? 'Executing…' : 'Execute'}
+            </button>
           </div>
-          <div>
-            <label htmlFor="rpc-params" className="block text-sm text-gray-400 mb-1">
-              Params (JSON array)
-            </label>
-            <textarea
-              id="rpc-params"
-              value={paramsStr}
-              onChange={(e) => setParamsStr(e.target.value)}
-              rows={3}
-              className="w-full rounded border border-green-500/30 bg-black/90 px-3 py-2 font-mono text-sm text-green-400 focus:border-gold/50 focus:outline-none resize-y"
-              placeholder='[]'
-              spellCheck={false}
-            />
-          </div>
-          <button
-            type="button"
-            onClick={handleExecute}
-            disabled={loading}
-            className="px-4 py-2 rounded font-medium bg-gold/20 text-gold border border-gold/40 hover:bg-gold/30 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? 'Executing…' : 'Execute'}
-          </button>
         </div>
-      </div>
 
-      {(response !== null || error !== null) && (
-        <div className="rounded border border-green-500/30 bg-black/80 overflow-hidden">
-          <div className="px-3 py-2 border-b border-green-500/30 text-sm font-medium text-gray-400">
+        <div className="flex-1 min-w-0 rounded border border-level-3 bg-level-2 overflow-hidden flex flex-col">
+          <div className="px-3 py-2 border-b border-level-3 text-sm font-medium text-level-4">
             Response
           </div>
-          <div className="p-3 font-mono text-sm overflow-x-auto">
+          <div className="p-3 font-mono text-sm overflow-x-auto flex-1 min-h-[120px]">
             {error !== null ? (
               <pre className="text-red-400 whitespace-pre-wrap break-words">{error}</pre>
             ) : response !== null ? (
-              <pre className="text-green-400 whitespace-pre-wrap break-words">
+              <pre className="text-level-5 whitespace-pre-wrap break-words">
                 {formatResponseForDisplay(response)}
               </pre>
-            ) : null}
+            ) : (
+              <p className="text-level-3 text-sm">Response will appear here after Execute.</p>
+            )}
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

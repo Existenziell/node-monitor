@@ -68,7 +68,7 @@ export function NetworkHistoryChart({ networkHistory }: NetworkHistoryChartProps
         >
           <CartesianGrid
             strokeDasharray="3 3"
-            className="stroke-gray-200 dark:stroke-gray-600"
+            className="stroke-level-3"
           />
           <XAxis
             dataKey="time"
@@ -82,33 +82,33 @@ export function NetworkHistoryChart({ networkHistory }: NetworkHistoryChartProps
                 minute: '2-digit',
               })
             }
-            tick={{ fill: 'currentColor', fontSize: 11 }}
-            className="text-gray-600 dark:text-gray-400"
+            tick={{ fill: 'currentColor', fontSize: 12 }}
+            className="text-level-4"
           />
           <YAxis
             yAxisId="hashrate"
             orientation="left"
             tickFormatter={(v) => `${v} TH/s`}
-            tick={{ fill: 'currentColor', fontSize: 11 }}
-            className="text-gray-600 dark:text-gray-400"
+            tick={{ fill: 'currentColor', fontSize: 12 }}
+            className="text-level-4"
             label={{
               value: 'Hashrate (TH/s)',
               angle: -90,
               position: 'insideLeft',
-              style: { fill: 'currentColor', fontSize: 11 },
+              style: { fill: 'currentColor', fontSize: 12 },
             }}
           />
           <YAxis
             yAxisId="difficulty"
             orientation="right"
             tickFormatter={(v) => formatDifficulty(v)}
-            tick={{ fill: 'currentColor', fontSize: 11 }}
-            className="text-gray-600 dark:text-gray-400"
+            tick={{ fill: 'currentColor', fontSize: 12 }}
+            className="text-level-4"
             label={{
               value: 'Difficulty',
               angle: 90,
               position: 'insideRight',
-              style: { fill: 'currentColor', fontSize: 11 },
+              style: { fill: 'currentColor', fontSize: 12 },
             }}
           />
           <Tooltip

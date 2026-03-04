@@ -2,22 +2,50 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Light theme (slate) */
+:root {
+  --level-1: #f8fafc;
+  --level-2: #f1f5f9;
+  --level-3: #e2e8f0;
+  --level-4: #475569;
+  --level-5: #0f172a;
+  --accent: #5a7a9a;
+}
+
+/* Dark theme */
+.dark {
+  --level-1: #1f2127;
+  --level-2: #1a1c21;
+  --level-3: #22242b;
+  --level-4: #7e889f;
+  --level-5: #b8c0d4;
+  --accent: #5a7a9a;
+}
+
 @layer base {
   body {
-    @apply font-mono bg-gradient-to-br from-[#1a1a1a] to-[#2d2d2d] text-[#f4f4f4] min-h-screen;
+    @apply font-sans bg-level-1 text-level-4 min-h-screen text-sm antialiased;
   }
-  body.light-mode {
-    @apply bg-gradient-to-br from-[#f8f9fa] to-[#e9ecef] text-[#212529];
+
+  /* Hide number input spinners */
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
   }
 }
 
 @layer components {
   .radio-setting {
-    @apply h-5 w-5 shrink-0 cursor-pointer rounded-full border-2 border-gray-300 dark:border-gold/40
-           bg-white dark:bg-white/10
+    @apply h-5 w-5 shrink-0 cursor-pointer rounded-full border-2 border-level-3
+           bg-level-2
            transition-[border-color,box-shadow] duration-200
-           focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-transparent
-           focus:ring-blue-500/60 dark:focus:ring-gold/50
-           accent-blue-600 dark:accent-gold;
+           focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-level-1
+           focus:ring-accent/50
+           accent-accent;
   }
 }

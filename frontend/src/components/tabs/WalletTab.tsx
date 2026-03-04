@@ -4,6 +4,7 @@ import type { UtxoEntry, WalletData, WalletTransaction } from '@/types';
 import { formatTxTime, truncateTxid } from '@/utils';
 import { useApiData } from '@/hooks/useApiData';
 import { useTabData } from '@/hooks/useTabData';
+import { LoadingOverlay } from '@/components/LoadingOverlay';
 
 export function WalletTab() {
   const { fetchWallet } = useApi();
@@ -32,12 +33,12 @@ export function WalletTab() {
   );
 
   if (loading && !data) {
-    return <div className="p-4 text-gray-600 dark:text-gray-400">Loading wallet data...</div>;
+    return <div className="p-4 text-level-4">Loading wallet data...</div>;
   }
 
   if (error && !data) {
     return (
-      <div className="p-4 text-red-400 dark:text-red-400">
+      <div className="p-4 text-red-400">
         Error loading wallet: {error.message}. Make sure the API server is running and a wallet is loaded.
       </div>
     );
@@ -47,44 +48,45 @@ export function WalletTab() {
   const balance = data?.balance ?? 0;
 
   return (
-    <div className="space-y-4">
+    <div className="relative space-y-4">
+      <LoadingOverlay show={loading && !!data} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="rounded-lg bg-white dark:bg-white/5 border border-gray-200 dark:border-gold/20 p-4">
-          <h3 className="text-accent-light dark:text-gold font-medium mb-2">Wallet</h3>
+        <div className="rounded-lg bg-level-2 border border-level-3 p-4">
+          <h3 className="text-sm font-medium text-accent mb-2">Wallet</h3>
           <dl className="text-sm space-y-1">
             <div className="flex justify-between">
-              <dt className="text-gray-600 dark:text-gray-400">Wallet name</dt>
-              <dd className="text-gray-900 dark:text-gray-300">{String(wallet.walletname ?? 'N/A')}</dd>
+              <dt className="text-level-4">Wallet name</dt>
+              <dd className="text-level-5">{String(wallet.walletname ?? 'N/A')}</dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-gray-600 dark:text-gray-400">Balance</dt>
-              <dd className="text-accent-light dark:text-gold">{Number(balance).toFixed(8)} BTC</dd>
+              <dt className="text-level-4">Balance</dt>
+              <dd className="text-accent">{Number(balance).toFixed(8)} BTC</dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-gray-600 dark:text-gray-400">Tx count</dt>
-              <dd className="text-gray-900 dark:text-gray-300">{wallet.txcount !== null && wallet.txcount !== undefined ? String(wallet.txcount) : 'N/A'}</dd>
+              <dt className="text-level-4">Tx count</dt>
+              <dd className="text-level-5">{wallet.txcount !== null && wallet.txcount !== undefined ? String(wallet.txcount) : 'N/A'}</dd>
             </div>
           </dl>
         </div>
       </div>
 
-      <div className="rounded-lg bg-white dark:bg-white/5 border border-gray-200 dark:border-gold/20 overflow-hidden">
-        <h3 className="text-accent-light dark:text-gold font-medium p-4 pb-2">UTXOs ({unspent.length})</h3>
+      <div className="rounded-lg bg-level-2 border border-level-3 overflow-hidden">
+        <h3 className="text-sm font-medium text-accent p-4 pb-2">UTXOs ({unspent.length})</h3>
         <div className="overflow-x-auto max-h-[60vh]">
           <table className="w-full text-sm">
-            <thead className="sticky top-0 bg-gray-100 dark:bg-black/80 text-left">
+            <thead className="sticky top-0 bg-level-2 text-left">
               <tr>
-                <th className="p-2 text-gray-700 dark:text-gray-400">Txid</th>
-                <th className="p-2 text-gray-700 dark:text-gray-400">Vout</th>
-                <th className="p-2 text-gray-700 dark:text-gray-400">Address</th>
-                <th className="p-2 text-gray-700 dark:text-gray-400">Amount (BTC)</th>
-                <th className="p-2 text-gray-700 dark:text-gray-400">Confirmations</th>
+                <th className="p-2 text-level-4">Txid</th>
+                <th className="p-2 text-level-4">Vout</th>
+                <th className="p-2 text-level-4">Address</th>
+                <th className="p-2 text-level-4">Amount (BTC)</th>
+                <th className="p-2 text-level-4">Confirmations</th>
               </tr>
             </thead>
             <tbody>
               {unspent.length === 0 ? (
-                <tr className="border-t border-gray-200 dark:border-gold/10">
-                  <td colSpan={5} className="p-4 text-center text-gray-500 dark:text-gray-400">
+                <tr className="border-t border-level-3">
+                  <td colSpan={5} className="p-4 text-center text-level-4">
                     No UTXOs
                   </td>
                 </tr>
@@ -92,19 +94,19 @@ export function WalletTab() {
                 unspentByConfirmations.map((utxo, i) => (
                   <tr
                     key={`${utxo.txid ?? ''}-${utxo.vout ?? i}`}
-                    className="border-t border-gray-200 dark:border-gold/10 hover:bg-gray-50 dark:hover:bg-white/5"
+                    className="border-t border-level-3 hover:bg-level-3"
                   >
-                    <td className="p-2 text-gray-900 dark:text-gray-300 font-mono" title={utxo.txid ?? ''}>
+                    <td className="p-2 text-level-5 font-mono" title={utxo.txid ?? ''}>
                       {truncateTxid(utxo.txid)}
                     </td>
-                    <td className="p-2 text-gray-900 dark:text-gray-300">{utxo.vout ?? '-'}</td>
-                    <td className="p-2 max-w-[200px] truncate text-gray-900 dark:text-gray-300" title={utxo.address ?? ''}>
+                    <td className="p-2 text-level-5">{utxo.vout ?? '-'}</td>
+                    <td className="p-2 max-w-[200px] truncate text-level-5" title={utxo.address ?? ''}>
                       {utxo.address ?? '-'}
                     </td>
-                    <td className="p-2 text-gray-900 dark:text-gray-300">
+                    <td className="p-2 text-level-5">
                       {utxo.amount !== null && utxo.amount !== undefined && Number.isFinite(utxo.amount) ? Number(utxo.amount).toFixed(8) : '-'}
                     </td>
-                    <td className="p-2 text-gray-900 dark:text-gray-300">{utxo.confirmations ?? '-'}</td>
+                    <td className="p-2 text-level-5">{utxo.confirmations ?? '-'}</td>
                   </tr>
                 ))
               )}
@@ -113,23 +115,23 @@ export function WalletTab() {
         </div>
       </div>
 
-      <div className="rounded-lg bg-white dark:bg-white/5 border border-gray-200 dark:border-gold/20 overflow-hidden">
-        <h3 className="text-accent-light dark:text-gold font-medium p-4 pb-2">Recent transactions</h3>
+      <div className="rounded-lg bg-level-2 border border-level-3 overflow-hidden">
+        <h3 className="text-sm font-medium text-accent p-4 pb-2">Recent transactions</h3>
         <div className="overflow-x-auto max-h-[60vh]">
           <table className="w-full text-sm">
-            <thead className="sticky top-0 bg-gray-100 dark:bg-black/80 text-left">
+            <thead className="sticky top-0 bg-level-2 text-left">
               <tr>
-                <th className="p-2 text-gray-700 dark:text-gray-400">Txid</th>
-                <th className="p-2 text-gray-700 dark:text-gray-400">Category</th>
-                <th className="p-2 text-gray-700 dark:text-gray-400">Amount (BTC)</th>
-                <th className="p-2 text-gray-700 dark:text-gray-400">Confirmations</th>
-                <th className="p-2 text-gray-700 dark:text-gray-400">Time</th>
+                <th className="p-2 text-level-4">Txid</th>
+                <th className="p-2 text-level-4">Category</th>
+                <th className="p-2 text-level-4">Amount (BTC)</th>
+                <th className="p-2 text-level-4">Confirmations</th>
+                <th className="p-2 text-level-4">Time</th>
               </tr>
             </thead>
             <tbody>
               {transactions.length === 0 ? (
-                <tr className="border-t border-gray-200 dark:border-gold/10">
-                  <td colSpan={5} className="p-4 text-center text-gray-500 dark:text-gray-400">
+                <tr className="border-t border-level-3">
+                  <td colSpan={5} className="p-4 text-center text-level-4">
                     No recent transactions
                   </td>
                 </tr>
@@ -137,17 +139,17 @@ export function WalletTab() {
                 transactionsByTime.map((tx, i) => (
                   <tr
                     key={`${tx.txid ?? ''}-${tx.vout ?? ''}-${i}`}
-                    className="border-t border-gray-200 dark:border-gold/10 hover:bg-gray-50 dark:hover:bg-white/5"
+                    className="border-t border-level-3 hover:bg-level-3"
                   >
-                    <td className="p-2 text-gray-900 dark:text-gray-300 font-mono" title={tx.txid ?? ''}>
+                    <td className="p-2 text-level-5 font-mono" title={tx.txid ?? ''}>
                       {truncateTxid(tx.txid)}
                     </td>
-                    <td className="p-2 text-gray-900 dark:text-gray-300">{tx.category ?? '-'}</td>
-                    <td className="p-2 text-gray-900 dark:text-gray-300">
+                    <td className="p-2 text-level-5">{tx.category ?? '-'}</td>
+                    <td className="p-2 text-level-5">
                       {tx.amount !== null && tx.amount !== undefined && Number.isFinite(tx.amount) ? Number(tx.amount).toFixed(8) : '-'}
                     </td>
-                    <td className="p-2 text-gray-900 dark:text-gray-300">{tx.confirmations ?? '-'}</td>
-                    <td className="p-2 text-gray-900 dark:text-gray-300">{formatTxTime(tx)}</td>
+                    <td className="p-2 text-level-5">{tx.confirmations ?? '-'}</td>
+                    <td className="p-2 text-level-5">{formatTxTime(tx)}</td>
                   </tr>
                 ))
               )}

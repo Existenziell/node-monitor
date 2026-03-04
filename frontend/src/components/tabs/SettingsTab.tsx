@@ -208,16 +208,16 @@ export function SettingsTab() {
 
   if (loading && !status) {
     return (
-      <div className="p-4 text-gray-600 dark:text-gray-400">Loading settings...</div>
+      <div className="p-4 text-level-4">Loading settings...</div>
     );
   }
 
   return (
     <div className="space-y-4">
-      <div className="rounded-lg bg-white dark:bg-white/5 border border-gray-200 dark:border-gold/20 p-4 max-w-xl">
-        <h2 className="text-lg font-medium text-accent-light dark:text-gold mb-4">Node configuration</h2>
+      <div className="rounded-lg bg-level-2 border border-level-3 p-4 max-w-xl">
+        <h2 className="text-lg font-medium text-accent mb-4">Node configuration</h2>
         {status && !status.config_exists && (
-          <p className="text-amber-700 dark:text-gold/90 text-sm mb-4">
+          <p className="text-level-5 text-sm mb-4">
             No configuration found. Enter RPC credentials or cookie path to connect to your Bitcoin
             node.
           </p>
@@ -226,8 +226,8 @@ export function SettingsTab() {
           <div
             className={`mb-4 p-2 rounded text-sm ${
               message.type === 'success'
-                ? 'bg-green-500/20 text-green-800 dark:text-green-300'
-                : 'bg-red-500/20 text-red-800 dark:text-red-300'
+                ? 'bg-green-500/20 text-green-800'
+                : 'bg-red-500/20 text-red-800'
             }`}
           >
             {message.text}
@@ -235,7 +235,7 @@ export function SettingsTab() {
         )}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label className="block text-sm font-medium text-level-5 mb-1">
               Authentication
             </label>
             <div className="flex gap-4">
@@ -265,7 +265,7 @@ export function SettingsTab() {
           {authMethod === 'password' && (
             <>
               <div>
-                <label htmlFor="rpc_user" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label htmlFor="rpc_user" className="block text-sm font-medium text-level-5 mb-1">
                   RPC Username
                 </label>
                 <input
@@ -273,13 +273,13 @@ export function SettingsTab() {
                   type="text"
                   value={rpcUser}
                   onChange={(e) => setRpcUser(e.target.value)}
-                  className="w-full rounded border border-gray-300 dark:border-gold/30 bg-white dark:bg-white/10 px-3 py-2 text-gray-900 dark:text-gray-100"
+                  className="w-full rounded border border-level-3 bg-level-2 px-3 py-2 text-level-5"
                   placeholder="bitcoinrpc"
                   autoComplete="username"
                 />
               </div>
               <div>
-                <label htmlFor="rpc_password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label htmlFor="rpc_password" className="block text-sm font-medium text-level-5 mb-1">
                   RPC Password
                 </label>
                 <input
@@ -287,7 +287,7 @@ export function SettingsTab() {
                   type="password"
                   value={rpcPassword}
                   onChange={(e) => setRpcPassword(e.target.value)}
-                  className="w-full rounded border border-gray-300 dark:border-gold/30 bg-white dark:bg-white/10 px-3 py-2 text-gray-900 dark:text-gray-100"
+                  className="w-full rounded border border-level-3 bg-level-2 px-3 py-2 text-level-5"
                   placeholder={status?.config_exists ? 'Leave blank to keep current' : 'Required'}
                   autoComplete="current-password"
                 />
@@ -297,7 +297,7 @@ export function SettingsTab() {
 
           {authMethod === 'cookie' && (
             <div>
-              <label htmlFor="cookie_file" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label htmlFor="cookie_file" className="block text-sm font-medium text-level-5 mb-1">
                 Cookie file path
               </label>
               <input
@@ -305,14 +305,14 @@ export function SettingsTab() {
                 type="text"
                 value={cookieFile}
                 onChange={(e) => setCookieFile(e.target.value)}
-                className="w-full rounded border border-gray-300 dark:border-gold/30 bg-white dark:bg-white/10 px-3 py-2 text-gray-900 dark:text-gray-100 font-mono text-sm"
+                className="w-full rounded border border-level-3 bg-level-2 px-3 py-2 text-level-5 font-mono text-sm"
                 placeholder="e.g. /home/user/.bitcoin/.cookie"
               />
             </div>
           )}
 
           <div>
-            <label htmlFor="rpc_host" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label htmlFor="rpc_host" className="block text-sm font-medium text-level-5 mb-1">
               RPC Host
             </label>
             <input
@@ -320,16 +320,16 @@ export function SettingsTab() {
               type="text"
               value={rpcHost}
               onChange={(e) => setRpcHost(e.target.value)}
-              className="w-full rounded border border-gray-300 dark:border-gold/30 bg-white dark:bg-white/10 px-3 py-2 text-gray-900 dark:text-gray-100"
+              className="w-full rounded border border-level-3 bg-level-2 px-3 py-2 text-level-5"
               placeholder="127.0.0.1 or Bitcoin node IP/hostname"
             />
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            <p className="text-xs text-level-4 mt-1">
               Use the Bitcoin node&apos;s IP or hostname when node-monitor runs on a different machine (e.g. Pi3 + Pi5).
             </p>
           </div>
 
           <div>
-            <label htmlFor="rpc_port" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label htmlFor="rpc_port" className="block text-sm font-medium text-level-5 mb-1">
               RPC Port
             </label>
             <input
@@ -339,15 +339,15 @@ export function SettingsTab() {
               max={65535}
               value={rpcPort}
               onChange={(e) => setRpcPort(e.target.value)}
-              className="w-full rounded border border-gray-300 dark:border-gold/30 bg-white dark:bg-white/10 px-3 py-2 text-gray-900 dark:text-gray-100"
+              className="w-full rounded border border-level-3 bg-level-2 px-3 py-2 text-level-5"
             />
           </div>
 
           {lastSaved && (
-            <div className="rounded-lg border border-gray-200 dark:border-gold/20 bg-gray-50 dark:bg-white/5 p-3">
-              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Pending changes</h3>
+            <div className="rounded-lg border border-level-3 bg-level-2 p-3">
+              <h3 className="text-sm font-medium text-level-5 mb-2">Pending changes</h3>
               {hasPendingChanges ? (
-                <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1 list-disc list-inside">
+                <ul className="text-sm text-level-4 space-y-1 list-disc list-inside">
                   {pendingChanges.map((c, i) => (
                     <li key={i}>
                       {c.field}: {c.from !== null && c.from !== undefined ? `${c.from} → ` : ''}{c.to ?? ''}
@@ -355,7 +355,7 @@ export function SettingsTab() {
                   ))}
                 </ul>
               ) : (
-                <p className="text-sm text-gray-500 dark:text-gray-500">No pending changes</p>
+                <p className="text-sm text-level-4">No pending changes</p>
               )}
             </div>
           )}
@@ -364,7 +364,7 @@ export function SettingsTab() {
             type="submit"
             disabled={saving || !hasPendingChanges}
             title={!hasPendingChanges ? 'No changes to save' : undefined}
-            className="px-4 py-2 rounded font-medium bg-accent-light dark:bg-gold/30 text-white dark:text-gold border border-accent-light dark:border-gold/50 hover:bg-blue-700 dark:hover:bg-gold/40 disabled:opacity-50"
+            className="px-4 py-2 rounded font-medium bg-accent text-accent-foreground border border-accent hover:bg-accent-hover disabled:opacity-50"
           >
             {saving ? 'Saving…' : 'Save configuration'}
           </button>

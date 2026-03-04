@@ -5,13 +5,18 @@ export default {
   theme: {
     extend: {
       colors: {
-        gold: {
-          DEFAULT: '#ffd700',
-          hover: '#ffed4e',
-          light: 'rgba(255, 215, 0, 0.3)',
+        level: {
+          1: 'var(--level-1)',
+          2: 'var(--level-2)',
+          3: 'var(--level-3)',
+          4: 'var(--level-4)',
+          5: 'var(--level-5)',
         },
         accent: {
-          light: '#0D56FF',
+          DEFAULT: '#5a7a9a',
+          hover: '#6b8baa',
+          muted: 'rgba(90, 122, 154, 0.25)',
+          foreground: '#ffffff',
         },
         console: {
           info: '#87CEEB',
@@ -21,7 +26,8 @@ export default {
         },
       },
       fontFamily: {
-        mono: ['"Courier New"', 'monospace'],
+        sans: ['"DM Sans"', 'system-ui', 'sans-serif'],
+        mono: ['"IBM Plex Mono"', 'ui-monospace', 'monospace'],
       },
     },
   },

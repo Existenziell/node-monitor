@@ -6,6 +6,7 @@ import { formatBytes, formatWeight } from '@/utils';
 import { useConsole } from '@/contexts/ConsoleContext';
 import { useApiData } from '@/hooks/useApiData';
 import { useTabData } from '@/hooks/useTabData';
+import { LoadingOverlay } from '@/components/LoadingOverlay';
 
 const PIE_COLORS = [
   'oklch(0.55 0.2 250)',
@@ -78,7 +79,7 @@ function PoolDistributionChart({
 
   if (pieData.length === 0) {
     return (
-      <div className="flex items-center justify-center h-[240px] text-gray-500 dark:text-gray-400 text-sm">
+      <div className="flex items-center justify-center h-[240px] text-level-4 text-sm">
         No distribution data
       </div>
     );
@@ -108,7 +109,7 @@ function PoolDistributionChart({
             }}
             formatter={(value: number, name: string) => [`${value.toFixed(1)}%`, name]}
           />
-          <Legend wrapperStyle={{ fontSize: 11 }} />
+          <Legend wrapperStyle={{ fontSize: 12 }} />
         </PieChart>
       </ResponsiveContainer>
     </div>
@@ -149,99 +150,122 @@ export function BlocksTab() {
   }, [data, log]);
 
   if (loading && !data) {
-    return <div className="p-4 text-gray-600 dark:text-gray-400">Loading blockchain data...</div>;
+    return <div className="p-4 text-level-4">Loading blockchain data...</div>;
   }
 
   if (error && !data) {
     return (
-      <div className="p-4 text-red-400 dark:text-red-400">
+      <div className="p-4 text-red-400">
         Error loading blocks: {error.message}. Make sure the API server is running.
       </div>
     );
   }
 
   const blocks = data?.blocks ?? [];
-  const currentBlock = blocks.length > 0 ? (blocks[0] as BlockRow) : null;
+  const latestBlock = blocks.length > 0 ? (blocks[0] as BlockRow) : null;
+  const chainHeight = data?.chain_height ?? null;
+  const nextBlockHeight = chainHeight !== null && chainHeight !== undefined ? chainHeight + 1 : null;
+  const secondsSinceLastBlock = data?.seconds_since_last_block ?? null;
+  const timeSinceLastFormatted =
+    secondsSinceLastBlock !== null && secondsSinceLastBlock !== undefined && secondsSinceLastBlock >= 0
+      ? `${secondsSinceLastBlock}s`
+      : '-';
 
   return (
-    <div className="space-y-4">
+    <div className="relative space-y-4">
+      <LoadingOverlay show={loading && !!data} />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="rounded-lg bg-white dark:bg-white/5 border border-gray-200 dark:border-gold/20 p-4">
-          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-400 mb-3">Current block</h3>
-          {currentBlock ? (
+        <div className="rounded-lg bg-level-2 border border-level-3 p-4 space-y-4">
+          <section>
+            <h3 className="text-sm font-medium text-level-4 mb-3">Current block (being searched)</h3>
             <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-              <dt className="text-gray-600 dark:text-gray-400">Height</dt>
-              <dd className="text-gray-900 dark:text-gray-300 font-medium tabular-nums">{currentBlock.block_height}</dd>
-              <dt className="text-gray-600 dark:text-gray-400">Hash</dt>
-              <dd className="text-gray-900 dark:text-gray-300 font-mono text-xs truncate" title={currentBlock.block_hash}>{currentBlock.block_hash ?? '-'}</dd>
-              <dt className="text-gray-600 dark:text-gray-400">Time</dt>
-              <dd className="text-gray-900 dark:text-gray-300">{currentBlock.block_time ?? '-'}</dd>
-              <dt className="text-gray-600 dark:text-gray-400">Time since previous</dt>
-              <dd className="text-gray-900 dark:text-gray-300">{currentBlock.time_since_last_block || '-'}</dd>
-              <dt className="text-gray-600 dark:text-gray-400">Pool</dt>
-              <dd className="text-gray-900 dark:text-gray-300">
-                <PoolCell identifier={currentBlock.mining_pool} poolByIdentifier={poolByIdentifier} iconSize={POOL_ICON_SIZE} />
+              <dt className="text-level-4">Next block</dt>
+              <dd className="text-level-5 font-medium tabular-nums">
+                {nextBlockHeight !== null ? `#${nextBlockHeight.toLocaleString()}` : '-'}
               </dd>
-              <dt className="text-gray-600 dark:text-gray-400">Tx count</dt>
-              <dd className="text-gray-900 dark:text-gray-300 tabular-nums">{currentBlock.transaction_count ?? '-'}</dd>
-              <dt className="text-gray-600 dark:text-gray-400">Weight</dt>
-              <dd className="text-gray-900 dark:text-gray-300 tabular-nums">{formatWeight(currentBlock.block_weight as number | undefined)}</dd>
-              <dt className="text-gray-600 dark:text-gray-400">Size</dt>
-              <dd className="text-gray-900 dark:text-gray-300 tabular-nums">{formatBytes(currentBlock.block_size as number | undefined)}</dd>
-              <dt className="text-gray-600 dark:text-gray-400">Reward</dt>
-              <dd className="text-gray-900 dark:text-gray-300 tabular-nums">{currentBlock.block_reward !== null && currentBlock.block_reward !== undefined ? Number(currentBlock.block_reward).toFixed(4) : '-'}</dd>
-              <dt className="text-gray-600 dark:text-gray-400">Fees</dt>
-              <dd className="text-gray-900 dark:text-gray-300 tabular-nums">{currentBlock.total_fees !== null && currentBlock.total_fees !== undefined ? Number(currentBlock.total_fees).toFixed(4) : '-'}</dd>
-              <dt className="text-gray-600 dark:text-gray-400">Fees (USD)</dt>
-              <dd className="text-gray-900 dark:text-gray-300 tabular-nums">{currentBlock.total_fees_usd !== null && currentBlock.total_fees_usd !== undefined ? Number(currentBlock.total_fees_usd).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}</dd>
+              <dt className="text-level-4">Status</dt>
+              <dd className="text-level-5">Not yet found</dd>
+              <dt className="text-level-4">Time since last block</dt>
+              <dd className="text-level-5 tabular-nums">{timeSinceLastFormatted}</dd>
             </dl>
-          ) : (
-            <p className="text-sm text-gray-500 dark:text-gray-400">No block data</p>
-          )}
+          </section>
+          <section>
+            <h3 className="text-sm font-medium text-level-4 mb-3">Latest found block</h3>
+            {latestBlock ? (
+              <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                <dt className="text-level-4">Height</dt>
+                <dd className="text-level-5 font-medium tabular-nums">{latestBlock.block_height}</dd>
+                <dt className="text-level-4">Hash</dt>
+                <dd className="text-level-5 font-mono text-xs truncate" title={latestBlock.block_hash}>{latestBlock.block_hash ?? '-'}</dd>
+                <dt className="text-level-4">Time</dt>
+                <dd className="text-level-5">{latestBlock.block_time ?? '-'}</dd>
+                <dt className="text-level-4">Time since previous</dt>
+                <dd className="text-level-5">{latestBlock.time_since_last_block || '-'}</dd>
+                <dt className="text-level-4">Pool</dt>
+                <dd className="text-level-5">
+                  <PoolCell identifier={latestBlock.mining_pool} poolByIdentifier={poolByIdentifier} iconSize={POOL_ICON_SIZE} />
+                </dd>
+                <dt className="text-level-4">Tx count</dt>
+                <dd className="text-level-5 tabular-nums">{latestBlock.transaction_count ?? '-'}</dd>
+                <dt className="text-level-4">Weight</dt>
+                <dd className="text-level-5 tabular-nums">{formatWeight(latestBlock.block_weight as number | undefined)}</dd>
+                <dt className="text-level-4">Size</dt>
+                <dd className="text-level-5 tabular-nums">{formatBytes(latestBlock.block_size as number | undefined)}</dd>
+                <dt className="text-level-4">Reward</dt>
+                <dd className="text-level-5 tabular-nums">{latestBlock.block_reward !== null && latestBlock.block_reward !== undefined ? Number(latestBlock.block_reward).toFixed(4) : '-'}</dd>
+                <dt className="text-level-4">Fees</dt>
+                <dd className="text-level-5 tabular-nums">{latestBlock.total_fees !== null && latestBlock.total_fees !== undefined ? Number(latestBlock.total_fees).toFixed(4) : '-'}</dd>
+                <dt className="text-level-4">Fees (USD)</dt>
+                <dd className="text-level-5 tabular-nums">{latestBlock.total_fees_usd !== null && latestBlock.total_fees_usd !== undefined ? Number(latestBlock.total_fees_usd).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}</dd>
+              </dl>
+            ) : (
+              <p className="text-sm text-level-4">No block data</p>
+            )}
+          </section>
         </div>
-        <div className="rounded-lg bg-white dark:bg-white/5 border border-gray-200 dark:border-gold/20 p-4">
-          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-400 mb-3">Pool distribution</h3>
+        <div className="rounded-lg bg-level-2 border border-level-3 p-4">
+          <h3 className="text-sm font-medium text-level-4 mb-3">Pool distribution</h3>
           <PoolDistributionChart distribution={distribution ?? null} poolByIdentifier={poolByIdentifier} />
         </div>
       </div>
 
-      <div className="rounded-lg bg-white dark:bg-white/5 border border-gray-200 dark:border-gold/20 overflow-hidden">
+      <div className="rounded-lg bg-level-2 border border-level-3 overflow-hidden">
         <div className="overflow-x-auto max-h-[60vh]">
           <table className="w-full text-sm">
-            <thead className="sticky top-0 bg-gray-100 dark:bg-black/80 text-left">
+            <thead className="sticky top-0 bg-level-2 text-left">
               <tr>
-                <th className="p-2 text-gray-700 dark:text-gray-400">Height</th>
-                <th className="p-2 text-gray-700 dark:text-gray-400">Time</th>
-                <th className="p-2 text-gray-700 dark:text-gray-400">Pool</th>
-                <th className="p-2 text-gray-700 dark:text-gray-400">Tx Count</th>
-                <th className="p-2 text-gray-700 dark:text-gray-400">Weight</th>
-                <th className="p-2 text-gray-700 dark:text-gray-400">Size</th>
-                <th className="p-2 text-gray-700 dark:text-gray-400">Reward</th>
-                <th className="p-2 text-gray-700 dark:text-gray-400">Fees</th>
-                <th className="p-2 text-gray-700 dark:text-gray-400">Fees (USD)</th>
+                <th className="p-2 text-level-4">Height</th>
+                <th className="p-2 text-level-4">Time</th>
+                <th className="p-2 text-level-4">Pool</th>
+                <th className="p-2 text-level-4">Tx Count</th>
+                <th className="p-2 text-level-4">Weight</th>
+                <th className="p-2 text-level-4">Size</th>
+                <th className="p-2 text-level-4">Reward</th>
+                <th className="p-2 text-level-4">Fees</th>
+                <th className="p-2 text-level-4">Fees (USD)</th>
               </tr>
             </thead>
             <tbody>
               {blocks.map((block) => (
                 <tr
                   key={block.block_height}
-                  className="border-t border-gray-200 dark:border-gold/10 hover:bg-gray-50 dark:hover:bg-white/5"
+                  className="border-t border-level-3 hover:bg-level-3"
                 >
-                  <td className="p-2 text-gray-900 dark:text-gray-300">{block.block_height}</td>
-                  <td className="p-2 text-gray-900 dark:text-gray-300">{block.block_time ?? '-'}</td>
-                  <td className="p-2 max-w-[160px] text-gray-900 dark:text-gray-300">
+                  <td className="p-2 text-level-5">{block.block_height}</td>
+                  <td className="p-2 text-level-5">{block.block_time ?? '-'}</td>
+                  <td className="p-2 max-w-[160px] text-level-5">
                     <PoolCell
                       identifier={block.mining_pool}
                       poolByIdentifier={poolByIdentifier}
                       iconSize={POOL_ICON_SIZE}
                     />
                   </td>
-                  <td className="p-2 text-gray-900 dark:text-gray-300">{block.transaction_count ?? '-'}</td>
-                  <td className="p-2 text-gray-900 dark:text-gray-300 tabular-nums">{formatWeight(block.block_weight as number | undefined)}</td>
-                  <td className="p-2 text-gray-900 dark:text-gray-300 tabular-nums">{formatBytes(block.block_size as number | undefined)}</td>
-                  <td className="p-2 text-gray-900 dark:text-gray-300 tabular-nums">{block.block_reward !== null && block.block_reward !== undefined ? Number(block.block_reward).toFixed(4) : '-'}</td>
-                  <td className="p-2 text-gray-900 dark:text-gray-300 tabular-nums">{block.total_fees !== null && block.total_fees !== undefined ? Number(block.total_fees).toFixed(4) : '-'}</td>
-                  <td className="p-2 text-gray-900 dark:text-gray-300 tabular-nums">{block.total_fees_usd !== null && block.total_fees_usd !== undefined ? Number(block.total_fees_usd).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}</td>
+                  <td className="p-2 text-level-5">{block.transaction_count ?? '-'}</td>
+                  <td className="p-2 text-level-5 tabular-nums">{formatWeight(block.block_weight as number | undefined)}</td>
+                  <td className="p-2 text-level-5 tabular-nums">{formatBytes(block.block_size as number | undefined)}</td>
+                  <td className="p-2 text-level-5 tabular-nums">{block.block_reward !== null && block.block_reward !== undefined ? Number(block.block_reward).toFixed(4) : '-'}</td>
+                  <td className="p-2 text-level-5 tabular-nums">{block.total_fees !== null && block.total_fees !== undefined ? Number(block.total_fees).toFixed(4) : '-'}</td>
+                  <td className="p-2 text-level-5 tabular-nums">{block.total_fees_usd !== null && block.total_fees_usd !== undefined ? Number(block.total_fees_usd).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}</td>
                 </tr>
               ))}
             </tbody>

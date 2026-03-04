@@ -1,6 +1,8 @@
 {
   "extends": ["stylelint-config-standard"],
   "rules": {
+    "at-rule-no-unknown": null,
+    "property-no-vendor-prefix": null,
     "color-function-notation": null,
     "alpha-value-notation": null,
     "color-hex-length": null,

@@ -164,28 +164,14 @@ class BlockchainMonitor:
 
 
     def display_blockchain_status(self, blockchain_info):
-        """Display current blockchain status"""
+        """Display current blockchain status (no-op; status is served via API)."""
         if not blockchain_info:
-            return
-
-        print("📊 BLOCKCHAIN STATUS:")
-        print(f"  Current Block: {blockchain_info.get('blocks', 'N/A'):,}")
-        print(f"  Block Hash: {blockchain_info.get('bestblockhash', 'N/A')}")
-        print(f"  Difficulty: {blockchain_info.get('difficulty', 0):,.2f}")
-        print(f"  Chain: {blockchain_info.get('chain', 'N/A')}")
-        print(f"  Sync Progress: {blockchain_info.get('verificationprogress', 0):.1%}")
-        print()
+            pass
 
     def display_mempool_status(self, mempool_info):
-        """Display current mempool status"""
+        """Display current mempool status (no-op; status is served via API)."""
         if not mempool_info:
-            return
-
-        print("🏊 MEMPOOL STATUS:")
-        print(f"  Transactions: {mempool_info.get('size', 0):,}")
-        print(f"  Memory Usage: {mempool_info.get('usage', 0):,} bytes")
-        print(f"  Min Fee: {mempool_info.get('mempoolminfee', 0):.8f} BTC/kB")
-        print()
+            pass
 
 
     def listen_for_blocks_zmq(self) -> None:
@@ -239,7 +225,6 @@ class BlockchainMonitor:
                 return
 
             self.blocks_received += 1
-            print(f"ZMQ block received: {current_height:,}")
             self._process_new_block(block, current_height)
 
         except Exception as e:
@@ -302,8 +287,6 @@ class BlockchainMonitor:
             mining_pool = self._extract_mining_pool(block)
             time_since_last_block = self._get_time_since_last_block(current_block_time)
             self._calculate_and_log_fees(block, mining_pool, time_since_last_block)
-
-            print(f"new block {current_height:,}")
 
             # Update last seen height and time to prevent detection loop
             self.last_block_height = current_height
@@ -431,11 +414,9 @@ class BlockchainMonitor:
                 # Convert string keys to bytes for compatibility
                 signatures = {k.encode('utf-8'): v for k, v in signatures_dict.items()}
                 return signatures
-            print(f"Warning: API returned status {response.status_code}")
             return {}
 
-        except (requests.RequestException, KeyError, ValueError) as e:
-            print(f"Warning: Could not fetch from pools API: {e}")
+        except (requests.RequestException, KeyError, ValueError):
             return {}
 
     def _check_slash_format(self, coinbase_bytes):
@@ -699,11 +680,9 @@ class BlockchainMonitor:
     def _persist_block(self, block, mining_pool, block_details, time_since_last_block):
         """Persist block to SQLite (block_store)."""
         if not BLOCK_STORE_AVAILABLE:
-            print("[DB] block store unavailable, skip persist")
             return
         block_height = block.get('height', 0)
         if block_height <= self._last_logged_block_height:
-            print(f"[DB] block {block_height:,} already logged, skipping")
             return
         try:
             block_dict = self._prepare_block_dict(
@@ -724,18 +703,12 @@ class BlockchainMonitor:
                 db_path=self._db_path,
             )
             self._last_logged_block_height = block_height
-            bh = block_dict['block_hash'][:16] if block_dict.get('block_hash') else '?'
-            print(
-                f"[DB] blocks: inserted height={block_height:,} hash={bh}… "
-                f"pool={block_dict['mining_pool']} reward={block_dict['block_reward']} fees={block_dict['total_fees']}"
-            )
         except (OSError, IOError, KeyError, ValueError, sqlite3.Error) as e:
             error_service.handle_file_error("block_store", "write", e)
 
     def _persist_network_snapshot(self, hashrate: Optional[float], difficulty: Optional[float]) -> None:
         """Append one difficulty/hashrate record to SQLite (block_store)."""
         if not BLOCK_STORE_AVAILABLE:
-            print("[DB] block store unavailable, skip network snapshot")
             return
         try:
             blockchain_info = self.get_blockchain_info()
@@ -750,7 +723,6 @@ class BlockchainMonitor:
                 difficulty=diff,
                 db_path=self._db_path,
             )
-            print(f"[DB] network_history: inserted block_height={block_height:,} hashrate={hr} difficulty={diff}")
         except (OSError, IOError, KeyError, ValueError, sqlite3.Error) as e:
             error_service.handle_file_error("block_store", "write", e)
 
@@ -823,7 +795,6 @@ class BlockchainMonitor:
         """Monitor blockchain continuously (standalone). Use run_loop() when embedded (e.g. in API)."""
 
         def signal_handler(sig, frame):  # pylint: disable=unused-argument
-            print("\n🛑 Shutting down...")
             self.running = False
             self.cleanup_zmq()
             sys.exit(0)
@@ -831,8 +802,6 @@ class BlockchainMonitor:
         signal.signal(signal.SIGINT, signal_handler)
         try:
             self.run_loop(interval)
-        except KeyboardInterrupt:
-            print("\n🛑 Monitoring stopped by user")
         finally:
             self.cleanup_zmq()
 
@@ -844,25 +813,7 @@ class BlockchainMonitor:
             self.zmq_context.term()
 
     def show_current_status(self):
-        """Show current blockchain status once"""
-        print("📊 BITCOIN BLOCKCHAIN STATUS")
-        print("=" * 80)
-
-        blockchain_info = self.get_blockchain_info()
-        if blockchain_info:
-            print(f"Current Block: {blockchain_info.get('blocks', 'N/A'):,}")
-            print(f"Block Hash: {blockchain_info.get('bestblockhash', 'N/A')}")
-            print(f"Difficulty: {blockchain_info.get('difficulty', 0):,.2f}")
-            print(f"Chain: {blockchain_info.get('chain', 'N/A')}")
-            print(f"Sync Progress: {blockchain_info.get('verificationprogress', 0):.1%}")
-
-        mempool_info = self.get_mempool_info()
-        if mempool_info:
-            print(f"Mempool Transactions: {mempool_info.get('size', 0):,}")
-
-        network_info = self.get_network_info()
-        if network_info:
-            print(f"Peer Connections: {network_info.get('connections', 0)}")
+        """Show current blockchain status once (no-op; status is served via API)."""
 
 def main():
     """Main function with command line argument handling"""

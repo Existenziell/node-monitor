@@ -47,12 +47,12 @@ export function Header() {
   return (
     <header className="flex items-center justify-center gap-4 mb-4">
       <LogoSvg />
-      <h1 className="text-2xl font-bold">Bitcoin Dashboard</h1>
+      <h1 className="text-2xl font-bold text-level-5">Bitcoin Dashboard</h1>
       <div className="flex-1" />
       <button
         type="button"
         onClick={toggleTheme}
-        className="p-2 rounded-md hover:bg-gray-200 dark:hover:bg-white/10"
+        className="p-2 rounded-md hover:bg-level-3"
         title={theme === 'dark' ? 'Switch to light' : 'Switch to dark'}
       >
         {theme === 'dark' ? <SunIcon /> : <MoonIcon />}

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Header } from '@/components/Header';
 import { ThemeProvider } from '@/contexts/ThemeContext';
@@ -28,7 +28,9 @@ describe('Header', () => {
     const user = userEvent.setup();
     render(<WrappedHeader />);
     const toggle = screen.getByTitle(/switch to (light|dark)/i);
-    await user.click(toggle);
+    await act(async () => {
+      await user.click(toggle);
+    });
     expect(screen.getByTitle(/switch to (light|dark)/i)).toBeInTheDocument();
   });
 });

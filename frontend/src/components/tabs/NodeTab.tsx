@@ -5,6 +5,7 @@ import { useConsole } from '@/contexts/ConsoleContext';
 import { useApiData } from '@/hooks/useApiData';
 import { useTabData } from '@/hooks/useTabData';
 import { NetworkHistoryChart } from '@/components/NetworkHistoryChart';
+import { LoadingOverlay } from '@/components/LoadingOverlay';
 
 function formatBytes(n: number | undefined | null): string {
   if (n === null || n === undefined || !Number.isFinite(n)) return '-';
@@ -81,20 +82,62 @@ function InfoCard({
   items: { label: string; value: unknown }[];
 }) {
   return (
-    <div className="rounded-lg bg-white dark:bg-white/5 border border-gray-200 dark:border-gold/20 p-4">
-      <h3 className="text-accent-light dark:text-gold font-medium mb-2">
+    <div className="rounded-lg bg-level-2 border border-level-3 p-4">
+      <h3 className="text-sm font-medium text-accent mb-2">
         {title}
       </h3>
       <dl className="space-y-1 text-sm">
         {items.map(({ label, value }) => (
           <div key={label} className="flex justify-between gap-4">
-            <dt className="text-gray-600 dark:text-gray-400">{label}</dt>
-            <dd className="truncate text-gray-900 dark:text-gray-300" title={String(value)}>
+            <dt className="text-level-4">{label}</dt>
+            <dd className="truncate text-level-5" title={String(value)}>
               {value !== null && value !== undefined ? String(value) : 'N/A'}
             </dd>
           </div>
         ))}
       </dl>
+    </div>
+  );
+}
+
+type GroupedItem = { label: string; value: unknown };
+function GroupedInfoCard({
+  title,
+  leftGroup,
+  rightGroup,
+}: {
+  title?: string;
+  leftGroup: { heading?: string; items: GroupedItem[] };
+  rightGroup: { heading?: string; items: GroupedItem[] };
+}) {
+  const renderGroup = (heading: string | undefined, items: GroupedItem[]) => (
+    <div className="space-y-3">
+      {heading !== undefined && heading !== null && heading !== '' ? (
+        <h4 className="text-xs font-semibold uppercase tracking-wider text-level-4 border-b border-level-3 pb-1">
+          {heading}
+        </h4>
+      ) : null}
+      <dl className="space-y-1 text-sm">
+        {items.map(({ label, value }) => (
+          <div key={label} className="flex justify-between gap-4">
+            <dt className="text-level-4">{label}</dt>
+            <dd className="truncate text-level-5" title={String(value)}>
+              {value !== null && value !== undefined ? String(value) : 'N/A'}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  );
+  return (
+    <div className="rounded-lg bg-level-2 border border-level-3 p-4">
+      {title !== undefined && title !== null && title !== '' ? (
+        <h3 className="text-sm font-medium text-accent mb-3">{title}</h3>
+      ) : null}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <div>{renderGroup(leftGroup.heading, leftGroup.items)}</div>
+        <div>{renderGroup(rightGroup.heading, rightGroup.items)}</div>
+      </div>
     </div>
   );
 }
@@ -123,13 +166,13 @@ export function NodeTab() {
 
   if (loading && !data) {
     return (
-      <div className="p-4 text-gray-600 dark:text-gray-400">Loading node data...</div>
+      <div className="p-4 text-level-4">Loading node data...</div>
     );
   }
 
   if (error && !data) {
     return (
-      <div className="p-4 text-red-400 dark:text-red-400">
+      <div className="p-4 text-red-400">
         Error loading node data: {error.message}. Make sure the API server is running.
       </div>
     );
@@ -234,29 +277,32 @@ export function NodeTab() {
   const heapFree = memory.free !== null && memory.free !== undefined ? Number(memory.free) : null;
   const heapTotal = heapUsed !== null && heapFree !== null ? heapUsed + heapFree : (memory.total !== null && memory.total !== undefined ? Number(memory.total) : null);
 
-  const hostMemoryItems: { label: string; value: unknown }[] = [];
+  const hostSystemItems: GroupedItem[] = [];
   if (hostArchitecture !== null && hostArchitecture !== undefined && hostArchitecture !== '') {
-    hostMemoryItems.push({ label: 'Architecture', value: hostArchitecture });
+    hostSystemItems.push({ label: 'Architecture', value: hostArchitecture });
   }
   if (hostMemory && typeof hostMemory.total === 'number') {
-    hostMemoryItems.push(
-      { label: 'Total', value: formatBytes(hostMemory.total as number) },
-      { label: 'Used', value: formatBytes(hostMemory.used as number) },
-      { label: 'Available', value: formatBytes(hostMemory.available as number) },
+    hostSystemItems.push(
+      { label: 'Total memory', value: formatBytes(hostMemory.total as number) },
+      { label: 'Used memory', value: formatBytes(hostMemory.used as number) },
+      { label: 'Available memory', value: formatBytes(hostMemory.available as number) },
       {
-        label: 'Percent used',
+        label: 'Memory in use',
         value: hostMemory.percent !== null && hostMemory.percent !== undefined ? `${Number(hostMemory.percent)}%` : 'N/A',
       }
     );
     if (typeof hostMemory.swap_total === 'number' && hostMemory.swap_total > 0) {
-      hostMemoryItems.push(
+      hostSystemItems.push(
         { label: 'Swap total', value: formatBytes(hostMemory.swap_total as number) },
         { label: 'Swap free', value: formatBytes(hostMemory.swap_free as number) }
       );
     }
   }
+  if (hostSystemItems.length === 0) {
+    hostSystemItems.push({ label: '—', value: 'No host data' });
+  }
 
-  const processMemoryItems: { label: string; value: unknown }[] = [
+  const processBitcoindItems: GroupedItem[] = [
     ...(heapUsed !== null || heapFree !== null
       ? [
           { label: 'Heap used', value: heapUsed !== null ? formatBytes(heapUsed) : 'N/A' },
@@ -283,15 +329,9 @@ export function NodeTab() {
       ? [{ label: 'Chunks free', value: Number(memory.chunks_free).toLocaleString() }]
       : []),
   ];
-
-  const memoryCardItems =
-    hostMemoryItems.length > 0
-      ? [
-          ...hostMemoryItems,
-          { label: 'Process (bitcoind)', value: '' },
-          ...processMemoryItems,
-        ]
-      : processMemoryItems;
+  if (processBitcoindItems.length === 0) {
+    processBitcoindItems.push({ label: '—', value: 'No process data' });
+  }
 
   const mempoolCardItems = [
     {
@@ -360,8 +400,11 @@ export function NodeTab() {
     indexingEntries.push({ label: 'No indexes', value: 'N/A' });
   }
 
+  const isRefreshing = (loading || networkLoading) && !!data;
+
   return (
-    <div className="space-y-4">
+    <div className="relative space-y-4">
+      <LoadingOverlay show={isRefreshing} />
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <InfoCard title="Network Status" items={networkCardItems} />
         <InfoCard title="Blockchain Status" items={blockchainCardItems} />
@@ -369,57 +412,61 @@ export function NodeTab() {
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <InfoCard title="Indexing Status" items={indexingEntries} />
-        <InfoCard title="Host System" items={memoryCardItems} />
+        <GroupedInfoCard
+          title="Host system & process"
+          leftGroup={{ items: hostSystemItems }}
+          rightGroup={{ heading: 'Process (bitcoind)', items: processBitcoindItems }}
+        />
       </div>
       {peers.length > 0 && (
-        <div className="rounded-lg bg-white dark:bg-white/5 border border-gray-200 dark:border-gold/20 overflow-hidden">
-          <h3 className="text-accent-light dark:text-gold font-medium p-4 pb-2">
+        <div className="rounded-lg bg-level-2 border border-level-3 overflow-hidden">
+          <h3 className="text-sm font-medium text-accent p-4 pb-2">
             Peers ({peers.length})
           </h3>
           <div className="overflow-x-auto max-h-[60vh]">
             <table className="w-full text-sm">
-              <thead className="sticky top-0 bg-gray-100 dark:bg-black/80 text-left">
+              <thead className="sticky top-0 bg-level-2 text-left">
                 <tr>
-                  <th className="p-2 text-gray-700 dark:text-gray-400">Address</th>
-                  <th className="p-2 text-gray-700 dark:text-gray-400">Network</th>
-                  <th className="p-2 text-gray-700 dark:text-gray-400">Direction</th>
-                  <th className="p-2 text-gray-700 dark:text-gray-400">Version</th>
-                  <th className="p-2 text-gray-700 dark:text-gray-400">Connection type</th>
-                  <th className="p-2 text-gray-700 dark:text-gray-400">Connected</th>
-                  <th className="p-2 text-gray-700 dark:text-gray-400">Last recv</th>
-                  <th className="p-2 text-gray-700 dark:text-gray-400">Sent</th>
-                  <th className="p-2 text-gray-700 dark:text-gray-400">Recv</th>
-                  <th className="p-2 text-gray-700 dark:text-gray-400">Ping</th>
-                  <th className="p-2 text-gray-700 dark:text-gray-400">Starting height</th>
-                  <th className="p-2 text-gray-700 dark:text-gray-400">Transport</th>
+                  <th className="p-2 text-level-4">Address</th>
+                  <th className="p-2 text-level-4">Network</th>
+                  <th className="p-2 text-level-4">Direction</th>
+                  <th className="p-2 text-level-4">Version</th>
+                  <th className="p-2 text-level-4">Connection type</th>
+                  <th className="p-2 text-level-4">Connected</th>
+                  <th className="p-2 text-level-4">Last recv</th>
+                  <th className="p-2 text-level-4">Sent</th>
+                  <th className="p-2 text-level-4">Recv</th>
+                  <th className="p-2 text-level-4">Ping</th>
+                  <th className="p-2 text-level-4">Starting height</th>
+                  <th className="p-2 text-level-4">Transport</th>
                 </tr>
               </thead>
               <tbody>
                 {peers.map((peer, index) => (
                   <tr
                     key={String(peer.id ?? peer.addr ?? index)}
-                    className="border-t border-gray-200 dark:border-gold/10 hover:bg-gray-50 dark:hover:bg-white/5"
+                    className="border-t border-level-3 hover:bg-level-3"
                   >
-                    <td className="p-2 text-gray-900 dark:text-gray-300 font-mono truncate max-w-[180px]" title={peer.addr ?? ''}>
+                    <td className="p-2 text-level-5 font-mono truncate max-w-[180px]" title={peer.addr ?? ''}>
                       {peer.addr ?? '-'}
                     </td>
-                    <td className="p-2 text-gray-900 dark:text-gray-300">{peer.network ?? '-'}</td>
-                    <td className="p-2 text-gray-900 dark:text-gray-300">{peer.inbound === true ? 'In' : peer.inbound === false ? 'Out' : '-'}</td>
-                    <td className="p-2 text-gray-900 dark:text-gray-300 truncate max-w-[140px]" title={peer.subver ?? ''}>
+                    <td className="p-2 text-level-5">{peer.network ?? '-'}</td>
+                    <td className="p-2 text-level-5">{peer.inbound === true ? 'In' : peer.inbound === false ? 'Out' : '-'}</td>
+                    <td className="p-2 text-level-5 truncate max-w-[140px]" title={peer.subver ?? ''}>
                       {formatSubver(peer.subver)}
                     </td>
-                    <td className="p-2 text-gray-900 dark:text-gray-300">{peer.connection_type ?? '-'}</td>
-                    <td className="p-2 text-gray-900 dark:text-gray-300">{formatPeerTime(peer.conntime)}</td>
-                    <td className="p-2 text-gray-900 dark:text-gray-300">{formatPeerTime(peer.lastrecv)}</td>
-                    <td className="p-2 text-gray-900 dark:text-gray-300">{formatBytes(peer.bytessent)}</td>
-                    <td className="p-2 text-gray-900 dark:text-gray-300">{formatBytes(peer.bytesrecv)}</td>
-                    <td className="p-2 text-gray-900 dark:text-gray-300">
+                    <td className="p-2 text-level-5">{peer.connection_type ?? '-'}</td>
+                    <td className="p-2 text-level-5">{formatPeerTime(peer.conntime)}</td>
+                    <td className="p-2 text-level-5">{formatPeerTime(peer.lastrecv)}</td>
+                    <td className="p-2 text-level-5">{formatBytes(peer.bytessent)}</td>
+                    <td className="p-2 text-level-5">{formatBytes(peer.bytesrecv)}</td>
+                    <td className="p-2 text-level-5">
                       {peer.pingtime !== null && peer.pingtime !== undefined && Number.isFinite(peer.pingtime) ? `${Number(peer.pingtime).toFixed(0)} ms` : '-'}
                     </td>
-                    <td className="p-2 text-gray-900 dark:text-gray-300">
+                    <td className="p-2 text-level-5">
                       {peer.startingheight !== null && peer.startingheight !== undefined && Number.isFinite(peer.startingheight) ? Number(peer.startingheight).toLocaleString() : '-'}
                     </td>
-                    <td className="p-2 text-gray-900 dark:text-gray-300">{peer.transport_protocol_type ?? '-'}</td>
+                    <td className="p-2 text-level-5">{peer.transport_protocol_type ?? '-'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -427,16 +474,16 @@ export function NodeTab() {
           </div>
         </div>
       )}
-      <div className="rounded-lg bg-white dark:bg-white/5 border border-gray-200 dark:border-gold/20 p-4">
-        <h3 className="text-accent-light dark:text-gold font-medium mb-2">Network history</h3>
+      <div className="rounded-lg bg-level-2 border border-level-3 p-4">
+        <h3 className="text-sm font-medium text-accent mb-2">Network history</h3>
         {networkLoading && !networkData ? (
-          <p className="text-sm text-gray-600 dark:text-gray-400">Loading network data...</p>
+          <p className="text-sm text-level-4">Loading network data...</p>
         ) : networkError && !networkData ? (
-          <p className="text-sm text-red-400 dark:text-red-400">
+          <p className="text-sm text-red-400">
             Error loading network data: {networkError.message}. Ensure the block monitor is running and network data is being recorded.
           </p>
         ) : (networkData?.network_history?.length ?? 0) === 0 ? (
-          <p className="text-sm text-gray-600 dark:text-gray-400">
+          <p className="text-sm text-level-4">
             No network history yet. Data is recorded over time when the block monitor is running.
           </p>
         ) : (
