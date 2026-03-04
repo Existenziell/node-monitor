@@ -4,6 +4,13 @@
 
 import type { WalletTransaction } from '@/types';
 
+/** Merge class names (e.g. Tailwind). Filters out falsy values and joins with spaces. */
+export function cn(
+  ...classes: (string | undefined | null | false)[]
+): string {
+  return classes.filter(Boolean).join(' ');
+}
+
 export function formatDuration(seconds: number): string {
   if (!Number.isFinite(seconds) || seconds <= 0) {
     return '-';

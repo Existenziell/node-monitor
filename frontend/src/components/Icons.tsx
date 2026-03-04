@@ -1,5 +1,5 @@
 import type { IconProps } from '@/types'
-import { cn } from '@/lib/cn'
+import { cn } from '@/utils'
 
 // ============================================================================
 // Chevrons / Directional Navigation
