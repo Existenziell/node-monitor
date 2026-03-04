@@ -55,6 +55,9 @@ export default defineConfig({
     outDir: 'dist',
     emptyOutDir: true,
   },
+  preview: {
+    allowedHosts: ['dashboard.local', 'localhost'],
+  },
   server: {
     port: shared.DASHBOARD_PORT,
     proxy: {
