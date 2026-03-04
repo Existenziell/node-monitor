@@ -58,8 +58,4 @@ export default defineConfig({
             '/api': { target: "http://localhost:".concat(shared.API_SERVER_PORT), changeOrigin: true },
         },
     },
-    preview: {
-        // Allow access via hostname (e.g. dashboard.local) or IP on LAN
-        allowedHosts: true,
-    },
 });
