@@ -159,10 +159,7 @@ export function ConsoleTab() {
 
       <div className="flex gap-4 flex-col lg:flex-row">
         <div className="flex-1 min-w-0 rounded border border-level-3 bg-level-2 p-4">
-          <h3 className="text-sm font-medium text-accent mb-3">RPC Console</h3>
-          <p className="text-sm text-level-4 mb-4">
-            Send a JSON-RPC command to your Bitcoin node.
-          </p>
+          <h3 className="py-2 border-b border-level-3 text-sm font-medium text-level-4 mb-3">RPC Console</h3>
           <div className="space-y-3">
             <div>
               <label htmlFor="rpc-method" className="block text-sm text-level-4 mb-1">

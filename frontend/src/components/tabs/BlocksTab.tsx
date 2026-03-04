@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
 import { useApi } from '@/contexts/ApiContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import type { BlockRow, BlocksData, DistributionData } from '@/types';
 import { formatBytes, formatWeight } from '@/utils';
 import { useConsole } from '@/contexts/ConsoleContext';
@@ -72,6 +73,7 @@ function PoolDistributionChart({
   distribution: DistributionData | null;
   poolByIdentifier: Map<string, { name: string; icon?: string }>;
 }) {
+  const { isDark } = useTheme();
   const pieData = useMemo(() => {
     if (!distribution?.by_percentage) return [];
     return Object.entries(distribution.by_percentage)
@@ -102,9 +104,14 @@ function PoolDistributionChart({
             cx="50%"
             cy="50%"
             outerRadius="70%"
+            stroke={isDark ? 'none' : undefined}
           >
             {pieData.map((_, index) => (
-              <Cell key={index} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+              <Cell
+                key={index}
+                fill={PIE_COLORS[index % PIE_COLORS.length]}
+                stroke={isDark ? 'none' : undefined}
+              />
             ))}
           </Pie>
           <Tooltip

@@ -206,6 +206,7 @@ class BlockchainMonitor:
                 break
             except Exception:
                 time.sleep(1)
+            self.check_and_log_network_data()
 
     def _process_new_block_hash_zmq(self, block_hash: str) -> None:
         """Process a new block hash received via ZMQ"""

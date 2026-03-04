@@ -3,6 +3,7 @@ import { useTabFromUrl } from '@/hooks/useTabFromUrl';
 import { useConsole } from '@/contexts/ConsoleContext';
 import { useApi } from '@/contexts/ApiContext';
 import { Header } from '@/components/Header';
+import { Footer } from '@/components/Footer';
 import { TabNav } from '@/components/TabNav';
 import { NodeTab } from '@/components/tabs/NodeTab';
 import { BlocksTab } from '@/components/tabs/BlocksTab';
@@ -72,6 +73,7 @@ export default function App() {
       <section className="min-h-[200px]">
         <TabContent tab={activeTab} />
       </section>
+      <Footer />
     </div>
   );
 }
