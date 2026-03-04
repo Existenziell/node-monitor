@@ -118,10 +118,11 @@ class BlockchainMonitor:
         try:
             result = self.rpc_service.rpc_call('getnetworkhashps', [120])  # 120 blocks average
             if 'result' in result:
-                # Convert from H/s to TH/s
                 hashrate_hs = result['result']
-                hashrate_ths = hashrate_hs / (10**12)
-                return hashrate_ths
+                # Bitcoin Core can return null when not enough block data (e.g. during sync)
+                if hashrate_hs is not None and isinstance(hashrate_hs, (int, float)):
+                    hashrate_ths = hashrate_hs / (10**12)
+                    return hashrate_ths
         except Exception as e:
             print(f"Error getting network hashrate: {e}")
         return None
