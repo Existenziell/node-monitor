@@ -10,7 +10,18 @@ function formatBytes(n: number | undefined | null): string {
   if (n === null || n === undefined || !Number.isFinite(n)) return '-';
   if (n < 1024) return `${n} B`;
   if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
-  return `${(n / 1024 / 1024).toFixed(1)} MB`;
+  if (n < 1024 * 1024 * 1024) return `${(n / 1024 / 1024).toFixed(1)} MB`;
+  return `${(n / 1024 / 1024 / 1024).toFixed(2)} GB`;
+}
+
+function formatBtcPerKvB(n: number | undefined | null): string {
+  if (n === null || n === undefined || !Number.isFinite(n)) return '-';
+  return `${Number(n).toFixed(8)} BTC/kvB`;
+}
+
+function formatBtc(n: number | undefined | null): string {
+  if (n === null || n === undefined || !Number.isFinite(n)) return '-';
+  return `${Number(n).toFixed(8)} BTC`;
 }
 
 function formatPeerTime(epoch: number | undefined | null): string {
@@ -36,6 +47,19 @@ function formatSubver(subver: string | undefined | null): string {
   if (subver === null || subver === undefined || subver === '') return '-';
   const s = String(subver).replace(/^\/+|\/+$/g, '').trim();
   return s || '-';
+}
+
+/** Extract UA comment from subversion string, e.g. "/Satoshi:22.0.0(my comment)/" -> "my comment". */
+function parseUaComment(subversion: string | undefined | null): string {
+  if (subversion === null || subversion === undefined || subversion === '') return '–';
+  const match = String(subversion).match(/\(([^)]*)\)/);
+  return match ? match[1].trim() : '–';
+}
+
+/** Subversion string with UA comment stripped, e.g. "/Satoshi:22.0.0(my comment)/" -> "/Satoshi:22.0.0/". */
+function subversionWithoutUaComment(subversion: string | undefined | null): string {
+  if (subversion === null || subversion === undefined || subversion === '') return 'N/A';
+  return String(subversion).replace(/\s*\([^)]*\)\s*/, '').trim() || 'N/A';
 }
 
 function InfoCard({
@@ -109,94 +133,185 @@ export function NodeTab() {
   const peers: Peer[] = data?.peers ?? [];
 
   const networkCardItems = [
-    { label: 'Connections', value: network.connections },
     { label: 'Version', value: network.version },
     {
       label: 'Subversion',
-      value: network.subversion !== null && network.subversion !== undefined && network.subversion !== '' ? String(network.subversion) : 'N/A',
+      value: subversionWithoutUaComment(network.subversion as string | undefined),
     },
+    {
+      label: 'UA comment',
+      value:
+        network.uacomment !== null && network.uacomment !== undefined && String(network.uacomment).trim() !== ''
+          ? String(network.uacomment)
+          : (network as Record<string, unknown>).ua_comment !== null && (network as Record<string, unknown>).ua_comment !== undefined && String((network as Record<string, unknown>).ua_comment).trim() !== ''
+            ? String((network as Record<string, unknown>).ua_comment)
+            : parseUaComment(network.subversion as string | undefined),
+    },
+    { label: 'Protocol version', value: network.protocolversion },
+    { label: 'Connections', value: network.connections },
+    { label: 'Connections in', value: network.connections_in },
+    { label: 'Connections out', value: network.connections_out },
+    { label: 'Network active', value: network.networkactive === true ? 'Yes' : network.networkactive === false ? 'No' : 'N/A' },
+    { label: 'Local relay', value: network.localrelay === true ? 'Yes' : network.localrelay === false ? 'No' : 'N/A' },
+    { label: 'Time offset (s)', value: network.timeoffset },
+    { label: 'Relay fee', value: network.relayfee !== null && network.relayfee !== undefined ? formatBtcPerKvB(Number(network.relayfee)) : 'N/A' },
+    { label: 'Incremental fee', value: network.incrementalfee !== null && network.incrementalfee !== undefined ? formatBtcPerKvB(Number(network.incrementalfee)) : 'N/A' },
+    { label: 'Warnings', value: network.warnings !== null && network.warnings !== undefined && String(network.warnings).trim() !== '' ? String(network.warnings) : 'None' },
   ];
 
+  const bestBlockHash = typeof blockchain.bestblockhash === 'string' ? blockchain.bestblockhash : '';
   const blockchainCardItems = [
     {
-      label: 'Current Block',
+      label: 'Current block',
       value:
         typeof blockchain.blocks === 'number'
           ? blockchain.blocks.toLocaleString()
           : 'N/A',
     },
+    {
+      label: 'Headers',
+      value: typeof blockchain.headers === 'number' ? blockchain.headers.toLocaleString() : 'N/A',
+    },
     { label: 'Chain', value: blockchain.chain },
     {
-      label: 'Hash Rate',
+      label: 'Best block hash',
+      value: bestBlockHash ? `${bestBlockHash.slice(0, 16)}…${bestBlockHash.slice(-8)}` : 'N/A',
+    },
+    {
+      label: 'Verification progress',
+      value:
+        blockchain.verificationprogress !== null && blockchain.verificationprogress !== undefined
+          ? `${(Number(blockchain.verificationprogress) * 100).toFixed(2)}%`
+          : 'N/A',
+    },
+    {
+      label: 'Initial block download',
+      value: blockchain.initialblockdownload === true ? 'Yes' : blockchain.initialblockdownload === false ? 'No' : 'N/A',
+    },
+    {
+      label: 'Size on disk',
+      value: blockchain.size_on_disk !== null && blockchain.size_on_disk !== undefined ? formatBytes(Number(blockchain.size_on_disk)) : 'N/A',
+    },
+    {
+      label: 'Pruned',
+      value: blockchain.pruned === true ? 'Yes' : blockchain.pruned === false ? 'No' : 'N/A',
+    },
+    ...(blockchain.pruned === true && blockchain.pruneheight !== null && blockchain.pruneheight !== undefined
+      ? [{ label: 'Prune height', value: Number(blockchain.pruneheight).toLocaleString() }]
+      : []),
+    {
+      label: 'Hash rate',
       value: hashrate ? `${(hashrate / 1e18).toFixed(2)} EH/s` : 'N/A',
+    },
+    {
+      label: 'Difficulty',
+      value: typeof blockchain.difficulty === 'number' ? blockchain.difficulty.toLocaleString() : 'N/A',
+    },
+    {
+      label: 'Warnings',
+      value: blockchain.warnings !== null && blockchain.warnings !== undefined && String(blockchain.warnings).trim() !== '' ? String(blockchain.warnings) : 'None',
     },
   ];
 
   const memLocked = memory.locked as Record<string, unknown> | undefined;
   const memoryCardItems = [
+    ...(memory.used !== null && memory.used !== undefined || memory.free !== null && memory.free !== undefined
+      ? [
+          { label: 'Heap used', value: memory.used !== null && memory.used !== undefined ? formatBytes(Number(memory.used)) : 'N/A' },
+          { label: 'Heap free', value: memory.free !== null && memory.free !== undefined ? formatBytes(Number(memory.free)) : 'N/A' },
+        ]
+      : []),
     {
-      label: 'Used',
-      value: memLocked?.used
-        ? `${(Number(memLocked.used) / 1024 / 1024).toFixed(2)} MB`
-        : 'N/A',
+      label: 'Locked used',
+      value: memLocked?.used !== null && memLocked?.used !== undefined ? formatBytes(Number(memLocked.used)) : 'N/A',
     },
     {
-      label: 'Free',
-      value: memLocked?.free
-        ? `${(Number(memLocked.free) / 1024 / 1024).toFixed(2)} MB`
-        : 'N/A',
+      label: 'Locked free',
+      value: memLocked?.free !== null && memLocked?.free !== undefined ? formatBytes(Number(memLocked.free)) : 'N/A',
     },
     {
-      label: 'Total',
-      value: memLocked?.total
-        ? `${(Number(memLocked.total) / 1024 / 1024).toFixed(2)} MB`
-        : 'N/A',
+      label: 'Locked total',
+      value: memLocked?.total !== null && memLocked?.total !== undefined ? formatBytes(Number(memLocked.total)) : 'N/A',
     },
   ];
 
   const mempoolCardItems = [
     {
+      label: 'Loaded',
+      value: mempool.loaded === true ? 'Yes' : mempool.loaded === false ? 'No' : 'N/A',
+    },
+    {
       label: 'Transactions',
       value: mempool.size !== null && mempool.size !== undefined ? Number(mempool.size).toLocaleString() : 'N/A',
     },
     {
-      label: 'Memory',
-      value: mempool.bytes
-        ? `${(Number(mempool.bytes) / 1024 / 1024).toFixed(2)} MB`
-        : 'N/A',
+      label: 'Size (vB)',
+      value: mempool.bytes !== null && mempool.bytes !== undefined ? formatBytes(Number(mempool.bytes)) : 'N/A',
     },
     {
-      label: 'Min Fee',
-      value: mempool.mempoolminfee
-        ? `${Number(mempool.mempoolminfee).toFixed(8)} BTC/kB`
-        : 'N/A',
+      label: 'Memory usage',
+      value: mempool.usage !== null && mempool.usage !== undefined ? formatBytes(Number(mempool.usage)) : 'N/A',
+    },
+    {
+      label: 'Total fee',
+      value: mempool.total_fee !== null && mempool.total_fee !== undefined ? formatBtc(Number(mempool.total_fee)) : 'N/A',
+    },
+    {
+      label: 'Max mempool',
+      value: mempool.maxmempool !== null && mempool.maxmempool !== undefined ? formatBytes(Number(mempool.maxmempool)) : 'N/A',
+    },
+    {
+      label: 'Mempool min fee',
+      value: mempool.mempoolminfee !== null && mempool.mempoolminfee !== undefined ? formatBtcPerKvB(Number(mempool.mempoolminfee)) : 'N/A',
+    },
+    {
+      label: 'Min relay tx fee',
+      value: mempool.minrelaytxfee !== null && mempool.minrelaytxfee !== undefined ? formatBtcPerKvB(Number(mempool.minrelaytxfee)) : 'N/A',
+    },
+    {
+      label: 'Incremental relay fee',
+      value: mempool.incrementalrelayfee !== null && mempool.incrementalrelayfee !== undefined ? formatBtcPerKvB(Number(mempool.incrementalrelayfee)) : 'N/A',
+    },
+    {
+      label: 'Unbroadcast count',
+      value: mempool.unbroadcastcount !== null && mempool.unbroadcastcount !== undefined ? Number(mempool.unbroadcastcount).toLocaleString() : 'N/A',
+    },
+    {
+      label: 'Full RBF',
+      value: mempool.fullrbf === true ? 'Yes' : mempool.fullrbf === false ? 'No' : 'N/A',
     },
   ];
 
-  const indexingEntries = Object.entries(indexing).map(([name, info]) => ({
-    label: name.toUpperCase(),
-    value: (info as { synced?: boolean })?.synced ? 'Synced' : 'Syncing',
-  }));
+  const indexingEntries: { label: string; value: unknown }[] = Object.entries(indexing).map(([name, info]) => {
+    const obj = info as { synced?: boolean; best_block_height?: number } | undefined;
+    const synced = obj?.synced === true;
+    const height = obj?.best_block_height;
+    const heightStr = height !== null && height !== undefined ? height.toLocaleString() : '–';
+    return {
+      label: name.toUpperCase(),
+      value: `${synced ? 'Synced' : 'Syncing'} (block ${heightStr})`,
+    };
+  });
   if (blockchain.verificationprogress !== null && blockchain.verificationprogress !== undefined) {
     indexingEntries.push({
-      label: 'Sync Progress',
-      value: `${(Number(blockchain.verificationprogress) * 100).toFixed(1)}%`,
+      label: 'Chain sync progress',
+      value: `${(Number(blockchain.verificationprogress) * 100).toFixed(2)}%`,
     });
+  }
+  if (indexingEntries.length === 0) {
+    indexingEntries.push({ label: 'No indexes', value: 'N/A' });
   }
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <InfoCard title="Network Status" items={networkCardItems} />
         <InfoCard title="Blockchain Status" items={blockchainCardItems} />
-        <InfoCard title="Memory Usage" items={memoryCardItems} />
         <InfoCard title="Mempool Status" items={mempoolCardItems} />
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <InfoCard
-          title="Indexing Status"
-          items={indexingEntries.length ? indexingEntries : [{ label: 'No indexes', value: '' }]}
-        />
+        <InfoCard title="Indexing Status" items={indexingEntries} />
+        <InfoCard title="Memory Usage" items={memoryCardItems} />
       </div>
       {peers.length > 0 && (
         <div className="rounded-lg bg-white dark:bg-white/5 border border-gray-200 dark:border-gold/20 overflow-hidden">

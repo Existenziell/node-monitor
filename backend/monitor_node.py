@@ -937,8 +937,8 @@ def main():
     parser = argparse.ArgumentParser(description='Bitcoin Blockchain Monitor with ZMQ support')
     parser.add_argument('--zmq-endpoint', default='tcp://127.0.0.1:28332',
                        help='ZMQ endpoint for block notifications (default: tcp://127.0.0.1:28332)')
-    parser.add_argument('--continuous', '-c', nargs='?', const=10, type=int, metavar='interval',
-                       help='Start continuous monitoring (default: 10 seconds)')
+    parser.add_argument('--interval', '-i', type=int, default=10, metavar='SECS',
+                       help='Polling interval in seconds when running continuously (default: 10)')
     parser.add_argument('--status', '-s', action='store_true',
                        help='Show current status once and exit')
 
@@ -949,11 +949,9 @@ def main():
 
     if args.status:
         monitor.show_current_status()
-    elif args.continuous is not None:
-        monitor.monitor_continuous(args.continuous)
     else:
         monitor.display_header()
-        monitor.show_current_status()
+        monitor.monitor_continuous(args.interval)
 
 if __name__ == "__main__":
     main()

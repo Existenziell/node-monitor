@@ -581,7 +581,6 @@ export function MoonIcon({ className, ...props }: IconProps) {
     </svg>
   )
 }
-
 export function SystemIcon({ className, ...props }: IconProps) {
   return (
     <svg
@@ -655,3 +654,4 @@ export function PlayCircleIcon({ className, ...props }: IconProps) {
     </svg>
   )
 }
+

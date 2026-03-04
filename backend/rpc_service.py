@@ -248,16 +248,26 @@ class RPCService:
 
 
 def create_rpc_connection():
-    """Create RPC connection using secure configuration (loads config, returns RPCService or None)."""
+    """Create RPC connection using secure configuration (loads config, returns RPCService or None).
+    Environment RPC_HOST (and optionally RPC_PORT) override the config host/port for local dev (e.g. connect to node on Pi).
+    """
     try:
         from config_service import config_service
         config = config_service.load_config()
         if config:
+            rpc_url = config["rpc_url"]
+            rpc_host_env = os.environ.get("RPC_HOST")
+            rpc_port_env = os.environ.get("RPC_PORT")
+            if rpc_host_env:
+                from urllib.parse import urlparse
+                parsed = urlparse(rpc_url)
+                port = rpc_port_env if rpc_port_env else (parsed.port or 8332)
+                rpc_url = f"http://{rpc_host_env.strip()}:{port}"
             cookie_file = config.get("cookie_file")
             if cookie_file and os.path.exists(cookie_file):
-                return RPCService(config["rpc_url"], cookie_file=cookie_file)
+                return RPCService(rpc_url, cookie_file=cookie_file)
             return RPCService(
-                config["rpc_url"],
+                rpc_url,
                 config.get("rpc_user"),
                 config.get("rpc_password")
             )
