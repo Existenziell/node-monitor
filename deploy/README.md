@@ -27,7 +27,7 @@ Only these two service files are needed; the block monitor runs inside the API p
 
 ## Access
 
-- Dashboard: **http://miner.local:8002** (or `http://<pi-ip>:8002`)
+- Dashboard: **http://dashboard.local:8002** (or `http://<pi-ip>:8002`)
 - API is proxied via the dashboard; no need to open 8003 externally.
 
 ## Commands

@@ -43,7 +43,7 @@ sudo systemctl enable --now node-monitor-api node-monitor-web
 
 ## 4. Verify
 
-- Dashboard: **http://miner.local:8002** (or your Pi IP)
+- Dashboard: **http://dashboard.local:8002** (or your Pi IP)
 - Blocks and network tabs get data from the API; the API runs the block monitor internally and stores data in `data/node_monitor.db`.
 - Logs: `sudo journalctl -u node-monitor-api -f` — you should see block monitor messages (e.g. ZMQ connected, blocks received) from the same process.
 

@@ -59,7 +59,7 @@ export default defineConfig({
         },
     },
     preview: {
-        // Allow access via hostname (miner.local) or IP on LAN
+        // Allow access via hostname (e.g. dashboard.local) or IP on LAN
         allowedHosts: true,
     },
 });

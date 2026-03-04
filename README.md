@@ -131,7 +131,7 @@ Standalone mode also writes to `data/node_monitor.db` if the API is not running.
 ### Running node-monitor on a different machine (e.g. Pi3 + Pi5)
 You can run node-monitor (and miner-dashboard) on one Pi while the Bitcoin node runs on another.
 
-**Example:** Pi5 = Bitcoin node, Pi3 = node-monitor + miner-dashboard.
+**Example:** Pi5 = node (Knots); Pi3 = dashboard (node-monitor + miner-dashboard). If the Pi3 hostname is `dashboard`, use **http://dashboard.local:8002**.
 
 1. **On the Bitcoin node (Pi5)** – allow RPC and ZMQ from the monitor’s IP (e.g. Pi3’s LAN IP). In `bitcoin.conf`:
    ```ini
