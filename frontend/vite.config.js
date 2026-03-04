@@ -58,4 +58,8 @@ export default defineConfig({
             '/api': { target: "http://localhost:".concat(shared.API_SERVER_PORT), changeOrigin: true },
         },
     },
+    preview: {
+        // Allow access via hostname (miner.local) or IP on LAN
+        allowedHosts: true,
+    },
 });
