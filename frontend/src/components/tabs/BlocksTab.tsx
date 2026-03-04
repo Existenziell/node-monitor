@@ -5,6 +5,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import type { BlockRow, BlocksData, DistributionData } from '@/types';
 import { formatBytes, formatWeight } from '@/utils';
 import { useConsole } from '@/contexts/ConsoleContext';
+import { useLoading } from '@/contexts/LoadingContext';
 import { useApiData } from '@/hooks/useApiData';
 import { useTabData } from '@/hooks/useTabData';
 import { LoadingOverlay } from '@/components/LoadingOverlay';
@@ -137,6 +138,12 @@ export function BlocksTab() {
   const { log } = useConsole();
 
   useTabData(load, 'blocks');
+  const { setLoading: setGlobalLoading } = useLoading();
+
+  useEffect(() => {
+    setGlobalLoading(loading);
+    return () => setGlobalLoading(false);
+  }, [loading, setGlobalLoading]);
 
   useEffect(() => {
     loadPools().catch(() => {});

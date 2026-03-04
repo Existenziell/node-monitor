@@ -2,6 +2,7 @@ import { useCallback, useEffect } from 'react';
 import { useApi } from '@/contexts/ApiContext';
 import type { NodeData, NetworkData, Peer } from '@/types';
 import { useConsole } from '@/contexts/ConsoleContext';
+import { useLoading } from '@/contexts/LoadingContext';
 import { useApiData } from '@/hooks/useApiData';
 import { useTabData } from '@/hooks/useTabData';
 import { NetworkHistoryChart } from '@/components/NetworkHistoryChart';
@@ -157,6 +158,12 @@ export function NodeTab() {
 
   const { data, loading, error } = nodeState;
   const { data: networkData, loading: networkLoading, error: networkError } = networkState;
+  const { setLoading: setGlobalLoading } = useLoading();
+
+  useEffect(() => {
+    setGlobalLoading(loading || networkLoading);
+    return () => setGlobalLoading(false);
+  }, [loading, networkLoading, setGlobalLoading]);
 
   useEffect(() => {
     if (data?.blockchain && typeof data.blockchain.blocks === 'number') {

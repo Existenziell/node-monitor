@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useApi } from '@/contexts/ApiContext';
 import { useConsole } from '@/contexts/ConsoleContext';
+import { useLoading } from '@/contexts/LoadingContext';
 import type { ConfigStatus, ConfigSavePayload } from '@/types';
 
 /** Baseline values from last load/save for dirty checking. rpcUser is null when masked. */
@@ -81,11 +82,17 @@ function getPendingChanges(
 export function SettingsTab() {
   const { fetchConfigStatus, saveConfig } = useApi();
   const { log } = useConsole();
+  const { setLoading: setGlobalLoading } = useLoading();
   const [status, setStatus] = useState<ConfigStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [lastSaved, setLastSaved] = useState<SettingsBaseline | null>(null);
+
+  useEffect(() => {
+    setGlobalLoading(loading);
+    return () => setGlobalLoading(false);
+  }, [loading, setGlobalLoading]);
 
   const [authMethod, setAuthMethod] = useState<'password' | 'cookie'>('password');
   const [rpcHost, setRpcHost] = useState('127.0.0.1');

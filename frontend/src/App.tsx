@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef } from 'react';
 import { useTabFromUrl } from '@/hooks/useTabFromUrl';
 import { useConsole } from '@/contexts/ConsoleContext';
 import { useApi } from '@/contexts/ApiContext';
+import { useLoading } from '@/contexts/LoadingContext';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { TabNav } from '@/components/TabNav';
@@ -33,6 +34,7 @@ export default function App() {
   const { activeTab, setTab } = useTabFromUrl();
   const { log } = useConsole();
   const { fetchConfigStatus } = useApi();
+  const { isLoading } = useLoading();
   const hasCheckedConfig = useRef(false);
 
   React.useEffect(() => {
@@ -73,7 +75,7 @@ export default function App() {
       <section className="min-h-[200px]">
         <TabContent tab={activeTab} />
       </section>
-      <Footer />
+      {!isLoading && <Footer />}
     </div>
   );
 }

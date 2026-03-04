@@ -1,7 +1,8 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useApi } from '@/contexts/ApiContext';
 import type { UtxoEntry, WalletData, WalletTransaction } from '@/types';
 import { formatTxTime, truncateTxid } from '@/utils';
+import { useLoading } from '@/contexts/LoadingContext';
 import { useApiData } from '@/hooks/useApiData';
 import { useTabData } from '@/hooks/useTabData';
 import { LoadingOverlay } from '@/components/LoadingOverlay';
@@ -9,8 +10,14 @@ import { LoadingOverlay } from '@/components/LoadingOverlay';
 export function WalletTab() {
   const { fetchWallet } = useApi();
   const { data, loading, error, load } = useApiData<WalletData>(fetchWallet);
+  const { setLoading: setGlobalLoading } = useLoading();
 
   useTabData(load, 'wallet');
+
+  useEffect(() => {
+    setGlobalLoading(loading);
+    return () => setGlobalLoading(false);
+  }, [loading, setGlobalLoading]);
 
   const unspent: UtxoEntry[] = useMemo(
     () => (Array.isArray(data?.unspent) ? data.unspent : []),
