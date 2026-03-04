@@ -462,6 +462,8 @@ class BlockchainMonitor:
                 return None
 
             coinbase_tx = tx_result['result']
+            if coinbase_tx is None:
+                return None
             block_reward = sum(out.get('value', 0) for out in coinbase_tx.get('vout', []))
 
             # Calculate block subsidy based on block height
