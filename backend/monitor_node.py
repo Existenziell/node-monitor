@@ -426,8 +426,8 @@ class BlockchainMonitor:
             return {}
 
         except (requests.RequestException, KeyError, ValueError) as e:
-            print(f"Error: Could not fetch from pools API: {e}")
-            raise RuntimeError(f"Pools API is unavailable: {e}") from e
+            print(f"Warning: Could not fetch from pools API: {e}")
+            return {}
 
     def _check_slash_format(self, coinbase_bytes):
         """Check for slash-separated pool format"""
