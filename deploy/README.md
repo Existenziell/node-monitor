@@ -30,6 +30,8 @@ Only these two service files are needed; the block monitor runs inside the API p
 - Dashboard: **http://dashboard.local:8002** (or `http://<pi-ip>:8002`)
 - API is proxied via the dashboard; no need to open 8003 externally.
 
+**Firefox can't connect (Chrome/Safari work):** On macOS, open **System Settings → Privacy & Security → Local Network** and ensure **Firefox** is allowed.
+
 ## Commands
 
 ```bash

@@ -128,11 +128,6 @@ python3 backend/monitor_node.py --zmq-endpoint tcp://127.0.0.1:28332
 ```
 Standalone mode also writes to `data/node_monitor.db` if the API is not running.
 
-**Troubleshooting ZMQ:**
-- If ZMQ connection fails, the monitor automatically falls back to polling
-- Ensure `pyzmq` is installed: `pip3 install pyzmq`
-- Check that ZMQ is enabled in Bitcoin logs: `grep -i zmq ~/.bitcoin/debug.log`
-
 **Configuration:** To set up RPC credentials (e.g. before first use), run: `python3 backend/config_service.py --setup`.
 
 ### How to enable Tor
@@ -169,47 +164,6 @@ onion=127.0.0.1:8336
 
 Restart the Bitcoin node so it picks up the new settings. The node will then use Tor for outbound traffic; with `listen=1` and `onion=...` it can receive connections from other Tor nodes.
 
-**3. Verify**
-
-- Tor is running: `sudo systemctl status tor` (Linux) or `brew services list` (macOS).
-- Bitcoin is using the proxy: check the node logs for Tor-related messages, or run `getnetworkinfo` via RPC and look at `network` / proxy info.
-
-**Note:** RPC and ZMQ between node-monitor and your node stay on the addresses you configured (e.g. `127.0.0.1` or the node’s LAN IP). Tor only affects the node’s own peer connections.
-
-### Running node-monitor on a different machine (e.g. Pi3 + Pi5)
-You can run node-monitor (and miner-dashboard) on one Pi while the Bitcoin node runs on another.
-
-**Example:** Pi5 = node (Knots); Pi3 = dashboard (node-monitor + miner-dashboard). If the Pi3 hostname is `dashboard`, use **http://dashboard.local:8002**.
-
-1. **On the Bitcoin node (Pi5)** – allow RPC and ZMQ from the monitor’s IP (e.g. Pi3’s LAN IP). In `bitcoin.conf`:
-   ```ini
-   # Allow RPC from Pi3 only (use Pi3's actual IP)
-   rpcallowip=192.168.1.10
-   rpcbind=0.0.0.0
-   rpcuser=youruser
-   rpcpassword=yourpassword
-
-   # ZMQ for block notifications (bind all so Pi3 can connect)
-   zmqpubhashblock=tcp://0.0.0.0:28332
-   ```
-   Restart the node. Ensure the firewall on Pi5 allows port **8332** (RPC) and **28332** (ZMQ) from Pi3.
-
-2. **On the monitor (Pi3)** – configure node-monitor to use the node’s IP:
-   - **Settings tab:** set **RPC Host** to Pi5’s IP or hostname (e.g. `192.168.1.5` or `bitcoin-pi.local`), **RPC Port** to `8332`, and use **Username / Password** with the same `rpcuser` / `rpcpassword` as on Pi5. (Cookie auth is file-based on the node; for a remote client, username/password is simpler.)
-   - **ZMQ:** the block monitor (inside the API) connects to ZMQ for instant block notifications. Set the environment variable **`ZMQ_ENDPOINT`** before starting the API, e.g. in your systemd service file:
-     ```ini
-     [Service]
-     Environment="ZMQ_ENDPOINT=tcp://192.168.1.5:28332"
-     ExecStart=...
-     ```
-     Replace `192.168.1.5` with Pi5’s IP. If `ZMQ_ENDPOINT` is not set, it defaults to `tcp://127.0.0.1:28332` (local node). Without ZMQ, the monitor falls back to polling the RPC every 10 seconds.
-
-3. **Result:** Pi3 runs only the two services (API + dashboard). All RPC and ZMQ traffic goes over the LAN to Pi5. Block and network data are stored in SQLite on Pi3 (`data/node_monitor.db`).
-
-**Security:** Restrict `rpcallowip` to the monitor’s IP only; use a strong RPC password; keep both devices on a trusted network.
-
-**"Connection failed" / "Bitcoin node is not responding":** The dashboard shows which host:port the API is using (e.g. `connecting to 127.0.0.1:8332`). If the node runs on another machine, open **Settings**, set **RPC Host** to that machine's IP or hostname, save, and reload. On the node, ensure `bitcoin.conf` has `rpcallowip` and `rpcbind` as above and the firewall allows port 8332 from the dashboard machine.
-
 ## Testing
 
 Backend Python tests use **pytest** and live in `backend/tests/`.
@@ -224,13 +178,6 @@ python3 -m pytest backend/tests -v
 ```bash
 python3 -m pytest backend/tests -v --cov=backend --cov-report=term-missing
 ```
-
-**Layout and conventions:**
-- Test files: `backend/tests/test_*.py` (e.g. `test_data_service.py`, `test_error_service.py`, `test_rpc_service.py`).
-- Shared fixtures (sample data, mocks): `backend/tests/conftest.py`.
-- Helpers/fakes: `backend/tests/helpers/` (e.g. `FakeRPCService` for tests that need an in-memory RPC).
-- External I/O (RPC, HTTP, filesystem) is mocked via `monkeypatch` and `unittest.mock` so tests run without a live node or network.
-
 See `pytest.ini` at the repo root for `testpaths` and `pythonpath`.
 
 ## Code Quality
