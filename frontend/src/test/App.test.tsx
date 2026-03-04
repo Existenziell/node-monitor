@@ -4,13 +4,16 @@ import App from '@/App';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { ConsoleProvider } from '@/contexts/ConsoleContext';
 import { ApiProvider } from '@/contexts/ApiContext';
+import { LoadingProvider } from '@/contexts/LoadingContext';
 
 function WrappedApp() {
   return (
     <ThemeProvider>
       <ConsoleProvider>
         <ApiProvider>
-          <App />
+          <LoadingProvider>
+            <App />
+          </LoadingProvider>
         </ApiProvider>
       </ConsoleProvider>
     </ThemeProvider>

@@ -271,6 +271,7 @@ class ConfigService:
             "rpc_port": None,
             "rpc_user_masked": None,
             "cookie_file": None,
+            "wallet_name": None,
             "node_configured": False,
         }
         if not self.config_file.exists():
@@ -282,6 +283,7 @@ class ConfigService:
             status["rpc_host"] = config.get("rpc_host", "127.0.0.1")
             status["rpc_port"] = config.get("rpc_port")
             status["cookie_file"] = config.get("cookie_file") if config.get("auth_method") == "cookie" else None
+            status["wallet_name"] = config.get("wallet_name")
             rpc_user = config.get("rpc_user")
             if rpc_user:
                 status["rpc_user_masked"] = (rpc_user[:2] + "***") if len(rpc_user) > 2 else "***"
@@ -290,6 +292,23 @@ class ConfigService:
         except Exception:
             pass
         return status
+
+    def save_wallet_name(self, wallet_name: Optional[str]) -> Tuple[bool, str]:
+        """Merge wallet_name into existing config. Use None or '' to clear. Returns (success, error_message)."""
+        if not self.config_file.exists():
+            return False, "Config not found"
+        try:
+            with open(self.config_file, 'r', encoding='utf-8') as f:
+                config = json.load(f)
+            name = (wallet_name or "").strip()
+            config["wallet_name"] = name if name else None
+            with open(self.config_file, 'w', encoding='utf-8') as f:
+                json.dump(config, f, indent=2)
+            os.chmod(self.config_file, 0o600)
+            self._config_cache = None
+            return True, ""
+        except Exception as e:
+            return False, str(e)
 
     def save_config_from_api(  # pylint: disable=R0914
         self,
@@ -338,6 +357,8 @@ class ConfigService:
                 "created_at": self._get_timestamp(),
                 "version": "1.1",
             }
+            if existing and existing.get("wallet_name"):
+                config["wallet_name"] = existing["wallet_name"]
         else:
             # password
             user = (rpc_user or "").strip()
@@ -401,6 +422,8 @@ class ConfigService:
                         "created_at": self._get_timestamp(),
                         "version": "1.1",
                     }
+                    if existing and existing.get("wallet_name"):
+                        config["wallet_name"] = existing["wallet_name"]
                     with open(self.config_file, 'w', encoding='utf-8') as f:
                         json.dump(config, f, indent=2)
                     os.chmod(self.config_file, 0o600)
@@ -418,6 +441,8 @@ class ConfigService:
                 "created_at": self._get_timestamp(),
                 "version": "1.1",
             }
+            if existing and existing.get("wallet_name"):
+                config["wallet_name"] = existing["wallet_name"]
 
         try:
             with open(self.config_file, 'w', encoding='utf-8') as f:

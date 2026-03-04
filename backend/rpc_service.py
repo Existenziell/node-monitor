@@ -12,23 +12,49 @@ import requests
 from constants import DEFAULT_RPC_TIMEOUT
 
 
+# Methods that must use the base RPC URL (no wallet path)
+_BASE_ONLY_METHODS = frozenset({"listwallets", "loadwallet", "createwallet"})
+# Methods that operate on a specific wallet; use wallet URL when wallet_name is set
+_WALLET_SCOPED_METHODS = frozenset({
+    "getwalletinfo", "getbalance", "listunspent", "listtransactions", "gettransaction"
+})
+
+
 class RPCService:
     """Centralized service for Bitcoin node RPC communication."""
 
-    def __init__(self, rpc_url: str, rpc_user: Optional[str] = None, rpc_password: Optional[str] = None, cookie_file: Optional[str] = None):
+    def __init__(
+        self,
+        rpc_url: str,
+        rpc_user: Optional[str] = None,
+        rpc_password: Optional[str] = None,
+        cookie_file: Optional[str] = None,
+        wallet_name: Optional[str] = None,
+    ):
         """Initialize the RPC service with connection details.
-        
+
         Args:
             rpc_url: RPC endpoint URL
             rpc_user: RPC username (optional, for legacy auth)
             rpc_password: RPC password (optional, for legacy auth)
             cookie_file: Path to cookie file (preferred method)
+            wallet_name: Optional wallet name for wallet-scoped RPC calls (Bitcoin Core multi-wallet)
         """
-        self.rpc_url = rpc_url
+        self.rpc_url = rpc_url.rstrip("/")
         self.rpc_user = rpc_user
         self.rpc_password = rpc_password
         self.cookie_file = cookie_file
+        self.wallet_name = (wallet_name or "").strip() or None
+        self.wallet_rpc_url = f"{self.rpc_url}/wallet/{self.wallet_name}" if self.wallet_name else None
         self.timeout = 5  # Default timeout in seconds
+
+    def _url_for_method(self, method: str) -> str:
+        """Return the RPC URL to use for the given method (base or wallet-scoped)."""
+        if method in _BASE_ONLY_METHODS:
+            return self.rpc_url
+        if method in _WALLET_SCOPED_METHODS and self.wallet_rpc_url:
+            return self.wallet_rpc_url
+        return self.rpc_url
 
     def rpc_call(self, method: str, params: Optional[List] = None) -> Dict[str, Any]:
         """Make an RPC call to Bitcoin node."""
@@ -63,8 +89,9 @@ class RPCService:
             else:
                 return {"error": "No authentication method configured"}
 
+            url = self._url_for_method(method)
             response = requests.post(
-                self.rpc_url,
+                url,
                 json=payload,
                 auth=auth,
                 headers=headers,
@@ -163,6 +190,14 @@ class RPCService:
     def list_transactions(self, label: str = "*", count: int = 100, skip: int = 0, include_watchonly: bool = True) -> Dict[str, Any]:
         """List wallet transactions."""
         return self.rpc_call("listtransactions", [label, count, skip, include_watchonly])
+
+    def list_wallets(self) -> Dict[str, Any]:
+        """List wallet names (uses base URL, no wallet path)."""
+        return self.rpc_call("listwallets")
+
+    def load_wallet(self, name: str) -> Dict[str, Any]:
+        """Load a wallet by name (uses base URL, no wallet path)."""
+        return self.rpc_call("loadwallet", [name])
 
     # Network Hashrate Methods
     def get_network_hashrate(self, nblocks: int = 120) -> Dict[str, Any]:
@@ -263,22 +298,30 @@ def create_rpc_connection():
                 parsed = urlparse(rpc_url)
                 port = rpc_port_env if rpc_port_env else (parsed.port or 8332)
                 rpc_url = f"http://{rpc_host_env.strip()}:{port}"
+            wallet_name = config.get("wallet_name")
             cookie_file = config.get("cookie_file")
             if cookie_file and os.path.exists(cookie_file):
-                return RPCService(rpc_url, cookie_file=cookie_file)
+                return RPCService(rpc_url, cookie_file=cookie_file, wallet_name=wallet_name)
             return RPCService(
                 rpc_url,
                 config.get("rpc_user"),
-                config.get("rpc_password")
+                config.get("rpc_password"),
+                wallet_name=wallet_name,
             )
     except ImportError:
         pass
     return None
 
 
-def create_rpc_service(rpc_url: str, rpc_user: Optional[str] = None, rpc_password: Optional[str] = None, cookie_file: Optional[str] = None) -> RPCService:
+def create_rpc_service(
+    rpc_url: str,
+    rpc_user: Optional[str] = None,
+    rpc_password: Optional[str] = None,
+    cookie_file: Optional[str] = None,
+    wallet_name: Optional[str] = None,
+) -> RPCService:
     """Create an RPC service instance with explicit credentials."""
-    return RPCService(rpc_url, rpc_user, rpc_password, cookie_file)
+    return RPCService(rpc_url, rpc_user, rpc_password, cookie_file, wallet_name)
 
 
 def test_rpc_connection(rpc_url: str, rpc_user: Optional[str] = None, rpc_password: Optional[str] = None, cookie_file: Optional[str] = None) -> bool:

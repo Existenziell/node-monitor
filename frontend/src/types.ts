@@ -33,6 +33,7 @@ export interface ApiContextValue {
   callRpc: (method: string, params?: unknown[]) => Promise<Record<string, unknown>>;
   fetchConfigStatus: () => Promise<ConfigStatus>;
   saveConfig: (payload: ConfigSavePayload) => Promise<{ ok: boolean; error?: string }>;
+  saveWalletName: (walletName: string | null) => Promise<{ ok: boolean; error?: string }>;
 }
 
 export interface ConfigSavePayload {
@@ -163,6 +164,10 @@ export interface WalletData {
   balance?: number;
   unspent?: UtxoEntry[];
   transactions?: WalletTransaction[];
+  /** When true, no wallet is loaded; use wallets list to let user select or create. */
+  noWallet?: boolean;
+  /** Available wallet names when noWallet is true (from listwallets). */
+  wallets?: string[];
 }
 
 export interface NetworkHistoryEntry {

@@ -120,6 +120,10 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
                 self.handle_config_save()
                 return
 
+            if path == '/api/config/wallet':
+                self.handle_config_wallet_save()
+                return
+
             if path != '/api/rpc':
                 self.send_response(404)
                 self.send_header('Content-Type', 'application/json')
@@ -319,6 +323,19 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
             }
             self.wfile.write(json.dumps(error_response).encode())
 
+    def _is_no_wallet_error(self, wallet_info):
+        """Return True if the response indicates no wallet is loaded (Bitcoin Core -18 or message)."""
+        if 'error' not in wallet_info or not wallet_info['error']:
+            return False
+        err = wallet_info['error']
+        if isinstance(err, dict):
+            if err.get('code') == -18:
+                return True
+            msg = (err.get('message') or '').lower()
+            return 'no wallet' in msg or 'not loaded' in msg
+        msg = str(err).lower()
+        return 'no wallet' in msg or 'not loaded' in msg
+
     def handle_wallet_data(self):
         """Handle wallet monitoring data requests (cached to reduce RPC load)."""
         if self.rpc_service is None:
@@ -332,15 +349,27 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
                 self.wfile.write(json.dumps(self._wallet_cache, indent=2).encode())
                 return
 
-            # Get wallet data using direct RPC calls
+            # Get wallet info first; if no wallet loaded, return list of wallets for frontend
             wallet_info = self.rpc_service.get_wallet_info()
+            if self._is_no_wallet_error(wallet_info):
+                list_result = self.rpc_service.list_wallets()
+                wallets = list_result.get('result') if 'result' in list_result else []
+                if not isinstance(wallets, list):
+                    wallets = []
+                wallets = [str(w) for w in wallets]
+                no_wallet_response = {
+                    "status": "success",
+                    "data": {"noWallet": True, "wallets": wallets}
+                }
+                self.wfile.write(json.dumps(no_wallet_response, indent=2).encode())
+                return
+
+            if self._check_connection_error(wallet_info, "wallet info"):
+                return
+
             balance = self.rpc_service.get_balance()
             unspent = self.rpc_service.get_unspent_outputs()
             transactions = self.rpc_service.list_transactions("*", 100)
-
-            # Check if any RPC call returned a connection error (indicating node is down)
-            if self._check_connection_error(wallet_info, "wallet info"):
-                return
 
             if self._check_connection_error(balance, "balance"):
                 return
@@ -365,6 +394,35 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
                 "message": f"Failed to get wallet data: {str(e)}"
             }
             self.wfile.write(json.dumps(error_response).encode())
+
+    def handle_config_wallet_save(self):
+        """POST /api/config/wallet - save wallet_name only (merge into existing config)."""
+        self.send_response(200)
+        self.send_header('Content-Type', 'application/json')
+        self._send_cors_headers()
+        self.end_headers()
+        content_length = int(self.headers.get('Content-Length', 0))
+        if content_length <= 0:
+            self.wfile.write(json.dumps({"ok": False, "error": "Missing body"}).encode())
+            return
+        try:
+            body = self.rfile.read(content_length)
+        except Exception:
+            self.wfile.write(json.dumps({"ok": False, "error": "Failed to read body"}).encode())
+            return
+        try:
+            data = json.loads(body.decode('utf-8'))
+        except (ValueError, UnicodeDecodeError):
+            self.wfile.write(json.dumps({"ok": False, "error": "Invalid JSON"}).encode())
+            return
+        wallet_name = data.get('wallet_name')
+        if wallet_name is not None and not isinstance(wallet_name, str):
+            wallet_name = str(wallet_name)
+        ok, err = config_service.save_wallet_name(wallet_name)
+        if ok:
+            self.wfile.write(json.dumps({"ok": True}).encode())
+        else:
+            self.wfile.write(json.dumps({"ok": False, "error": err}).encode())
 
     def _get_data_dir(self):
         """Return the path to the data directory (project/data)."""

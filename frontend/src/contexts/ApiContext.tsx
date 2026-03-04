@@ -164,6 +164,22 @@ export function ApiProvider({ children }: { children: React.ReactNode }) {
     []
   );
 
+  const saveWalletName = useCallback(
+    async (walletName: string | null): Promise<{ ok: boolean; error?: string }> => {
+      const res = await fetch(`${API_BASE_URL}/config/wallet`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ wallet_name: walletName }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        return { ok: false, error: data?.error ?? 'Request failed' };
+      }
+      return { ok: data.ok === true, error: data.error };
+    },
+    []
+  );
+
   const value: ApiContextValue = {
     apiBaseUrl: API_BASE_URL,
     fetchWithRetry,
@@ -176,6 +192,7 @@ export function ApiProvider({ children }: { children: React.ReactNode }) {
     callRpc,
     fetchConfigStatus,
     saveConfig,
+    saveWalletName,
   };
 
   return <ApiContext.Provider value={value}>{children}</ApiContext.Provider>;
