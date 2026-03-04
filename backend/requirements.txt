@@ -18,4 +18,5 @@ numpy>=1.24.0
 
 # Development Tools (optional, for npm run test / npm run lint)
 pytest>=7.0.0
+pytest-cov>=4.0.0
 pylint>=3.0.0
