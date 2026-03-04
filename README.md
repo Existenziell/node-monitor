@@ -11,10 +11,6 @@ A suite of tools for monitoring Bitcoin blockchain activity.
 - **Mining pool identification** from coinbase transactions
 - **OP_RETURN data extraction** and analysis
 
-### Tor Network Integration
-- **Dual network support** - accepts both clearnet and Tor connections
-- **Automatic Tor management** - starts Tor service when needed
-
 ## Requirements
 
 ### Python Dependencies
@@ -73,8 +69,6 @@ npm install
    cd frontend
    npm install
    ```
-
-5. **Tor (optional):** See [How to enable Tor](#how-to-enable-tor) below.
 
 ## Usage
 
