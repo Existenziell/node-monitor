@@ -68,6 +68,9 @@ peers.dat
 # Secure configuration
 .bitcoin_secure/
 
+# Local reference (do not commit)
+shared/bitcoin.conf
+
 # Bitcoin node data (symlink to external volume)
 Knots
 Knots/
