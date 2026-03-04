@@ -149,18 +149,13 @@ class BlockchainMonitor:
             # Set socket timeout for non-blocking operation
             self.zmq_socket.setsockopt(zmq.RCVTIMEO, 1000)  # 1 second timeout
 
-            print("Connected to ZMQ endpoint: " + self.zmq_endpoint)
             return True
 
-        except Exception as e:
-            print(f"❌ Failed to setup ZMQ connection: {e}")
+        except Exception:
             return False
 
     def display_header(self) -> None:
-        """Display monitoring header"""
-        print(f"Started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-        print(f"Monitoring mode: {self.monitoring_mode}")
-        print()
+        """Display monitoring header (no-op when running in background)."""
 
 
     def display_blockchain_status(self, blockchain_info):
@@ -191,11 +186,7 @@ class BlockchainMonitor:
     def listen_for_blocks_zmq(self) -> None:
         """Listen for ZMQ block notifications"""
         if not self.zmq_socket:
-            print("❌ ZMQ socket not initialized")
             return
-
-        print("Press Ctrl+C to stop")
-        print()
 
         self.running = True
         self.start_time = datetime.now()
@@ -222,8 +213,7 @@ class BlockchainMonitor:
             except KeyboardInterrupt:
                 self.running = False
                 break
-            except Exception as e:
-                print(f"❌ Error in ZMQ listener: {e}")
+            except Exception:
                 time.sleep(1)
 
     def _process_new_block_hash_zmq(self, block_hash: str) -> None:
@@ -232,10 +222,11 @@ class BlockchainMonitor:
             # Get block details from RPC
             block_result = self.rpc_service.rpc_call('getblock', [block_hash])
             if 'result' not in block_result:
-                print(f"❌ Could not get block details for {block_hash}")
                 return
 
             block = block_result['result']
+            if block is None:
+                return
             current_height = block.get('height', 0)
 
             # Check if this is actually a new block
@@ -245,8 +236,8 @@ class BlockchainMonitor:
             self.blocks_received += 1
             self._process_new_block(block, current_height)
 
-        except Exception as e:
-            print(f"❌ Error processing block hash {block_hash}: {e}")
+        except Exception:
+            pass
 
     def check_for_new_block(self, blockchain_info):
         """Check if a new block was found"""
@@ -263,10 +254,6 @@ class BlockchainMonitor:
 
     def _process_new_block(self, block_or_info, current_height):
         """Process a new block that was found"""
-        print()
-        print("╔" + "═" * 80 + "╗")
-        print(f"  Block Height: {current_height:,}")
-
         try:
             # Handle both ZMQ (block object) and polling (blockchain_info) inputs
             if isinstance(block_or_info, dict) and 'hash' in block_or_info:
@@ -295,8 +282,9 @@ class BlockchainMonitor:
                     block_result = self.rpc_service.rpc_call('getblock', [block_hash])
                     if 'result' not in block_result:
                         return self._handle_block_error()
-
                     block = block_result['result']
+                    if block is None:
+                        return self._handle_block_error()
                     # Cache the block data
                     self._block_cache[cache_key] = {
                         'data': block,
@@ -304,34 +292,11 @@ class BlockchainMonitor:
                     }
 
             current_block_time = datetime.fromtimestamp(block.get('time', 0))
+            mining_pool = self._extract_mining_pool(block)
+            time_since_last_block = self._get_time_since_last_block(current_block_time)
+            self._calculate_and_log_fees(block, mining_pool, time_since_last_block)
 
-            # Enhanced block information display
-            print(f"  Block Hash: {block.get('hash', 'N/A')}")
-            print(f"  Time: {current_block_time.strftime('%Y-%m-%d %H:%M:%S')}")
-            print(f"  Transactions: {len(block.get('tx', [])):,}")
-
-            block_size_bytes = block.get('size', 0)
-            block_size_mb = block_size_bytes / (1024 * 1024)
-            print(f"  Size: {block_size_mb:.2f} MB")
-
-            block_weight = block.get('weight', 0)
-            weight_mwu = block_weight / 1_000_000
-            print(f"  Weight: {weight_mwu:.2f} MWU")
-
-            # Mining pool information
-            mining_pool = self._extract_and_display_mining_pool(block)
-
-            # Time since last block
-            time_since_last_block = self._display_time_since_last_block(current_block_time)
-
-            # Block fees and rewards
-            self._calculate_and_display_fees(block, mining_pool, time_since_last_block)
-
-            # OP_RETURN data
-            self._display_op_return_data(block)
-
-            print("╚" + "═" * 80 + "╝")
-            print()
+            print(f"new block {current_height:,}")
 
             # Update last seen height and time to prevent detection loop
             self.last_block_height = current_height
@@ -340,93 +305,38 @@ class BlockchainMonitor:
 
         except (requests.RequestException, KeyError, ValueError) as e:
             error_service.handle_critical_error("Block processing", e)
-            print("╚" + "═" * 80 + "╝")
-            print()
             return False
 
     def _handle_block_error(self):
         """Handle error when getting block details"""
-        print("❌ Could not get block details")
-        print("╚" + "═" * 60 + "╝")
-        print()
         return False
 
-
-    def _extract_and_display_mining_pool(self, block):
-        """Extract and display mining pool information"""
+    def _extract_mining_pool(self, block):
+        """Extract mining pool information (no output)."""
         try:
             mining_pool = self.extract_mining_pool_info(block)
-            if mining_pool:
-                print(f"  Mining Pool: {mining_pool}")
-            else:
-                print("  Mining Pool: Unknown")
-            return mining_pool
-        except (requests.RequestException, KeyError, ValueError) as e:
-            print(f"  Mining Pool: Error detecting ({str(e)[:30]}...)")
+            return mining_pool if mining_pool else "Unknown"
+        except (requests.RequestException, KeyError, ValueError):
             return "Unknown"
 
-    def _calculate_and_display_fees(self, block, mining_pool, time_since_last_block):
-        """Calculate and display block fees"""
+    def _calculate_and_log_fees(self, block, mining_pool, time_since_last_block):
+        """Calculate block fees and log to store (no output)."""
         block_details = None
         try:
             block_details = self.calculate_block_btc(block)
-            if not block_details:
-                print("  Block Fees: Calculating...")
-                # Log block even if fee calculation failed
-                self.log_block_to_json(block, mining_pool, None, time_since_last_block)
-                return
-
-            _, total_fees = block_details
-            btc_price = self.get_bitcoin_price()
-
-            if btc_price:
-                usd_amount = total_fees * btc_price
-                print(f"  Block Fees: {total_fees:.8f} BTC (${usd_amount:,.2f})")
-            else:
-                print(f"  Block Fees: {total_fees:.8f} BTC")
-
-        except (requests.RequestException, KeyError, ValueError) as e:
-            error_service.handle_api_error("Block fees calculation", e)
-            print("  Block Fees: Error calculating")
-
-        # Log block only once, regardless of fee calculation success/failure
+        except (requests.RequestException, KeyError, ValueError):
+            error_service.handle_api_error("Block fees calculation", None)
         self.log_block_to_json(block, mining_pool, block_details, time_since_last_block)
 
-    def _display_op_return_data(self, block):
-        """Display OP_RETURN data from block transactions"""
-        try:
-            op_return_data = self.extract_op_return_data(block)
-            if not op_return_data:
-                return
-
-            print(f"  OP_RETURN Data: {len(op_return_data)} transactions with embedded data")
-            for i, data in enumerate(op_return_data[:10]):  # Show first 10
-                display_data = data[:47] + "..." if len(data) > 50 else data
-                print(f"    {i+1}. {display_data}")
-            if len(op_return_data) > 10:
-                print(f"    ... and {len(op_return_data) - 10} more")
-
-        except (requests.RequestException, KeyError, ValueError) as e:
-            error_service.handle_api_error("OP_RETURN data extraction", e)
-
-    def _display_time_since_last_block(self, current_block_time):
-        """Display time since last block and return formatted string"""
+    def _get_time_since_last_block(self, current_block_time):
+        """Return formatted time since last block (no output)."""
         if self.last_block_time is None:
-            print("  Time Since Last Block: First block detected (no block history)")
             return "First block"
-
         time_diff = current_block_time - self.last_block_time
         total_seconds = int(time_diff.total_seconds())
         minutes = total_seconds // 60
         seconds = total_seconds % 60
-
-        if minutes > 0:
-            formatted_time = f"{minutes}m {seconds}s"
-        else:
-            formatted_time = f"{seconds}s"
-
-        print(f"  Time Since Last Block: {formatted_time}")
-        return formatted_time
+        return f"{minutes}m {seconds}s" if minutes > 0 else f"{seconds}s"
 
     def extract_mining_pool_info(self, block):
         """Extract mining pool information from coinbase transaction"""
@@ -848,15 +758,10 @@ class BlockchainMonitor:
                 if difficulty is not None:
                     self._last_difficulty = difficulty
 
-                hr_str = f"{hashrate:.2f}" if hashrate is not None else "N/A"
-                diff_str = f"{difficulty:.2f}" if difficulty is not None else "N/A"
-                print(f"📊 Network data logged - Hashrate: {hr_str} TH/s, Difficulty: {diff_str}")
-
     def run_loop(self, interval=10):
         """Run the block monitoring loop (ZMQ or polling) until self.running is False.
         Safe to call from a background thread; does not install signal handlers or sys.exit."""
         if not self.rpc_service:
-            print("Block monitor: RPC not available, skipping run_loop")
             return
         self.running = True
         self.start_time = datetime.now()
@@ -870,7 +775,6 @@ class BlockchainMonitor:
                 self.cleanup_zmq()
             return
 
-        print("❌ ZMQ connection failed. Falling back to polling mode...")
         self.monitoring_mode = "Polling"
         self.display_header()
         try:
