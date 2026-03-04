@@ -234,6 +234,7 @@ class BlockchainMonitor:
                 return
 
             self.blocks_received += 1
+            print(f"ZMQ block received: {current_height:,}")
             self._process_new_block(block, current_height)
 
         except Exception:
@@ -768,6 +769,7 @@ class BlockchainMonitor:
 
         if self.setup_zmq():
             self.monitoring_mode = "ZMQ"
+            print("Block monitor mode: ZMQ")
             self.display_header()
             try:
                 self.listen_for_blocks_zmq()
@@ -776,6 +778,7 @@ class BlockchainMonitor:
             return
 
         self.monitoring_mode = "Polling"
+        print("Block monitor mode: Polling")
         self.display_header()
         try:
             while self.running:

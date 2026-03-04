@@ -604,7 +604,7 @@ def start_api_server(port=None):
         monitor = BlockchainMonitor(zmq_endpoint=zmq_endpoint, exit_on_rpc_failure=False)
         monitor_thread = threading.Thread(target=monitor.run_loop, kwargs={"interval": 10}, daemon=True)
         monitor_thread.start()
-        print("Block monitor started in background (ZMQ or polling)")
+        print(f"Block monitor started in background (ZMQ_ENDPOINT={zmq_endpoint})")
     except Exception as e:
         print(f"Block monitor not started: {e}")
 
