@@ -70,11 +70,24 @@ npm install
 
 ### Web Dashboard (primary)
 
+**First-time setup:** Create a virtualenv and install Python dependencies once (from the project root):
+
 ```bash
-cd frontend && npm install && npm run dev
+python3 -m venv venv
+source venv/bin/activate
+pip install -r backend/requirements.txt
 ```
 
-This starts the Vite dev server and the Python API server (`python3 backend/api_server.py`). The dashboard proxies `/api` to the API server.
+Then start the dashboard. From the **project root** (recommended):
+
+```bash
+npm install
+npm run dev
+```
+
+Or from the frontend folder: `cd frontend && npm install && npm run dev`.
+
+This starts the Vite dev server and the Python API server; `npm run dev` uses `./venv/bin/python3` so the same environment is used every time. The dashboard proxies `/api` to the API server.
 
 **Local dev with node on another machine (e.g. Pi):** To point the API at the Pi’s node when running `npm run dev` locally, set `RPC_HOST` (and optionally `RPC_PORT`) and `ZMQ_ENDPOINT` before starting. Example (Unix):
 
@@ -86,7 +99,7 @@ cd frontend && npm run dev
 
 Or in one line: `RPC_HOST=node.local ZMQ_ENDPOINT=tcp://node.local:28332 npm run dev`. Auth (cookie or user/password) still comes from your saved config; only the host/port are overridden.
 
-**Production / systemd (e.g. Raspberry Pi):** Use the service files in `deploy/` for the API (port 8003) and dashboard (port 8002). The block monitor runs inside the API process and writes to SQLite. Copy the two `.service` files to `/etc/systemd/system/`, run `npm run build` in `frontend/`, then enable and start the services.
+**Production / systemd (e.g. Raspberry Pi):** Use the service files in `deploy/` for the API (port 8003) and dashboard (port 8002). The block monitor runs inside the API process and writes to SQLite. Copy the two `.service` files to `/etc/systemd/system/`, run `npm run build` (from project root or `frontend/`), then enable and start the services.
 
 Two-Pi setup (node on one Pi, dashboard on another):
 
@@ -206,7 +219,7 @@ Backend Python tests use **pytest** and live in `backend/tests/`.
 **Run all backend tests (from repo root):**
 
 ```bash
-pip3 install -r backend/requirements-dev.txt
+pip3 install -r backend/requirements.txt
 python3 -m pytest backend/tests -v
 ```
 

@@ -4,23 +4,16 @@
   "description": "Real-time blockchain monitoring dashboard",
   "type": "module",
   "scripts": {
-    "dev": "concurrently -n v,api,block \"npm run dev:vite\" \"npm run dev:api\" \"npm run dev:block\"",
-    "dev:vite": "vite",
-    "dev:api": "cd .. && python3 backend/api_server.py",
-    "dev:block": "cd .. && python3 backend/monitor_node.py",
+    "dev": "concurrently -n v,api,block \"vite\" \"cd .. && ./venv/bin/python3 backend/api_server.py\" \"cd .. && ./venv/bin/python3 backend/monitor_node.py\"",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "test": "vitest run && cd .. && backend/venv/bin/python3 -m pytest backend/tests -v",
+    "test": "vitest run && cd .. && ./venv/bin/python3 -m pytest backend/tests -v",
     "test:watch": "vitest",
-    "lint": "eslint src && cd .. && backend/venv/bin/python3 -m pylint --rcfile=backend/pylint.ini backend/",
+    "lint": "eslint src && cd .. && ./venv/bin/python3 -m pylint --rcfile=backend/pylint.ini backend/",
     "lint:fix": "eslint src --fix",
-    "lint:js": "eslint src",
     "lint:html": "html-validate index.html",
     "lint:css": "stylelint src/index.css",
-    "lint:py": "cd .. && backend/venv/bin/python3 -m pylint --rcfile=backend/pylint.ini backend/",
-    "lint:all": "npm run lint && npm run lint:py && npm run lint:html && npm run lint:css",
-    "all": "concurrently \"npm run lint:all\" \"npm run test\" \"npm run build\""
-
+    "all": "concurrently \"(npm run lint && npm run lint:html && npm run lint:css)\" \"npm run test\" \"npm run build\""
   },
   "dependencies": {
     "date-fns": "^2.30.0",
