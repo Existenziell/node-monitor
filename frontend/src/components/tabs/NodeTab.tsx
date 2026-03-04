@@ -235,7 +235,7 @@ export function NodeTab() {
   const heapTotal = heapUsed !== null && heapFree !== null ? heapUsed + heapFree : (memory.total !== null && memory.total !== undefined ? Number(memory.total) : null);
 
   const hostMemoryItems: { label: string; value: unknown }[] = [];
-  if (hostArchitecture != null && hostArchitecture !== '') {
+  if (hostArchitecture !== null && hostArchitecture !== undefined && hostArchitecture !== '') {
     hostMemoryItems.push({ label: 'Architecture', value: hostArchitecture });
   }
   if (hostMemory && typeof hostMemory.total === 'number') {
@@ -245,7 +245,7 @@ export function NodeTab() {
       { label: 'Available', value: formatBytes(hostMemory.available as number) },
       {
         label: 'Percent used',
-        value: hostMemory.percent != null ? `${Number(hostMemory.percent)}%` : 'N/A',
+        value: hostMemory.percent !== null && hostMemory.percent !== undefined ? `${Number(hostMemory.percent)}%` : 'N/A',
       }
     );
     if (typeof hostMemory.swap_total === 'number' && hostMemory.swap_total > 0) {

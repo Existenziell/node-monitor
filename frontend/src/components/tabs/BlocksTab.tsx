@@ -2,7 +2,7 @@ import { useEffect, useMemo } from 'react';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
 import { useApi } from '@/contexts/ApiContext';
 import type { BlockRow, BlocksData, DistributionData } from '@/types';
-import { formatBytes, formatDuration, formatWeight } from '@/utils';
+import { formatBytes, formatWeight } from '@/utils';
 import { useConsole } from '@/contexts/ConsoleContext';
 import { useApiData } from '@/hooks/useApiData';
 import { useTabData } from '@/hooks/useTabData';
@@ -161,44 +161,48 @@ export function BlocksTab() {
   }
 
   const blocks = data?.blocks ?? [];
-  const avgBlockTimeSeconds = data?.avg_block_time_seconds ?? null;
-  const avgBlockTimeDisplay =
-    avgBlockTimeSeconds && avgBlockTimeSeconds > 0
-      ? formatDuration(avgBlockTimeSeconds)
-      : '-';
-  const avgTx =
-    blocks.length > 0
-      ? Math.round(
-          blocks.reduce((s, b) => s + Number(b.transaction_count ?? 0), 0) / blocks.length
-        )
-      : 0;
-  const avgFees =
-    blocks.length > 0
-      ? blocks.reduce((s, b) => s + Number(b.total_fees ?? 0), 0) / blocks.length
-      : 0;
+  const currentBlock = blocks.length > 0 ? (blocks[0] as BlockRow) : null;
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="rounded-lg bg-white dark:bg-white/5 border border-gray-200 dark:border-gold/20 p-4">
-          <div className="text-2xl font-bold text-accent-light dark:text-gold">
-            {avgBlockTimeDisplay}
-          </div>
-          <div className="text-sm text-gray-600 dark:text-gray-400">Avg Block Time</div>
+          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-400 mb-3">Current block</h3>
+          {currentBlock ? (
+            <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+              <dt className="text-gray-600 dark:text-gray-400">Height</dt>
+              <dd className="text-gray-900 dark:text-gray-300 font-medium tabular-nums">{currentBlock.block_height}</dd>
+              <dt className="text-gray-600 dark:text-gray-400">Hash</dt>
+              <dd className="text-gray-900 dark:text-gray-300 font-mono text-xs truncate" title={currentBlock.block_hash}>{currentBlock.block_hash ?? '-'}</dd>
+              <dt className="text-gray-600 dark:text-gray-400">Time</dt>
+              <dd className="text-gray-900 dark:text-gray-300">{currentBlock.block_time ?? '-'}</dd>
+              <dt className="text-gray-600 dark:text-gray-400">Time since previous</dt>
+              <dd className="text-gray-900 dark:text-gray-300">{currentBlock.time_since_last_block || '-'}</dd>
+              <dt className="text-gray-600 dark:text-gray-400">Pool</dt>
+              <dd className="text-gray-900 dark:text-gray-300">
+                <PoolCell identifier={currentBlock.mining_pool} poolByIdentifier={poolByIdentifier} iconSize={POOL_ICON_SIZE} />
+              </dd>
+              <dt className="text-gray-600 dark:text-gray-400">Tx count</dt>
+              <dd className="text-gray-900 dark:text-gray-300 tabular-nums">{currentBlock.transaction_count ?? '-'}</dd>
+              <dt className="text-gray-600 dark:text-gray-400">Weight</dt>
+              <dd className="text-gray-900 dark:text-gray-300 tabular-nums">{formatWeight(currentBlock.block_weight as number | undefined)}</dd>
+              <dt className="text-gray-600 dark:text-gray-400">Size</dt>
+              <dd className="text-gray-900 dark:text-gray-300 tabular-nums">{formatBytes(currentBlock.block_size as number | undefined)}</dd>
+              <dt className="text-gray-600 dark:text-gray-400">Reward</dt>
+              <dd className="text-gray-900 dark:text-gray-300 tabular-nums">{currentBlock.block_reward !== null && currentBlock.block_reward !== undefined ? Number(currentBlock.block_reward).toFixed(4) : '-'}</dd>
+              <dt className="text-gray-600 dark:text-gray-400">Fees</dt>
+              <dd className="text-gray-900 dark:text-gray-300 tabular-nums">{currentBlock.total_fees !== null && currentBlock.total_fees !== undefined ? Number(currentBlock.total_fees).toFixed(4) : '-'}</dd>
+              <dt className="text-gray-600 dark:text-gray-400">Fees (USD)</dt>
+              <dd className="text-gray-900 dark:text-gray-300 tabular-nums">{currentBlock.total_fees_usd !== null && currentBlock.total_fees_usd !== undefined ? Number(currentBlock.total_fees_usd).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}</dd>
+            </dl>
+          ) : (
+            <p className="text-sm text-gray-500 dark:text-gray-400">No block data</p>
+          )}
         </div>
         <div className="rounded-lg bg-white dark:bg-white/5 border border-gray-200 dark:border-gold/20 p-4">
-          <div className="text-2xl font-bold text-accent-light dark:text-gold">{avgTx.toLocaleString()}</div>
-          <div className="text-sm text-gray-600 dark:text-gray-400">Avg Transaction Count</div>
+          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-400 mb-3">Pool distribution</h3>
+          <PoolDistributionChart distribution={distribution ?? null} poolByIdentifier={poolByIdentifier} />
         </div>
-        <div className="rounded-lg bg-white dark:bg-white/5 border border-gray-200 dark:border-gold/20 p-4">
-          <div className="text-2xl font-bold text-accent-light dark:text-gold">{avgFees.toFixed(4)}</div>
-          <div className="text-sm text-gray-600 dark:text-gray-400">Avg Fees</div>
-        </div>
-      </div>
-
-      <div className="rounded-lg bg-white dark:bg-white/5 border border-gray-200 dark:border-gold/20 p-4">
-        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-400 mb-3">Pool distribution</h3>
-        <PoolDistributionChart distribution={distribution ?? null} poolByIdentifier={poolByIdentifier} />
       </div>
 
       <div className="rounded-lg bg-white dark:bg-white/5 border border-gray-200 dark:border-gold/20 overflow-hidden">

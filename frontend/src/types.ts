@@ -114,6 +114,7 @@ export interface BlockRow {
   block_height: number;
   block_hash?: string;
   block_time?: string;
+  time_since_last_block?: string;
   transaction_count?: number;
   block_size?: number;
   block_weight?: number;
