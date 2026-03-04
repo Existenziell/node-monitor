@@ -387,16 +387,43 @@ export function NodeTab() {
     },
   ];
 
-  const indexingEntries: { label: string; value: unknown }[] = Object.entries(indexing).map(([name, info]) => {
-    const obj = info as { synced?: boolean; best_block_height?: number } | undefined;
-    const synced = obj?.synced === true;
-    const height = obj?.best_block_height;
+  // Known index types to show in a fixed order; display name used as label
+  const KNOWN_INDEXES: { key: string; label: string }[] = [
+    { key: 'txindex', label: 'Txindex' },
+    { key: 'addrindex', label: 'Addrindex' },
+    { key: 'timestampindex', label: 'Timestampindex' },
+    { key: 'spentindex', label: 'Spentindex' },
+    { key: 'coinstatsindex', label: 'Coinstatsindex' },
+    { key: 'basic block filter index', label: 'Block filter index' },
+  ];
+
+  const formatIndexValue = (info: { synced?: boolean; best_block_height?: number } | undefined) => {
+    if (!info) return 'Disabled';
+    const synced = info.synced === true;
+    const height = info.best_block_height;
     const heightStr = height !== null && height !== undefined ? height.toLocaleString() : '–';
-    return {
-      label: name.toUpperCase(),
-      value: `${synced ? 'Synced' : 'Syncing'} (block ${heightStr})`,
-    };
-  });
+    return `Enabled — ${synced ? 'Synced' : 'Syncing'} (block ${heightStr})`;
+  };
+
+  const indexingEntries: { label: string; value: unknown }[] = [];
+  const seenKeys = new Set<string>();
+
+  for (const { key, label } of KNOWN_INDEXES) {
+    const info = indexing[key] as { synced?: boolean; best_block_height?: number } | undefined;
+    indexingEntries.push({ label, value: formatIndexValue(info) });
+    if (info !== undefined && info !== null) seenKeys.add(key);
+  }
+
+  // Append any other indexes returned by the node that aren't in the known list
+  for (const [name, info] of Object.entries(indexing)) {
+    if (seenKeys.has(name)) continue;
+    const obj = info as { synced?: boolean; best_block_height?: number } | undefined;
+    indexingEntries.push({
+      label: name.replace(/\b\w/g, (c) => c.toUpperCase()),
+      value: formatIndexValue(obj),
+    });
+  }
+
   if (blockchain.verificationprogress !== null && blockchain.verificationprogress !== undefined) {
     indexingEntries.push({
       label: 'Chain sync progress',
