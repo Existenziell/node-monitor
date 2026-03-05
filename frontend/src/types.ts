@@ -17,6 +17,15 @@ export interface TabNavProps {
   activeTab: TabId;
   onTabChange: (tab: TabId) => void;
   onRefresh: () => void;
+  isMobileMenuOpen: boolean;
+  onCloseMobileMenu: () => void;
+}
+
+export interface HeaderProps {
+  activeTab: TabId;
+  onRefresh: () => void;
+  isMobileMenuOpen: boolean;
+  onMobileMenuToggle: () => void;
 }
 
 // --- API / data (ApiContext) ---

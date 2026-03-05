@@ -7,7 +7,12 @@ import { ThemeProvider } from '@/contexts/ThemeContext';
 function WrappedHeader() {
   return (
     <ThemeProvider>
-      <Header />
+      <Header
+        activeTab="node"
+        onRefresh={() => {}}
+        isMobileMenuOpen={false}
+        onMobileMenuToggle={() => {}}
+      />
     </ThemeProvider>
   );
 }

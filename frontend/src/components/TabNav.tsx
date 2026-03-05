@@ -1,115 +1,89 @@
-import { useState } from 'react';
 import { TABS } from '@/constants';
 import type { TabId, TabNavProps } from '@/types';
-import { MenuIcon, RefreshIcon, XIcon } from './Icons';
+import { RefreshIcon, XIcon } from './Icons';
 
-const DRAWER_ID = 'tab-nav-drawer';
+export const TAB_NAV_DRAWER_ID = 'tab-nav-drawer';
 
 function tabButtonClass(active: boolean) {
-  return `px-4 py-2 rounded text-sm font-medium transition border ${
-    active
-      ? 'text-accent border-accent'
-      : 'text-level-4 hover:bg-level-3 border-transparent'
-  }`;
+  return `px-4 py-2 rounded text-sm font-medium transition border ${active
+    ? 'text-accent border-accent'
+    : 'text-level-4 hover:bg-level-3 border-transparent'
+    }`;
 }
 
-export function TabNav({ activeTab, onTabChange, onRefresh }: TabNavProps) {
-  const [isMobileOpen, setIsMobileOpen] = useState(false);
-
-  const activeLabel = TABS.find((t) => t.id === activeTab)?.label ?? 'Tabs';
+export function TabNav({
+  activeTab,
+  onTabChange,
+  onRefresh,
+  isMobileMenuOpen,
+  onCloseMobileMenu,
+}: TabNavProps) {
   const showRefresh =
     activeTab !== 'console' && activeTab !== 'docs' && activeTab !== 'settings';
 
   const handleTabSelect = (id: TabId) => {
     onTabChange(id);
-    setIsMobileOpen(false);
+    onCloseMobileMenu();
   };
 
   return (
-    <div className="flex items-center justify-between gap-4 mb-4 border-b border-level-3 pb-2">
-      {/* Desktop: horizontal tab list (visible from sm up) */}
-      <nav className="hidden sm:flex gap-1" aria-label="Main navigation">
-        {TABS.map(({ id, label }) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => onTabChange(id)}
-            className={tabButtonClass(activeTab === id)}
-          >
-            {label}
-          </button>
-        ))}
-      </nav>
+    <>
+      <div className="flex items-center justify-between gap-4 mb-4 border-b border-level-3 pb-2">
+        {/* Desktop: horizontal tab list (visible from sm up) */}
+        <nav className="hidden sm:flex gap-1" aria-label="Main navigation">
+          {TABS.map(({ id, label }) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => onTabChange(id)}
+              className={tabButtonClass(activeTab === id)}
+            >
+              {label}
+            </button>
+          ))}
+        </nav>
 
-      {/* Mobile: burger icon on the left, current nav title next to it, refresh on the right */}
-      <div className="flex sm:hidden items-center gap-2 w-full min-w-0">
-        <button
-          type="button"
-          onClick={() => setIsMobileOpen((o) => !o)}
-          className="p-2 rounded-md hover:bg-level-3"
-          aria-expanded={isMobileOpen}
-          aria-controls={DRAWER_ID}
-          aria-label="Toggle navigation"
-        >
-          <MenuIcon />
-        </button>
-        <span className="flex-1 text-sm font-medium text-level-5 truncate min-w-0">
-          {activeLabel}
-        </span>
+        {/* Desktop: refresh button (right-aligned) */}
         {showRefresh && (
-          <button
-            type="button"
-            onClick={onRefresh}
-            className="p-2 rounded-md hover:bg-level-3"
-            title="Refresh"
-          >
-            <RefreshIcon />
-          </button>
+          <div className="hidden sm:block">
+            <button
+              type="button"
+              onClick={onRefresh}
+              className="square-button"
+              title="Refresh"
+            >
+              <RefreshIcon />
+            </button>
+          </div>
         )}
       </div>
 
-      {/* Desktop: refresh button (right-aligned) */}
-      {showRefresh && (
-        <div className="hidden sm:block">
-          <button
-            type="button"
-            onClick={onRefresh}
-            className="p-2 rounded-md hover:bg-level-3"
-            title="Refresh"
-          >
-            <RefreshIcon />
-          </button>
-        </div>
-      )}
-
-      {/* Mobile: backdrop + side drawer */}
+      {/* Mobile: backdrop + side drawer (burger in Header) */}
       <div
         className="sm:hidden fixed inset-0 z-40"
-        aria-hidden={!isMobileOpen}
-        style={{ pointerEvents: isMobileOpen ? undefined : 'none' }}
+        aria-hidden={!isMobileMenuOpen}
+        style={{ pointerEvents: isMobileMenuOpen ? undefined : 'none' }}
       >
         <button
           type="button"
-          onClick={() => setIsMobileOpen(false)}
-          className={`absolute inset-0 bg-black/40 transition-opacity ${
-            isMobileOpen ? 'opacity-100' : 'opacity-0'
-          }`}
+          onClick={onCloseMobileMenu}
+          className={`absolute inset-0 bg-black/40 transition-opacity ${isMobileMenuOpen ? 'opacity-100' : 'opacity-0'
+            }`}
           aria-label="Close navigation"
         />
         <aside
-          id={DRAWER_ID}
+          id={TAB_NAV_DRAWER_ID}
           role="dialog"
           aria-label="Navigation menu"
-          className={`absolute top-0 right-0 h-full w-[min(280px,85vw)] bg-level-2 border-l border-level-3 shadow-lg flex flex-col transition-transform duration-200 ease-out ${
-            isMobileOpen ? 'translate-x-0' : 'translate-x-full'
-          }`}
+          className={`absolute top-0 right-0 h-full w-[min(280px,85vw)] bg-level-2 border-l border-level-3 shadow-lg flex flex-col transition-transform duration-200 ease-out ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
+            }`}
         >
           <div className="flex items-center justify-between p-3 border-b border-level-3">
             <span className="text-sm font-medium text-level-5">Tabs</span>
             <button
               type="button"
-              onClick={() => setIsMobileOpen(false)}
-              className="p-2 rounded-md hover:bg-level-3"
+              onClick={onCloseMobileMenu}
+              className="square-button"
               aria-label="Close menu"
             >
               <XIcon />
@@ -129,6 +103,6 @@ export function TabNav({ activeTab, onTabChange, onRefresh }: TabNavProps) {
           </nav>
         </aside>
       </div>
-    </div>
+    </>
   );
 }

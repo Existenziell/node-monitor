@@ -8,7 +8,13 @@ describe('TabNav', () => {
     const onTabChange = vi.fn();
     const onRefresh = vi.fn();
     render(
-      <TabNav activeTab="node" onTabChange={onTabChange} onRefresh={onRefresh} />
+      <TabNav
+        activeTab="node"
+        onTabChange={onTabChange}
+        onRefresh={onRefresh}
+        isMobileMenuOpen={false}
+        onCloseMobileMenu={() => {}}
+      />
     );
     // TabNav renders tabs in both desktop nav and mobile drawer; either set is in the DOM
     expect(screen.getAllByRole('button', { name: /node/i }).length).toBeGreaterThanOrEqual(1);
@@ -18,7 +24,6 @@ describe('TabNav', () => {
     expect(screen.getAllByRole('button', { name: /console/i }).length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByRole('button', { name: /docs/i }).length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByRole('button', { name: /settings/i }).length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByRole('button', { name: /toggle navigation/i })).toBeInTheDocument();
     expect(screen.getAllByTitle('Refresh').length).toBeGreaterThanOrEqual(1);
   });
 
@@ -27,7 +32,13 @@ describe('TabNav', () => {
     const onRefresh = vi.fn();
     const user = userEvent.setup();
     render(
-      <TabNav activeTab="node" onTabChange={onTabChange} onRefresh={onRefresh} />
+      <TabNav
+        activeTab="node"
+        onTabChange={onTabChange}
+        onRefresh={onRefresh}
+        isMobileMenuOpen={false}
+        onCloseMobileMenu={() => {}}
+      />
     );
     const blocksButtons = screen.getAllByRole('button', { name: /blocks/i });
     await user.click(blocksButtons[0]);
@@ -39,7 +50,13 @@ describe('TabNav', () => {
     const onRefresh = vi.fn();
     const user = userEvent.setup();
     render(
-      <TabNav activeTab="node" onTabChange={onTabChange} onRefresh={onRefresh} />
+      <TabNav
+        activeTab="node"
+        onTabChange={onTabChange}
+        onRefresh={onRefresh}
+        isMobileMenuOpen={false}
+        onCloseMobileMenu={() => {}}
+      />
     );
     const refreshButtons = screen.getAllByTitle('Refresh');
     await user.click(refreshButtons[0]);

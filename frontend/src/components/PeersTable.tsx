@@ -34,8 +34,6 @@ export function PeersTable({ peers }: { peers: Peer[] }) {
     data: peers,
     keyExtractors: {
       address: (p) => (p.addr ?? '') || null,
-      network: (p) => (p.network ?? '') || null,
-      direction: (p) => (p.inbound === true ? 1 : p.inbound === false ? 0 : null),
       version: (p) => (p.subver ?? '') || null,
       connectionType: (p) => (p.connection_type ?? '') || null,
       connected: (p) => (p.conntime !== null && p.conntime !== undefined ? p.conntime : null),
@@ -61,8 +59,6 @@ export function PeersTable({ peers }: { peers: Peer[] }) {
           <thead className="sticky top-0 bg-level-2 text-left">
             <tr>
               <SortableTh label="Address" sortKey="address" currentSortKey={sort.sortKey} sortDir={sort.sortDir} onSort={sort.setSort} className="px-2 py-3 text-level-4" />
-              <SortableTh label="Network" sortKey="network" currentSortKey={sort.sortKey} sortDir={sort.sortDir} onSort={sort.setSort} className="px-2 py-3 text-level-4" />
-              <SortableTh label="Direction" sortKey="direction" currentSortKey={sort.sortKey} sortDir={sort.sortDir} onSort={sort.setSort} className="px-2 py-3 text-level-4" />
               <SortableTh label="Version" sortKey="version" currentSortKey={sort.sortKey} sortDir={sort.sortDir} onSort={sort.setSort} className="px-2 py-3 text-level-4" />
               <SortableTh label="Connection type" sortKey="connectionType" currentSortKey={sort.sortKey} sortDir={sort.sortDir} onSort={sort.setSort} className="px-2 py-3 text-level-4" />
               <SortableTh label="Connected" sortKey="connected" currentSortKey={sort.sortKey} sortDir={sort.sortDir} onSort={sort.setSort} className="px-2 py-3 text-level-4" />
@@ -83,8 +79,6 @@ export function PeersTable({ peers }: { peers: Peer[] }) {
                 <td className="p-2 text-level-5 font-mono truncate max-w-[180px]" title={peer.addr ?? ''}>
                   {peer.addr ?? '-'}
                 </td>
-                <td className="p-2 text-level-5">{peer.network ?? '-'}</td>
-                <td className="p-2 text-level-5">{peer.inbound === true ? 'In' : peer.inbound === false ? 'Out' : '-'}</td>
                 <td className="p-2 text-level-5 truncate max-w-[140px]" title={peer.subver ?? ''}>
                   {formatSubver(peer.subver)}
                 </td>

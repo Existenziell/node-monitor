@@ -55,7 +55,7 @@ function formatResponseForDisplay(value: unknown, indent = 0): string {
 
 export function ConsoleTab() {
   const { callRpc } = useApi();
-  const [method, setMethod] = useState('getmininginfo');
+  const [method, setMethod] = useState('getblockchaininfo');
   const [paramsStr, setParamsStr] = useState('[]');
   const [response, setResponse] = useState<Record<string, unknown> | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -167,6 +167,12 @@ export function ConsoleTab() {
                 type="text"
                 value={method}
                 onChange={(e) => setMethod(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleExecute();
+                  }
+                }}
                 className="w-full rounded border border-level-3 bg-level-2 px-3 py-2 font-mono text-sm text-level-5 focus:border-accent focus:outline-none"
                 placeholder="getblockcount"
               />

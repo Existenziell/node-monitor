@@ -94,6 +94,7 @@ export function SettingsTab() {
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [lastSaved, setLastSaved] = useState<SettingsBaseline | null>(null);
   const [walletSaveLoading, setWalletSaveLoading] = useState(false);
+  const [walletSwitchMessage, setWalletSwitchMessage] = useState<string | null>(null);
 
   const [authMethod, setAuthMethod] = useState<'password' | 'cookie'>('password');
   const [rpcHost, setRpcHost] = useState(DEFAULT_RPC_HOST);
@@ -161,6 +162,13 @@ export function SettingsTab() {
     }
   }, [activeTab, loadStatus]);
 
+  // Clear "wallet switched to X" message after 3 seconds
+  useEffect(() => {
+    if (walletSwitchMessage === null) return;
+    const t = setTimeout(() => setWalletSwitchMessage(null), 3000);
+    return () => clearTimeout(t);
+  }, [walletSwitchMessage]);
+
   const pendingChanges = useMemo(
     () =>
       getPendingChanges(lastSaved, {
@@ -227,224 +235,241 @@ export function SettingsTab() {
 
   return (
     <div className="space-y-4">
-      <div className="section-container max-w-xl">
-        <SectionHeader as="h2">Node configuration</SectionHeader>
-        {status && !status.config_exists && (
-          <p className="text-level-5 text-sm mb-4">
-            No configuration found. Enter RPC credentials or cookie path to connect to your Bitcoin
-            node.
-          </p>
-        )}
-        {message && (
-          <div
-            className={`mb-4 p-2 rounded text-sm ${
-              message.type === 'success'
+      <div className="flex flex-col lg:flex-row gap-4">
+        <div className="section-container w-full lg:w-1/2 flex-1 min-w-0">
+          <SectionHeader as="h2">Node configuration</SectionHeader>
+          {status && !status.config_exists && (
+            <p className="text-level-5 text-sm mb-4">
+              No configuration found. Enter RPC credentials or cookie path to connect to your Bitcoin
+              node.
+            </p>
+          )}
+          {message && (
+            <div
+              className={`mb-4 p-2 rounded text-sm ${message.type === 'success'
                 ? 'bg-semantic-success/20 text-semantic-success'
                 : 'bg-semantic-error/20 text-semantic-error'
-            }`}
-          >
-            {message.text}
-          </div>
-        )}
-        {status?.config_exists && (
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-level-4 mb-1">Default wallet</label>
-            {Array.isArray(status.loaded_wallets) ? (
-              <select
-                value={status.wallet_name ?? ''}
-                onChange={async (e) => {
-                  const value = e.target.value;
-                  const name = value === '' ? null : value;
-                  setWalletSaveLoading(true);
-                  setMessage(null);
-                  try {
-                    const result = await saveWalletName(name);
-                    if (result.ok) {
-                      await loadStatus();
-                      window.dispatchEvent(new CustomEvent('tab-refresh', { detail: 'wallet' }));
-                    } else {
-                      setMessage({ type: 'error', text: result.error ?? 'Failed to save default wallet' });
-                    }
-                  } catch (err) {
-                    setMessage({ type: 'error', text: getErrorMessage(err) });
-                  } finally {
-                    setWalletSaveLoading(false);
-                  }
-                }}
-                disabled={walletSaveLoading}
-                className="block w-full max-w-xs rounded border border-level-3 bg-level-2 px-3 py-2 text-level-5 focus:border-accent focus:outline-none disabled:opacity-50"
-              >
-                <option value="">None</option>
-                {status.loaded_wallets.map((w) => (
-                  <option key={w} value={w}>
-                    {w}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <p className="text-sm text-level-4">
-                {status.wallet_name !== null && status.wallet_name !== undefined && status.wallet_name !== '' ? status.wallet_name : 'None'}
-              </p>
-            )}
-          </div>
-        )}
-        <div className="mb-4 flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={async () => {
-              setTestResult(null);
-              setTestLoading(true);
-              try {
-                const r = await fetchConfigTest();
-                setTestResult(r);
-              } catch (e) {
-                setTestResult({ ok: false, error: getErrorMessage(e) });
-              } finally {
-                setTestLoading(false);
-              }
-            }}
-            disabled={testLoading}
-            className="rounded border border-level-3 bg-level-2 px-3 py-2 text-sm font-medium text-level-5 hover:bg-level-3 disabled:opacity-50"
-          >
-            {testLoading ? 'Testing…' : 'Test connection'}
-          </button>
-          {testResult && !testLoading && (
-            <span className={`text-sm ${testResult.ok ? 'text-semantic-success' : 'text-semantic-error'}`}>
-              {testResult.ok
-                ? `Connected${testResult.version ? ` (${testResult.version})` : ''}`
-                : `Connection failed: ${testResult.error ?? 'Unknown error'}`}
-            </span>
-          )}
-        </div>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-level-5 mb-1">
-              Authentication
-            </label>
-            <div className="flex gap-4">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="auth_method"
-                  checked={authMethod === 'password'}
-                  onChange={() => setAuthMethod('password')}
-                  className="radio-setting"
-                />
-                <span className="text-sm">Username / Password</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="auth_method"
-                  checked={authMethod === 'cookie'}
-                  onChange={() => setAuthMethod('cookie')}
-                  className="radio-setting"
-                />
-                <span className="text-sm">Cookie file</span>
-              </label>
+                }`}
+            >
+              {message.text}
             </div>
-          </div>
-
-          {authMethod === 'password' && (
-            <>
-              <div>
-                <label htmlFor="rpc_user" className="block text-sm font-medium text-level-5 mb-1">
-                  RPC Username
-                </label>
-                <input
-                  id="rpc_user"
-                  type="text"
-                  value={rpcUser}
-                  onChange={(e) => setRpcUser(e.target.value)}
-                  className="w-full rounded border border-level-3 bg-level-2 px-3 py-2 text-level-5"
-                  placeholder={status?.rpc_user_masked ? `${status.rpc_user_masked} (current)` : 'bitcoinrpc'}
-                  autoComplete="username"
-                />
-              </div>
-              <div>
-                <label htmlFor="rpc_password" className="block text-sm font-medium text-level-5 mb-1">
-                  RPC Password
-                </label>
-                <input
-                  id="rpc_password"
-                  type="password"
-                  value={rpcPassword}
-                  onChange={(e) => setRpcPassword(e.target.value)}
-                  className="w-full rounded border border-level-3 bg-level-2 px-3 py-2 text-level-5"
-                  placeholder={status?.config_exists ? 'Leave blank to keep current' : 'Required'}
-                  autoComplete="current-password"
-                />
-              </div>
-            </>
           )}
-
-          {authMethod === 'cookie' && (
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label htmlFor="cookie_file" className="block text-sm font-medium text-level-5 mb-1">
-                Cookie file path
+              <label className="block text-sm font-medium text-level-5 mb-1">
+                Authentication
+              </label>
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="auth_method"
+                    checked={authMethod === 'password'}
+                    onChange={() => setAuthMethod('password')}
+                    className="radio-setting"
+                  />
+                  <span className="text-sm">Username / Password</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="auth_method"
+                    checked={authMethod === 'cookie'}
+                    onChange={() => setAuthMethod('cookie')}
+                    className="radio-setting"
+                  />
+                  <span className="text-sm">Cookie file</span>
+                </label>
+              </div>
+            </div>
+
+            {authMethod === 'password' && (
+              <>
+                <div>
+                  <label htmlFor="rpc_user" className="block text-sm font-medium text-level-5 mb-1">
+                    RPC Username
+                  </label>
+                  <input
+                    id="rpc_user"
+                    type="text"
+                    value={rpcUser}
+                    onChange={(e) => setRpcUser(e.target.value)}
+                    className="w-full rounded border border-level-3 bg-level-2 px-3 py-2 text-level-5"
+                    placeholder={status?.rpc_user_masked ? `${status.rpc_user_masked} (current)` : 'bitcoinrpc'}
+                    autoComplete="username"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="rpc_password" className="block text-sm font-medium text-level-5 mb-1">
+                    RPC Password
+                  </label>
+                  <input
+                    id="rpc_password"
+                    type="password"
+                    value={rpcPassword}
+                    onChange={(e) => setRpcPassword(e.target.value)}
+                    className="w-full rounded border border-level-3 bg-level-2 px-3 py-2 text-level-5"
+                    placeholder={status?.config_exists ? 'Leave blank to keep current' : 'Required'}
+                    autoComplete="current-password"
+                  />
+                </div>
+              </>
+            )}
+
+            {authMethod === 'cookie' && (
+              <div>
+                <label htmlFor="cookie_file" className="block text-sm font-medium text-level-5 mb-1">
+                  Cookie file path
+                </label>
+                <input
+                  id="cookie_file"
+                  type="text"
+                  value={cookieFile}
+                  onChange={(e) => setCookieFile(e.target.value)}
+                  className="w-full rounded border border-level-3 bg-level-2 px-3 py-2 text-level-5 font-mono text-sm"
+                  placeholder="e.g. /home/user/.bitcoin/.cookie"
+                />
+              </div>
+            )}
+
+            <div>
+              <label htmlFor="rpc_host" className="block text-sm font-medium text-level-5 mb-1">
+                RPC Host
               </label>
               <input
-                id="cookie_file"
+                id="rpc_host"
                 type="text"
-                value={cookieFile}
-                onChange={(e) => setCookieFile(e.target.value)}
-                className="w-full rounded border border-level-3 bg-level-2 px-3 py-2 text-level-5 font-mono text-sm"
-                placeholder="e.g. /home/user/.bitcoin/.cookie"
+                value={rpcHost}
+                onChange={(e) => setRpcHost(e.target.value)}
+                className="w-full rounded border border-level-3 bg-level-2 px-3 py-2 text-level-5"
+                placeholder={`${DEFAULT_RPC_HOST} or Bitcoin node IP/hostname`}
               />
             </div>
-          )}
 
-          <div>
-            <label htmlFor="rpc_host" className="block text-sm font-medium text-level-5 mb-1">
-              RPC Host
-            </label>
-            <input
-              id="rpc_host"
-              type="text"
-              value={rpcHost}
-              onChange={(e) => setRpcHost(e.target.value)}
-              className="w-full rounded border border-level-3 bg-level-2 px-3 py-2 text-level-5"
-              placeholder={`${DEFAULT_RPC_HOST} or Bitcoin node IP/hostname`}
-            />
-          </div>
+            <div>
+              <label htmlFor="rpc_port" className="block text-sm font-medium text-level-5 mb-1">
+                RPC Port
+              </label>
+              <input
+                id="rpc_port"
+                type="number"
+                min={1024}
+                max={65535}
+                value={rpcPort}
+                onChange={(e) => setRpcPort(e.target.value)}
+                className="w-full rounded border border-level-3 bg-level-2 px-3 py-2 text-level-5"
+              />
+            </div>
 
-          <div>
-            <label htmlFor="rpc_port" className="block text-sm font-medium text-level-5 mb-1">
-              RPC Port
-            </label>
-            <input
-              id="rpc_port"
-              type="number"
-              min={1024}
-              max={65535}
-              value={rpcPort}
-              onChange={(e) => setRpcPort(e.target.value)}
-              className="w-full rounded border border-level-3 bg-level-2 px-3 py-2 text-level-5"
-            />
-          </div>
+            {lastSaved && hasPendingChanges && (
+              <div className="rounded-lg border border-level-3 bg-level-2 p-3">
+                <SectionHeader>Pending changes</SectionHeader>
+                <ul className="text-sm text-level-4 space-y-1 list-disc list-inside">
+                  {pendingChanges.map((c, i) => (
+                    <li key={i}>
+                      {c.field}: {c.from !== null && c.from !== undefined ? `${c.from} → ` : ''}{c.to ?? ''}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
-          {lastSaved && hasPendingChanges && (
-            <div className="rounded-lg border border-level-3 bg-level-2 p-3">
-              <SectionHeader>Pending changes</SectionHeader>
-              <ul className="text-sm text-level-4 space-y-1 list-disc list-inside">
-                {pendingChanges.map((c, i) => (
-                  <li key={i}>
-                    {c.field}: {c.from !== null && c.from !== undefined ? `${c.from} → ` : ''}{c.to ?? ''}
-                  </li>
-                ))}
-              </ul>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="submit"
+                disabled={saving || !hasPendingChanges}
+                title={!hasPendingChanges ? 'No changes to save' : undefined}
+                className="px-4 py-2 rounded font-medium bg-accent text-accent-foreground border border-accent hover:bg-accent-hover disabled:opacity-50"
+              >
+                {saving ? 'Saving…' : 'Save configuration'}
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  setTestResult(null);
+                  setTestLoading(true);
+                  try {
+                    const r = await fetchConfigTest();
+                    setTestResult(r);
+                  } catch (e) {
+                    setTestResult({ ok: false, error: getErrorMessage(e) });
+                  } finally {
+                    setTestLoading(false);
+                  }
+                }}
+                disabled={testLoading}
+                className="rounded border border-level-3 bg-level-2 px-3 py-2 text-sm font-medium text-level-5 hover:bg-level-3 disabled:opacity-50"
+              >
+                {testLoading ? 'Testing…' : 'Test connection'}
+              </button>
+            </div>
+            {testResult && !testLoading && (
+              <p className={`text-sm ${testResult.ok ? 'text-semantic-success' : 'text-semantic-error'}`}>
+                {testResult.ok
+                  ? `Connected${testResult.version ? ` (${testResult.version})` : ''}`
+                  : `Connection failed: ${testResult.error ?? 'Unknown error'}`}
+              </p>
+            )}
+          </form>
+        </div>
+
+        <div className="section-container w-full lg:w-1/2 py-3">
+          <SectionHeader as="h2">Wallet configuration</SectionHeader>
+          {status?.config_exists && (
+            <div className="space-y-2">
+              <div>
+                <label className="block text-sm font-medium text-level-4 mb-1">Default wallet</label>
+                {Array.isArray(status.loaded_wallets) ? (
+                  <select
+                    value={status.wallet_name ?? ''}
+                    onChange={async (e) => {
+                      const value = e.target.value;
+                      const name = value === '' ? null : value;
+                      setWalletSaveLoading(true);
+                      setMessage(null);
+                      try {
+                        const result = await saveWalletName(name);
+                        if (result.ok) {
+                          await loadStatus();
+                          window.dispatchEvent(new CustomEvent('tab-refresh', { detail: 'wallet' }));
+                          const displayName = name ?? 'None';
+                          setWalletSwitchMessage(displayName);
+                        } else {
+                          setMessage({ type: 'error', text: result.error ?? 'Failed to save default wallet' });
+                        }
+                      } catch (err) {
+                        setMessage({ type: 'error', text: getErrorMessage(err) });
+                      } finally {
+                        setWalletSaveLoading(false);
+                      }
+                    }}
+                    disabled={walletSaveLoading}
+                    className="block w-full rounded border border-level-3 bg-level-2 px-3 py-2 text-level-5 focus:border-accent focus:outline-none disabled:opacity-50"
+                  >
+                    <option value="">None</option>
+                    {status.loaded_wallets.map((w) => (
+                      <option key={w} value={w}>
+                        {w}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <p className="text-sm text-level-4">
+                    {status.wallet_name !== null && status.wallet_name !== undefined && status.wallet_name !== '' ? status.wallet_name : 'None'}
+                  </p>
+                )}
+              </div>
+              {walletSwitchMessage !== null && (
+                <div className="p-2 rounded text-sm bg-semantic-success/20 text-semantic-success">
+                  Wallet switched to {walletSwitchMessage}
+                </div>
+              )}
             </div>
           )}
-
-          <button
-            type="submit"
-            disabled={saving || !hasPendingChanges}
-            title={!hasPendingChanges ? 'No changes to save' : undefined}
-            className="px-4 py-2 rounded font-medium bg-accent text-accent-foreground border border-accent hover:bg-accent-hover disabled:opacity-50"
-          >
-            {saving ? 'Saving…' : 'Save configuration'}
-          </button>
-        </form>
+          {status?.config_exists === false && (
+            <p className="text-sm text-level-4">Save node configuration first to choose a default wallet.</p>
+          )}
+        </div>
       </div>
     </div>
   );

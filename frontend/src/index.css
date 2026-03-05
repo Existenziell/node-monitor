@@ -39,6 +39,7 @@
     -webkit-appearance: none;
     margin: 0;
   }
+
   input[type="number"] {
     -moz-appearance: textfield;
     appearance: textfield;
@@ -46,18 +47,14 @@
 }
 
 @layer components {
+
   /* Align table body content with sortable header buttons (th px-2 + button px-2 = 1rem) */
   .sortable-table td {
     padding-left: 1rem;
   }
 
   .radio-setting {
-    @apply h-5 w-5 shrink-0 cursor-pointer rounded-full border-2 border-level-3
-           bg-level-2
-           transition-[border-color,box-shadow] duration-200
-           focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-level-1
-           focus:ring-accent/50
-           accent-accent;
+    @apply h-5 w-5 shrink-0 cursor-pointer rounded-full border-2 border-level-3 bg-level-2 transition-[border-color_box-shadow] duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-level-1 focus:ring-accent/50 accent-accent;
   }
 
   .section-container {
@@ -66,5 +63,9 @@
 
   .section-header {
     @apply text-base text-accent px-4 py-2 mb-3 bg-level-3 -mx-4 -mt-4 rounded-t-lg;
+  }
+
+  .square-button {
+    @apply p-2.5 rounded-md hover:bg-level-3 flex-shrink-0 transition-colors duration-200;
   }
 }

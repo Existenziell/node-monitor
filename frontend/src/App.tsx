@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTabFromUrl } from '@/hooks/useTabFromUrl';
 import { useConsole } from '@/contexts/ConsoleContext';
 import { useApi } from '@/contexts/ApiContext';
@@ -41,6 +41,7 @@ export default function App() {
   const { log } = useConsole();
   const { fetchConfigStatus } = useApi();
   const hasCheckedConfig = useRef(false);
+  const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   React.useEffect(() => {
     log('Chain Monitor initialized', 'success');
@@ -72,11 +73,18 @@ export default function App() {
 
   return (
     <div className="container max-w-[1400px] mx-auto p-5 min-h-screen flex flex-col">
-      <Header />
+      <Header
+        activeTab={activeTab}
+        onRefresh={handleRefresh}
+        isMobileMenuOpen={isMobileMenuOpen}
+        onMobileMenuToggle={() => setMobileMenuOpen((o) => !o)}
+      />
       <TabNav
         activeTab={activeTab}
         onTabChange={setTab}
         onRefresh={handleRefresh}
+        isMobileMenuOpen={isMobileMenuOpen}
+        onCloseMobileMenu={() => setMobileMenuOpen(false)}
       />
       <section className="min-h-[200px] flex-1">
         <TabContent tab={activeTab} />
