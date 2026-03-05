@@ -194,7 +194,6 @@ export function NodeTab() {
     { label: 'Relay fee', value: network.relayfee !== null && network.relayfee !== undefined ? formatBtcPerKvB(Number(network.relayfee)) : 'N/A' },
     { label: 'Incremental fee', value: network.incrementalfee !== null && network.incrementalfee !== undefined ? formatBtcPerKvB(Number(network.incrementalfee)) : 'N/A' },
     { label: 'Warnings', value: network.warnings !== null && network.warnings !== undefined && String(network.warnings).trim() !== '' ? String(network.warnings) : 'None' },
-    ...(typeof data?.uptime === 'number' ? [{ label: 'Node uptime', value: formatUptime(data.uptime) }] : []),
     ...(data?.nettotals && (data.nettotals.totalbytessent !== null && data.nettotals.totalbytessent !== undefined || data.nettotals.totalbytesrecv !== null && data.nettotals.totalbytesrecv !== undefined)
       ? [
           { label: 'Total bytes sent', value: formatBytes(data.nettotals.totalbytessent) },
@@ -282,6 +281,9 @@ export function NodeTab() {
         { label: 'Swap free', value: formatBytes(hostMemory.swap_free as number) }
       );
     }
+  }
+  if (typeof data?.uptime === 'number') {
+    hostSystemItems.push({ label: 'Node uptime', value: formatUptime(data.uptime) });
   }
   if (hostSystemItems.length === 0) {
     hostSystemItems.push({ label: '—', value: 'No host data' });

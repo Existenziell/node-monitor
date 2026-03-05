@@ -31,7 +31,6 @@ venv.bak/
 # Node.js
 node_modules/
 *.tsbuildinfo
-frontend/vite.config.js
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
