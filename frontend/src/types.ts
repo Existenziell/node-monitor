@@ -40,6 +40,7 @@ export interface ApiContextValue {
   fetchPrice: () => Promise<BtcPrices>;
   callRpc: (method: string, params?: unknown[]) => Promise<Record<string, unknown>>;
   fetchConfigStatus: () => Promise<ConfigStatus>;
+  fetchConfigTest: () => Promise<ConfigTestResult>;
   saveConfig: (payload: ConfigSavePayload) => Promise<{ ok: boolean; error?: string }>;
   saveWalletName: (walletName: string | null) => Promise<{ ok: boolean; error?: string }>;
 }
@@ -96,6 +97,13 @@ export interface Peer {
   [key: string]: unknown;
 }
 
+export interface NetTotals {
+  totalbytesrecv?: number;
+  totalbytessent?: number;
+  timemillis?: number;
+  [key: string]: unknown;
+}
+
 export interface NodeData {
   blockchain?: Record<string, unknown>;
   network?: Record<string, unknown>;
@@ -106,6 +114,12 @@ export interface NodeData {
   indexing?: Record<string, unknown>;
   hashrate?: number;
   peers?: Peer[];
+  /** Node uptime in seconds (from uptime RPC). */
+  uptime?: number | null;
+  /** Total bytes sent/received (from getnettotals RPC). */
+  nettotals?: NetTotals | null;
+  /** Number of peer connections (from getconnectioncount RPC). */
+  connection_count?: number | null;
 }
 
 export interface ConfigStatus {
@@ -115,7 +129,14 @@ export interface ConfigStatus {
   rpc_port: number | null;
   rpc_user_masked: string | null;
   cookie_file: string | null;
+  wallet_name: string | null;
   node_configured: boolean;
+  error?: string;
+}
+
+export interface ConfigTestResult {
+  ok: boolean;
+  version?: string | null;
   error?: string;
 }
 
@@ -165,9 +186,18 @@ export interface WalletTransaction {
   [key: string]: unknown;
 }
 
+export interface WalletBalanceBreakdown {
+  trusted?: number;
+  untrusted_pending?: number;
+  immature?: number;
+  [key: string]: unknown;
+}
+
 export interface WalletData {
   wallet?: Record<string, unknown>;
   balance?: number;
+  /** Balance breakdown from getbalances (mine.trusted, untrusted_pending, immature). */
+  balances?: { mine?: WalletBalanceBreakdown; watchonly?: WalletBalanceBreakdown } | null;
   unspent?: UtxoEntry[];
   transactions?: WalletTransaction[];
   /** When true, no wallet is loaded; use wallets list to let user select or create. */
@@ -189,10 +219,18 @@ export interface FeeEstimates {
   low_sat_per_vb?: number | null;
 }
 
+/** Per-bucket error messages when fee estimation failed (key = high_sat_per_vb | medium_sat_per_vb | low_sat_per_vb). */
+export interface FeeEstimateErrors {
+  high_sat_per_vb?: string | null;
+  medium_sat_per_vb?: string | null;
+  low_sat_per_vb?: string | null;
+}
+
 export interface NetworkData {
   network_history?: NetworkHistoryEntry[];
   total_records?: number;
   fee_estimates?: FeeEstimates | null;
+  fee_estimate_errors?: FeeEstimateErrors | null;
 }
 
 export interface Pool {

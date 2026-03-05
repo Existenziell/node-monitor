@@ -5,7 +5,10 @@ import { formatTxTime, truncateTxid } from '@/utils';
 import { getRefreshTabId, clearRefreshTabId } from '@/refreshState';
 import { useApiData } from '@/hooks/useApiData';
 import { useTabData } from '@/hooks/useTabData';
+import { useTableSort } from '@/hooks/useTableSort';
 import { LoadingOverlay } from '@/components/LoadingOverlay';
+import { SortableTh } from '@/components/SortableTh';
+import { EyeIcon, EyeSlashIcon } from '@/components/Icons';
 
 export function WalletTab() {
   const { fetchWallet, callRpc, saveWalletName } = useApi();
@@ -15,6 +18,7 @@ export function WalletTab() {
   const [createName, setCreateName] = useState('');
   const [createPassphrase, setCreatePassphrase] = useState('');
   const [selectedWallet, setSelectedWallet] = useState('');
+  const [balanceVisible, setBalanceVisible] = useState(true);
 
   useTabData(load, 'wallet');
 
@@ -32,17 +36,31 @@ export function WalletTab() {
     () => (Array.isArray(data?.transactions) ? data.transactions : []),
     [data?.transactions]
   );
-  const unspentByConfirmations = useMemo(
-    () => [...unspent].sort((a, b) => (b.confirmations ?? 0) - (a.confirmations ?? 0)),
-    [unspent]
-  );
-  const transactionsByTime = useMemo(
-    () =>
-      [...transactions].sort(
-        (a, b) => (b.blocktime ?? b.time ?? 0) - (a.blocktime ?? a.time ?? 0)
-      ),
-    [transactions]
-  );
+  const unspentSort = useTableSort<UtxoEntry>({
+    data: unspent,
+    keyExtractors: {
+      txid: (u) => (u.txid ?? '') || null,
+      vout: (u) => (u.vout !== null && u.vout !== undefined ? u.vout : null),
+      address: (u) => (u.address ?? '') || null,
+      amount: (u) => (u.amount !== null && u.amount !== undefined && Number.isFinite(u.amount) ? u.amount : null),
+      confirmations: (u) => (u.confirmations !== null && u.confirmations !== undefined ? u.confirmations : null),
+    },
+    defaultSortKey: 'confirmations',
+    defaultSortDir: 'desc',
+  });
+  const transactionsSort = useTableSort<WalletTransaction>({
+    data: transactions,
+    keyExtractors: {
+      txid: (t) => (t.txid ?? '') || null,
+      category: (t) => (t.category ?? '') || null,
+      address: (t) => (t.address ?? '') || null,
+      amount: (t) => (t.amount !== null && t.amount !== undefined && Number.isFinite(t.amount) ? t.amount : null),
+      confirmations: (t) => (t.confirmations !== null && t.confirmations !== undefined ? t.confirmations : null),
+      time: (t) => (t.blocktime ?? t.time) ?? null,
+    },
+    defaultSortKey: 'time',
+    defaultSortDir: 'desc',
+  });
 
   const handleLoadWallet = async (name: string) => {
     setActionError(null);
@@ -208,14 +226,87 @@ export function WalletTab() {
               <dt className="text-level-4">Wallet name</dt>
               <dd className="text-level-5">{String(wallet.walletname ?? 'N/A')}</dd>
             </div>
-            <div className="flex justify-between">
-              <dt className="text-level-4">Balance</dt>
-              <dd className="text-accent">{Number(balance).toFixed(8)} BTC</dd>
+            <div className="flex justify-between items-center gap-2">
+              <dt className="text-level-4 flex items-center gap-1.5">
+                Balance
+                <button
+                  type="button"
+                  onClick={() => setBalanceVisible((v) => !v)}
+                  className="p-0.5 rounded text-level-4 hover:text-level-5 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                  title={balanceVisible ? 'Hide balance' : 'Show balance'}
+                  aria-label={balanceVisible ? 'Hide balance' : 'Show balance'}
+                >
+                  {balanceVisible ? (
+                    <EyeSlashIcon className="w-4 h-4" />
+                  ) : (
+                    <EyeIcon className="w-4 h-4" />
+                  )}
+                </button>
+              </dt>
+              <dd className="text-accent tabular-nums">
+                {balanceVisible ? `${Number(balance).toFixed(8)} BTC` : '***.**'}
+              </dd>
             </div>
+            {data?.balances?.mine && (
+              <>
+                {data.balances.mine.trusted !== null && data.balances.mine.trusted !== undefined && Number.isFinite(data.balances.mine.trusted) && (
+                  <div className="flex justify-between">
+                    <dt className="text-level-4">Balance (confirmed)</dt>
+                    <dd className="text-level-5 tabular-nums">
+                      {balanceVisible ? `${Number(data.balances.mine.trusted).toFixed(8)} BTC` : '***.**'}
+                    </dd>
+                  </div>
+                )}
+                {data.balances.mine.untrusted_pending !== null && data.balances.mine.untrusted_pending !== undefined && Number.isFinite(data.balances.mine.untrusted_pending) && data.balances.mine.untrusted_pending !== 0 && (
+                  <div className="flex justify-between">
+                    <dt className="text-level-4">Pending</dt>
+                    <dd className="text-level-5 tabular-nums">
+                      {balanceVisible ? `${Number(data.balances.mine.untrusted_pending).toFixed(8)} BTC` : '***.**'}
+                    </dd>
+                  </div>
+                )}
+                {data.balances.mine.immature !== null && data.balances.mine.immature !== undefined && Number.isFinite(data.balances.mine.immature) && data.balances.mine.immature !== 0 && (
+                  <div className="flex justify-between">
+                    <dt className="text-level-4">Immature</dt>
+                    <dd className="text-level-5 tabular-nums">
+                      {balanceVisible ? `${Number(data.balances.mine.immature).toFixed(8)} BTC` : '***.**'}
+                    </dd>
+                  </div>
+                )}
+              </>
+            )}
             <div className="flex justify-between">
               <dt className="text-level-4" title="Distinct transactions in the wallet (from getwalletinfo)">Tx count</dt>
               <dd className="text-level-5">{wallet.txcount !== null && wallet.txcount !== undefined ? String(wallet.txcount) : 'N/A'}</dd>
             </div>
+            {wallet.walletversion !== null && wallet.walletversion !== undefined && (
+              <div className="flex justify-between">
+                <dt className="text-level-4">Wallet version</dt>
+                <dd className="text-level-5">{String(wallet.walletversion)}</dd>
+              </div>
+            )}
+            {wallet.keypoolsize !== null && wallet.keypoolsize !== undefined && (
+              <div className="flex justify-between">
+                <dt className="text-level-4">Keypool size</dt>
+                <dd className="text-level-5">{String(wallet.keypoolsize)}</dd>
+              </div>
+            )}
+            {wallet.avoid_reuse !== null && wallet.avoid_reuse !== undefined && (
+              <div className="flex justify-between">
+                <dt className="text-level-4">Avoid reuse</dt>
+                <dd className="text-level-5">{wallet.avoid_reuse === true ? 'Yes' : 'No'}</dd>
+              </div>
+            )}
+            {wallet.scanning !== null && wallet.scanning !== undefined && (
+              <div className="flex justify-between">
+                <dt className="text-level-4">Scanning</dt>
+                <dd className="text-level-5">
+                  {typeof wallet.scanning === 'object' && typeof (wallet.scanning as { progress?: number }).progress === 'number'
+                    ? `${(wallet.scanning as { progress?: number }).progress}%`
+                    : 'Rescanning…'}
+                </dd>
+              </div>
+            )}
           </dl>
         </div>
       </div>
@@ -223,14 +314,14 @@ export function WalletTab() {
       <div className="rounded-lg bg-level-2 border border-level-3 overflow-hidden">
         <h3 className="text-sm font-medium text-accent p-4 pb-2">UTXOs ({unspent.length})</h3>
         <div className="overflow-x-auto max-h-[60vh]">
-          <table className="w-full text-sm">
+          <table className="sortable-table w-full text-sm">
             <thead className="sticky top-0 bg-level-2 text-left">
               <tr>
-                <th className="px-2 py-3 text-level-4">Txid</th>
-                <th className="px-2 py-3 text-level-4">Vout</th>
-                <th className="px-2 py-3 text-level-4">Address</th>
-                <th className="px-2 py-3 text-level-4">Amount (BTC)</th>
-                <th className="px-2 py-3 text-level-4">Confirmations</th>
+                <SortableTh label="Txid" sortKey="txid" currentSortKey={unspentSort.sortKey} sortDir={unspentSort.sortDir} onSort={unspentSort.setSort} className="px-2 py-3 text-level-4" />
+                <SortableTh label="Vout" sortKey="vout" currentSortKey={unspentSort.sortKey} sortDir={unspentSort.sortDir} onSort={unspentSort.setSort} className="px-2 py-3 text-level-4" />
+                <SortableTh label="Address" sortKey="address" currentSortKey={unspentSort.sortKey} sortDir={unspentSort.sortDir} onSort={unspentSort.setSort} className="px-2 py-3 text-level-4" />
+                <SortableTh label="Amount (BTC)" sortKey="amount" currentSortKey={unspentSort.sortKey} sortDir={unspentSort.sortDir} onSort={unspentSort.setSort} className="px-2 py-3 text-level-4" />
+                <SortableTh label="Confirmations" sortKey="confirmations" currentSortKey={unspentSort.sortKey} sortDir={unspentSort.sortDir} onSort={unspentSort.setSort} className="px-2 py-3 text-level-4" />
               </tr>
             </thead>
             <tbody>
@@ -241,7 +332,7 @@ export function WalletTab() {
                   </td>
                 </tr>
               ) : (
-                unspentByConfirmations.map((utxo, i) => (
+                unspentSort.sortedData.map((utxo, i) => (
                   <tr
                     key={`${utxo.txid ?? ''}-${utxo.vout ?? i}`}
                     className="border-t border-level-3 hover:bg-level-3"
@@ -270,25 +361,26 @@ export function WalletTab() {
           Transactions ({transactions.length} entries)
         </h3>
         <div className="overflow-x-auto max-h-[60vh]">
-          <table className="w-full text-sm">
+          <table className="sortable-table w-full text-sm">
             <thead className="sticky top-0 bg-level-2 text-left">
               <tr>
-                <th className="px-2 py-3 text-level-4">Txid</th>
-                <th className="px-2 py-3 text-level-4">Category</th>
-                <th className="px-2 py-3 text-level-4">Amount (BTC)</th>
-                <th className="px-2 py-3 text-level-4">Confirmations</th>
-                <th className="px-2 py-3 text-level-4">Time</th>
+                <SortableTh label="Txid" sortKey="txid" currentSortKey={transactionsSort.sortKey} sortDir={transactionsSort.sortDir} onSort={transactionsSort.setSort} className="px-2 py-3 text-level-4" />
+                <SortableTh label="Category" sortKey="category" currentSortKey={transactionsSort.sortKey} sortDir={transactionsSort.sortDir} onSort={transactionsSort.setSort} className="px-2 py-3 text-level-4" />
+                <SortableTh label="Address" sortKey="address" currentSortKey={transactionsSort.sortKey} sortDir={transactionsSort.sortDir} onSort={transactionsSort.setSort} className="px-2 py-3 text-level-4" />
+                <SortableTh label="Amount (BTC)" sortKey="amount" currentSortKey={transactionsSort.sortKey} sortDir={transactionsSort.sortDir} onSort={transactionsSort.setSort} className="px-2 py-3 text-level-4" />
+                <SortableTh label="Confirmations" sortKey="confirmations" currentSortKey={transactionsSort.sortKey} sortDir={transactionsSort.sortDir} onSort={transactionsSort.setSort} className="px-2 py-3 text-level-4" />
+                <SortableTh label="Time" sortKey="time" currentSortKey={transactionsSort.sortKey} sortDir={transactionsSort.sortDir} onSort={transactionsSort.setSort} className="px-2 py-3 text-level-4" />
               </tr>
             </thead>
             <tbody>
               {transactions.length === 0 ? (
                 <tr className="border-t border-level-3">
-                  <td colSpan={5} className="p-4 text-center text-level-4">
+                  <td colSpan={6} className="p-4 text-center text-level-4">
                     No transactions
                   </td>
                 </tr>
               ) : (
-                transactionsByTime.map((tx, i) => (
+                transactionsSort.sortedData.map((tx, i) => (
                   <tr
                     key={`${tx.txid ?? ''}-${tx.vout ?? ''}-${i}`}
                     className="border-t border-level-3 hover:bg-level-3"
@@ -297,6 +389,9 @@ export function WalletTab() {
                       {truncateTxid(tx.txid)}
                     </td>
                     <td className="p-2 text-level-5">{tx.category ?? '-'}</td>
+                    <td className="p-2 max-w-[200px] truncate text-level-5" title={tx.address ?? ''}>
+                      {tx.address ?? '-'}
+                    </td>
                     <td className="p-2 text-level-5">
                       {tx.amount !== null && tx.amount !== undefined && Number.isFinite(tx.amount) ? Number(tx.amount).toFixed(8) : '-'}
                     </td>

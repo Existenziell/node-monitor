@@ -16,7 +16,7 @@ from constants import DEFAULT_RPC_TIMEOUT
 _BASE_ONLY_METHODS = frozenset({"listwallets", "loadwallet", "createwallet"})
 # Methods that operate on a specific wallet; use wallet URL when wallet_name is set
 _WALLET_SCOPED_METHODS = frozenset({
-    "getwalletinfo", "getbalance", "listunspent", "listtransactions", "gettransaction"
+    "getwalletinfo", "getbalance", "getbalances", "listunspent", "listtransactions", "gettransaction"
 })
 
 
@@ -174,6 +174,10 @@ class RPCService:
     def get_balance(self) -> Dict[str, Any]:
         """Get wallet balance."""
         return self.rpc_call("getbalance")
+
+    def get_balances(self) -> Dict[str, Any]:
+        """Get wallet balance breakdown (trusted, untrusted_pending, immature)."""
+        return self.rpc_call("getbalances")
 
     def get_unspent_outputs(self, minconf: int = 1, maxconf: int = 9999999) -> Dict[str, Any]:
         """Get unspent transaction outputs."""

@@ -7,7 +7,9 @@ import { useConsole } from '@/contexts/ConsoleContext';
 import { getRefreshTabId, clearRefreshTabId } from '@/refreshState';
 import { useApiData } from '@/hooks/useApiData';
 import { useTabData } from '@/hooks/useTabData';
+import { useTableSort } from '@/hooks/useTableSort';
 import { LoadingOverlay } from '@/components/LoadingOverlay';
+import { SortableTh } from '@/components/SortableTh';
 
 const PIE_COLORS = [
   'oklch(0.55 0.2 250)',
@@ -209,6 +211,24 @@ export function BlocksTab() {
   const timeSinceLastFormatted =
     elapsedSeconds !== null ? formatTimeSince(Math.floor(elapsedSeconds)) : '-';
 
+  const blocks = data?.blocks ?? [];
+  const blocksSort = useTableSort<BlockRow>({
+    data: blocks,
+    keyExtractors: {
+      height: (b) => b.block_height ?? null,
+      time: (b) => parseBlockTimeUtc(b.block_time ?? '') ?? null,
+      pool: (b) => (b.mining_pool ?? '') || null,
+      txCount: (b) => (b.transaction_count !== null && b.transaction_count !== undefined ? b.transaction_count : null),
+      weight: (b) => (b.block_weight !== null && b.block_weight !== undefined ? b.block_weight : null),
+      size: (b) => (b.block_size !== null && b.block_size !== undefined ? b.block_size : null),
+      reward: (b) => (b.block_reward !== null && b.block_reward !== undefined ? b.block_reward : null),
+      fees: (b) => (b.total_fees !== null && b.total_fees !== undefined ? b.total_fees : null),
+      feesUsd: (b) => (b.total_fees_usd !== null && b.total_fees_usd !== undefined ? b.total_fees_usd : null),
+    },
+    defaultSortKey: 'height',
+    defaultSortDir: 'desc',
+  });
+
   if (loading && !data) {
     return (
       <div className="p-4 text-level-4 flex items-center gap-2">
@@ -226,7 +246,6 @@ export function BlocksTab() {
     );
   }
 
-  const blocks = data?.blocks ?? [];
   const chainHeight = data?.chain_height ?? null;
   const nextBlockHeight = chainHeight !== null && chainHeight !== undefined ? chainHeight + 1 : null;
 
@@ -263,22 +282,22 @@ export function BlocksTab() {
 
       <div className="rounded-lg bg-level-2 border border-level-3 overflow-hidden">
         <div className="overflow-x-auto max-h-[60vh]">
-          <table className="w-full text-sm">
+          <table className="sortable-table w-full text-sm">
             <thead className="sticky top-0 bg-level-2 text-left">
               <tr>
-                <th className="px-2 py-3 text-level-4">Height</th>
-                <th className="px-2 py-3 text-level-4">Time</th>
-                <th className="px-2 py-3 text-level-4">Pool</th>
-                <th className="px-2 py-3 text-level-4">Tx Count</th>
-                <th className="px-2 py-3 text-level-4">Weight</th>
-                <th className="px-2 py-3 text-level-4">Size</th>
-                <th className="px-2 py-3 text-level-4">Reward</th>
-                <th className="px-2 py-3 text-level-4">Fees</th>
-                <th className="px-2 py-3 text-level-4">Fees (USD)</th>
+                <SortableTh label="Height" sortKey="height" currentSortKey={blocksSort.sortKey} sortDir={blocksSort.sortDir} onSort={blocksSort.setSort} className="px-2 py-3 text-level-4" />
+                <SortableTh label="Time" sortKey="time" currentSortKey={blocksSort.sortKey} sortDir={blocksSort.sortDir} onSort={blocksSort.setSort} className="px-2 py-3 text-level-4" />
+                <SortableTh label="Pool" sortKey="pool" currentSortKey={blocksSort.sortKey} sortDir={blocksSort.sortDir} onSort={blocksSort.setSort} className="px-2 py-3 text-level-4" />
+                <SortableTh label="Tx Count" sortKey="txCount" currentSortKey={blocksSort.sortKey} sortDir={blocksSort.sortDir} onSort={blocksSort.setSort} className="px-2 py-3 text-level-4" />
+                <SortableTh label="Weight" sortKey="weight" currentSortKey={blocksSort.sortKey} sortDir={blocksSort.sortDir} onSort={blocksSort.setSort} className="px-2 py-3 text-level-4" />
+                <SortableTh label="Size" sortKey="size" currentSortKey={blocksSort.sortKey} sortDir={blocksSort.sortDir} onSort={blocksSort.setSort} className="px-2 py-3 text-level-4" />
+                <SortableTh label="Reward" sortKey="reward" currentSortKey={blocksSort.sortKey} sortDir={blocksSort.sortDir} onSort={blocksSort.setSort} className="px-2 py-3 text-level-4" />
+                <SortableTh label="Fees" sortKey="fees" currentSortKey={blocksSort.sortKey} sortDir={blocksSort.sortDir} onSort={blocksSort.setSort} className="px-2 py-3 text-level-4" />
+                <SortableTh label="Fees (USD)" sortKey="feesUsd" currentSortKey={blocksSort.sortKey} sortDir={blocksSort.sortDir} onSort={blocksSort.setSort} className="px-2 py-3 text-level-4" />
               </tr>
             </thead>
             <tbody>
-              {blocks.map((block) => (
+              {blocksSort.sortedData.map((block) => (
                 <tr
                   key={block.block_height}
                   className="border-t border-level-3 hover:bg-level-3"

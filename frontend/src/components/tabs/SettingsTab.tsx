@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useApi } from '@/contexts/ApiContext';
 import { useConsole } from '@/contexts/ConsoleContext';
-import type { ConfigStatus, ConfigSavePayload } from '@/types';
+import type { ConfigStatus, ConfigSavePayload, ConfigTestResult } from '@/types';
 
 /** Baseline values from last load/save for dirty checking. rpcUser is null when masked. */
 interface SettingsBaseline {
@@ -79,11 +79,13 @@ function getPendingChanges(
 }
 
 export function SettingsTab() {
-  const { fetchConfigStatus, saveConfig } = useApi();
+  const { fetchConfigStatus, fetchConfigTest, saveConfig } = useApi();
   const { log } = useConsole();
   const [status, setStatus] = useState<ConfigStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [testLoading, setTestLoading] = useState(false);
+  const [testResult, setTestResult] = useState<ConfigTestResult | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [lastSaved, setLastSaved] = useState<SettingsBaseline | null>(null);
 
@@ -127,6 +129,7 @@ export function SettingsTab() {
         rpc_port: null,
         rpc_user_masked: null,
         cookie_file: null,
+        wallet_name: null,
         node_configured: false,
       };
       setStatus(fallback);
@@ -233,6 +236,39 @@ export function SettingsTab() {
             {message.text}
           </div>
         )}
+        {status?.config_exists && (
+          <p className="text-sm text-level-4 mb-4">
+            Default wallet: {status.wallet_name !== null && status.wallet_name !== undefined && status.wallet_name !== '' ? status.wallet_name : 'None'}
+          </p>
+        )}
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={async () => {
+              setTestResult(null);
+              setTestLoading(true);
+              try {
+                const r = await fetchConfigTest();
+                setTestResult(r);
+              } catch (e) {
+                setTestResult({ ok: false, error: (e as Error).message });
+              } finally {
+                setTestLoading(false);
+              }
+            }}
+            disabled={testLoading}
+            className="rounded border border-level-3 bg-level-2 px-3 py-2 text-sm font-medium text-level-5 hover:bg-level-3 disabled:opacity-50"
+          >
+            {testLoading ? 'Testing…' : 'Test connection'}
+          </button>
+          {testResult && !testLoading && (
+            <span className={`text-sm ${testResult.ok ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+              {testResult.ok
+                ? `Connected${testResult.version ? ` (${testResult.version})` : ''}`
+                : `Connection failed: ${testResult.error ?? 'Unknown error'}`}
+            </span>
+          )}
+        </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-level-5 mb-1">

@@ -39,6 +39,17 @@ function subversionWithoutUaComment(subversion: string | undefined | null): stri
   return String(subversion).replace(/\s*\([^)]*\)\s*/, '').trim() || 'N/A';
 }
 
+function formatUptime(seconds: number | undefined | null): string {
+  if (seconds === null || seconds === undefined || !Number.isFinite(seconds) || seconds < 0) return 'N/A';
+  const d = Math.floor(seconds / 86400);
+  const h = Math.floor((seconds % 86400) / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  if (d > 0) return `${d}d ${h}h`;
+  if (h > 0) return `${h}h ${m}m`;
+  if (m > 0) return `${m}m`;
+  return `${Math.floor(seconds)}s`;
+}
+
 function InfoCard({
   title,
   items,
@@ -183,6 +194,13 @@ export function NodeTab() {
     { label: 'Relay fee', value: network.relayfee !== null && network.relayfee !== undefined ? formatBtcPerKvB(Number(network.relayfee)) : 'N/A' },
     { label: 'Incremental fee', value: network.incrementalfee !== null && network.incrementalfee !== undefined ? formatBtcPerKvB(Number(network.incrementalfee)) : 'N/A' },
     { label: 'Warnings', value: network.warnings !== null && network.warnings !== undefined && String(network.warnings).trim() !== '' ? String(network.warnings) : 'None' },
+    ...(typeof data?.uptime === 'number' ? [{ label: 'Node uptime', value: formatUptime(data.uptime) }] : []),
+    ...(data?.nettotals && (data.nettotals.totalbytessent !== null && data.nettotals.totalbytessent !== undefined || data.nettotals.totalbytesrecv !== null && data.nettotals.totalbytesrecv !== undefined)
+      ? [
+          { label: 'Total bytes sent', value: formatBytes(data.nettotals.totalbytessent) },
+          { label: 'Total bytes recv', value: formatBytes(data.nettotals.totalbytesrecv) },
+        ]
+      : []),
   ];
 
   const bestBlockHash = typeof blockchain.bestblockhash === 'string' ? blockchain.bestblockhash : '';

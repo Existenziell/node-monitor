@@ -1,48 +1,16 @@
 import { useCallback, useEffect } from 'react';
 import { useApi } from '@/contexts/ApiContext';
-import type { NodeData, NetworkData, Peer, BtcPrices } from '@/types';
+import type { BlocksData, NodeData, NetworkData, Peer, BtcPrices } from '@/types';
 import { getRefreshTabId, clearRefreshTabId } from '@/refreshState';
 import { useApiData } from '@/hooks/useApiData';
 import { useTabData } from '@/hooks/useTabData';
 import { NetworkHistoryChart } from '@/components/NetworkHistoryChart';
+import { PeersTable } from '@/components/PeersTable';
 import { LoadingOverlay } from '@/components/LoadingOverlay';
 import { formatDifficulty } from '@/utils';
 
 const HALVING_INTERVAL = 210_000;
 const RETARGET_INTERVAL = 2016;
-
-function formatBytes(n: number | undefined | null): string {
-  if (n === null || n === undefined || !Number.isFinite(n)) return '-';
-  if (n < 1024) return `${n} B`;
-  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
-  if (n < 1024 * 1024 * 1024) return `${(n / 1024 / 1024).toFixed(1)} MB`;
-  return `${(n / 1024 / 1024 / 1024).toFixed(2)} GB`;
-}
-
-function formatPeerTime(epoch: number | undefined | null): string {
-  if (epoch === null || epoch === undefined || !Number.isFinite(epoch) || epoch <= 0) return '-';
-  try {
-    const date = new Date(epoch * 1000);
-    const now = Date.now();
-    const diffMs = now - date.getTime();
-    const diffM = Math.floor(diffMs / 60000);
-    const diffH = Math.floor(diffM / 60);
-    const diffD = Math.floor(diffH / 24);
-    if (diffM < 1) return 'just now';
-    if (diffM < 60) return `${diffM}m ago`;
-    if (diffH < 24) return `${diffH}h ago`;
-    if (diffD < 7) return `${diffD}d ago`;
-    return date.toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' });
-  } catch {
-    return '-';
-  }
-}
-
-function formatSubver(subver: string | undefined | null): string {
-  if (subver === null || subver === undefined || subver === '') return '-';
-  const s = String(subver).replace(/^\/+|\/+$/g, '').trim();
-  return s || '-';
-}
 
 function SummaryCard({
   title,
@@ -93,11 +61,19 @@ function formatPrice(usd: number | undefined): string {
   }).format(usd);
 }
 
+function formatSeconds(sec: number | undefined | null): string {
+  if (sec === null || sec === undefined || !Number.isFinite(sec)) return '—';
+  if (sec < 60) return `${Math.round(sec)} s`;
+  if (sec < 3600) return `${(sec / 60).toFixed(1)} min`;
+  return `${(sec / 3600).toFixed(1)} h`;
+}
+
 export function NetworkTab() {
-  const { fetchNode, fetchNetwork, fetchPrice } = useApi();
+  const { fetchNode, fetchNetwork, fetchPrice, fetchBlocks } = useApi();
   const nodeState = useApiData<NodeData>(fetchNode);
   const networkState = useApiData<NetworkData>(fetchNetwork);
   const priceState = useApiData<BtcPrices>(fetchPrice);
+  const blocksState = useApiData<BlocksData>(fetchBlocks);
 
   const loadBoth = useCallback(
     () =>
@@ -105,21 +81,23 @@ export function NetworkTab() {
         nodeState.load(),
         networkState.load(),
         priceState.load(),
+        blocksState.load(),
       ]),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- load refs are stable
-    [nodeState.load, networkState.load, priceState.load]
+    [nodeState.load, networkState.load, priceState.load, blocksState.load]
   );
   useTabData(loadBoth, 'network');
 
   const { data, loading, error } = nodeState;
   const { data: networkData, loading: networkLoading, error: networkError } = networkState;
   const { data: priceData } = priceState;
+  const blocksData = blocksState.data;
 
   useEffect(() => {
-    if (!loading && !networkLoading) {
+    if (!loading && !networkLoading && !blocksState.loading) {
       clearRefreshTabId('network');
     }
-  }, [loading, networkLoading]);
+  }, [loading, networkLoading, blocksState.loading]);
 
   if (loading && !data) {
     return (
@@ -143,6 +121,7 @@ export function NetworkTab() {
   const difficulty = typeof blockchain.difficulty === 'number' ? blockchain.difficulty : null;
   const peers: Peer[] = data?.peers ?? [];
   const feeEstimates = networkData?.fee_estimates;
+  const feeEstimateErrors = networkData?.fee_estimate_errors;
 
   const halvingProgress = blocks !== null ? (blocks % HALVING_INTERVAL) / HALVING_INTERVAL : null;
   const halvingLeft = blocks !== null ? HALVING_INTERVAL - (blocks % HALVING_INTERVAL) : null;
@@ -159,8 +138,17 @@ export function NetworkTab() {
   }
   blockHeightSubLines.push({
     label: 'Avg block time',
-    value: '—',
+    value:
+      blocksData?.avg_block_time_seconds !== null && blocksData?.avg_block_time_seconds !== undefined && Number.isFinite(blocksData.avg_block_time_seconds)
+        ? formatSeconds(blocksData.avg_block_time_seconds)
+        : '—',
   });
+  if (blocksData?.seconds_since_last_block !== null && blocksData?.seconds_since_last_block !== undefined && Number.isFinite(blocksData.seconds_since_last_block)) {
+    blockHeightSubLines.push({
+      label: 'Time since last block',
+      value: formatSeconds(blocksData.seconds_since_last_block),
+    });
+  }
 
   const difficultySubLines: { label: string; value: string; progress?: number }[] = [];
   if (retargetProgress !== null && retargetLeft !== null) {
@@ -180,7 +168,7 @@ export function NetworkTab() {
   const btcPriceSubLines = btcPriceEur ? [{ label: btcPriceEur, value: '' }] : undefined;
 
   const isRefreshing =
-    (loading || networkLoading) && !!data && getRefreshTabId() === 'network';
+    (loading || networkLoading || blocksState.loading) && !!data && getRefreshTabId() === 'network';
 
   return (
     <div className="relative space-y-4">
@@ -206,89 +194,61 @@ export function NetworkTab() {
             Fee estimates
           </h3>
           <dl className="space-y-1 text-sm">
-            <div className="flex justify-between gap-4">
-              <dt className="text-level-4">High priority</dt>
-              <dd className="text-level-5">
-                {feeEstimates?.high_sat_per_vb !== undefined && feeEstimates?.high_sat_per_vb !== null
-                  ? `${feeEstimates.high_sat_per_vb} sat/vB`
-                  : '—'}
-              </dd>
+            {data?.connection_count !== null && data?.connection_count !== undefined && Number.isFinite(data.connection_count) && (
+              <div className="flex justify-between gap-4">
+                <dt className="text-level-4">Connections</dt>
+                <dd className="text-level-5">{Number(data.connection_count).toLocaleString()}</dd>
+              </div>
+            )}
+            <div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-level-4">High priority</dt>
+                <dd className="text-level-5">
+                  {feeEstimates?.high_sat_per_vb !== undefined && feeEstimates?.high_sat_per_vb !== null
+                    ? `${feeEstimates.high_sat_per_vb} sat/vB`
+                    : '—'}
+                </dd>
+              </div>
+              {feeEstimateErrors?.high_sat_per_vb && (
+                <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5" role="status">
+                  {feeEstimateErrors.high_sat_per_vb}
+                </p>
+              )}
             </div>
-            <div className="flex justify-between gap-4">
-              <dt className="text-level-4">Medium</dt>
-              <dd className="text-level-5">
-                {feeEstimates?.medium_sat_per_vb !== undefined && feeEstimates?.medium_sat_per_vb !== null
-                  ? `${feeEstimates.medium_sat_per_vb} sat/vB`
-                  : '—'}
-              </dd>
+            <div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-level-4">Medium</dt>
+                <dd className="text-level-5">
+                  {feeEstimates?.medium_sat_per_vb !== undefined && feeEstimates?.medium_sat_per_vb !== null
+                    ? `${feeEstimates.medium_sat_per_vb} sat/vB`
+                    : '—'}
+                </dd>
+              </div>
+              {feeEstimateErrors?.medium_sat_per_vb && (
+                <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5" role="status">
+                  {feeEstimateErrors.medium_sat_per_vb}
+                </p>
+              )}
             </div>
-            <div className="flex justify-between gap-4">
-              <dt className="text-level-4">Low priority</dt>
-              <dd className="text-level-5">
-                {feeEstimates?.low_sat_per_vb !== undefined && feeEstimates?.low_sat_per_vb !== null
-                  ? `${feeEstimates.low_sat_per_vb} sat/vB`
-                  : '—'}
-              </dd>
+            <div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-level-4">Low priority</dt>
+                <dd className="text-level-5">
+                  {feeEstimates?.low_sat_per_vb !== undefined && feeEstimates?.low_sat_per_vb !== null
+                    ? `${feeEstimates.low_sat_per_vb} sat/vB`
+                    : '—'}
+                </dd>
+              </div>
+              {feeEstimateErrors?.low_sat_per_vb && (
+                <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5" role="status">
+                  {feeEstimateErrors.low_sat_per_vb}
+                </p>
+              )}
             </div>
           </dl>
         </div>
       </div>
-      {peers.length > 0 && (
-        <div className="rounded-lg bg-level-2 border border-level-3 overflow-hidden">
-          <h3 className="text-sm font-medium text-accent p-4 pb-2">
-            Peers ({peers.length})
-          </h3>
-          <div className="overflow-x-auto max-h-[60vh]">
-            <table className="w-full text-sm">
-              <thead className="sticky top-0 bg-level-2 text-left">
-                <tr>
-                  <th className="px-2 py-3 text-level-4">Address</th>
-                  <th className="px-2 py-3 text-level-4">Network</th>
-                  <th className="px-2 py-3 text-level-4">Direction</th>
-                  <th className="px-2 py-3 text-level-4">Version</th>
-                  <th className="px-2 py-3 text-level-4">Connection type</th>
-                  <th className="px-2 py-3 text-level-4">Connected</th>
-                  <th className="px-2 py-3 text-level-4">Last recv</th>
-                  <th className="px-2 py-3 text-level-4">Sent</th>
-                  <th className="px-2 py-3 text-level-4">Recv</th>
-                  <th className="px-2 py-3 text-level-4">Ping</th>
-                  <th className="px-2 py-3 text-level-4">Starting height</th>
-                  <th className="px-2 py-3 text-level-4">Transport</th>
-                </tr>
-              </thead>
-              <tbody>
-                {peers.map((peer, index) => (
-                  <tr
-                    key={String(peer.id ?? peer.addr ?? index)}
-                    className="border-t border-level-3 hover:bg-level-3"
-                  >
-                    <td className="p-2 text-level-5 font-mono truncate max-w-[180px]" title={peer.addr ?? ''}>
-                      {peer.addr ?? '-'}
-                    </td>
-                    <td className="p-2 text-level-5">{peer.network ?? '-'}</td>
-                    <td className="p-2 text-level-5">{peer.inbound === true ? 'In' : peer.inbound === false ? 'Out' : '-'}</td>
-                    <td className="p-2 text-level-5 truncate max-w-[140px]" title={peer.subver ?? ''}>
-                      {formatSubver(peer.subver)}
-                    </td>
-                    <td className="p-2 text-level-5">{peer.connection_type ?? '-'}</td>
-                    <td className="p-2 text-level-5">{formatPeerTime(peer.conntime)}</td>
-                    <td className="p-2 text-level-5">{formatPeerTime(peer.lastrecv)}</td>
-                    <td className="p-2 text-level-5">{formatBytes(peer.bytessent)}</td>
-                    <td className="p-2 text-level-5">{formatBytes(peer.bytesrecv)}</td>
-                    <td className="p-2 text-level-5">
-                      {peer.pingtime !== null && peer.pingtime !== undefined && Number.isFinite(peer.pingtime) ? `${Number(peer.pingtime).toFixed(0)} ms` : '-'}
-                    </td>
-                    <td className="p-2 text-level-5">
-                      {peer.startingheight !== null && peer.startingheight !== undefined && Number.isFinite(peer.startingheight) ? Number(peer.startingheight).toLocaleString() : '-'}
-                    </td>
-                    <td className="p-2 text-level-5">{peer.transport_protocol_type ?? '-'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+      <PeersTable peers={peers} />
       <div className="rounded-lg bg-level-2 border border-level-3 p-4">
         <h3 className="text-sm font-medium text-accent mb-2">Network history</h3>
         {networkLoading && !networkData ? (

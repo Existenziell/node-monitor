@@ -90,6 +90,8 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
                 self.handle_price()
             elif path == '/api/config/status':
                 self.handle_config_status()
+            elif path == '/api/config/test':
+                self.handle_config_test()
             elif path == '/api/pools':
                 self.handle_pools_data()
             elif path == '/api/pools/signatures':
@@ -231,6 +233,33 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
                 "error": str(e)
             }).encode())
 
+    def handle_config_test(self):
+        """GET /api/config/test - test RPC connection and return node version if successful."""
+        if self.rpc_service is None:
+            self.wfile.write(json.dumps({
+                "ok": False,
+                "error": "RPC not configured. Use Settings to configure your node."
+            }).encode())
+            return
+        try:
+            blockchain_info = self.rpc_service.get_blockchain_info()
+            if "error" in blockchain_info and blockchain_info["error"]:
+                err = blockchain_info["error"]
+                msg = err.get("message", str(err)) if isinstance(err, dict) else str(err)
+                self.wfile.write(json.dumps({"ok": False, "error": msg}).encode())
+                return
+            network_info = self.rpc_service.get_network_info()
+            if "error" in network_info and network_info["error"]:
+                err = network_info["error"]
+                msg = err.get("message", str(err)) if isinstance(err, dict) else str(err)
+                self.wfile.write(json.dumps({"ok": False, "error": msg}).encode())
+                return
+            result = network_info.get("result") if isinstance(network_info.get("result"), dict) else {}
+            version = result.get("subversion", "").strip("/") or None
+            self.wfile.write(json.dumps({"ok": True, "version": version}).encode())
+        except Exception as e:
+            self.wfile.write(json.dumps({"ok": False, "error": str(e)}).encode())
+
     def handle_config_save(self):
         """POST /api/config - save config from Settings form."""
         self.send_response(200)
@@ -273,7 +302,7 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
         else:
             self.wfile.write(json.dumps({"ok": False, "error": err}).encode())
 
-    def handle_node_data(self):
+    def handle_node_data(self):  # pylint: disable=too-many-locals
         """Handle node monitoring data requests (cached to reduce RPC load)."""
         if self.rpc_service is None:
             self._send_no_config_response()
@@ -294,6 +323,9 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
             index_info = self.rpc_service.get_index_info()
             hashrate_info = self.rpc_service.get_network_hashrate()
             peer_info = self.rpc_service.get_peer_info()
+            connection_count_info = self.rpc_service.get_connection_count()
+            uptime_info = self.rpc_service.uptime()
+            net_totals_info = self.rpc_service.get_net_totals()
             host_memory = self._get_host_memory()
             host_architecture = self._get_host_architecture()
 
@@ -303,6 +335,10 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
 
             if self._check_connection_error(network_info, "network info"):
                 return
+
+            uptime = uptime_info.get('result') if 'result' in uptime_info and uptime_info.get('error') is None else None
+            net_totals = net_totals_info.get('result') if 'result' in net_totals_info and net_totals_info.get('error') is None else None
+            connection_count = connection_count_info.get('result') if 'result' in connection_count_info and connection_count_info.get('error') is None else None
 
             response = {
                 "status": "success",
@@ -315,7 +351,10 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
                     "host_architecture": host_architecture,
                     "indexing": index_info.get('result') if 'result' in index_info else None,
                     "hashrate": hashrate_info.get('result') if 'result' in hashrate_info else None,
-                    "peers": peer_info.get('result') if 'result' in peer_info else []
+                    "peers": peer_info.get('result') if 'result' in peer_info else [],
+                    "uptime": uptime,
+                    "nettotals": net_totals,
+                    "connection_count": connection_count
                 }
             }
             self._node_cache = response
@@ -374,17 +413,21 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
                 return
 
             balance = self.rpc_service.get_balance()
+            balances = self.rpc_service.get_balances()
             unspent = self.rpc_service.get_unspent_outputs()
             transactions = self.rpc_service.list_transactions("*", 100)
 
             if self._check_connection_error(balance, "balance"):
                 return
 
+            balances_result = balances.get('result') if 'result' in balances and balances.get('error') is None else None
+
             response = {
                 "status": "success",
                 "data": {
                     "wallet": wallet_info.get('result') if 'result' in wallet_info else None,
                     "balance": balance.get('result') if 'result' in balance else None,
+                    "balances": balances_result,
                     "unspent": unspent.get('result') if 'result' in unspent else None,
                     "transactions": transactions.get('result') if 'result' in transactions else None
                 }
@@ -618,24 +661,30 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
             self.wfile.write(json.dumps(error_response).encode())
 
     def _get_fee_estimates(self):
-        """Return fee estimates in sat/vB for high/medium/low (2, 4, 6 blocks), or None if RPC unavailable."""
+        """Return fee estimates in sat/vB for high/medium/low (2, 4, 6 blocks), and optional errors. None if RPC unavailable."""
         if self.rpc_service is None:
-            return None
+            return None, None
         try:
             result = {}
+            errors = {}
             for blocks, key in [(2, "high_sat_per_vb"), (4, "medium_sat_per_vb"), (6, "low_sat_per_vb")]:
                 resp = self.rpc_service.estimate_smart_fee(blocks)
                 res = resp.get("result") if isinstance(resp.get("result"), dict) else None
                 feerate = res.get("feerate") if res else None
+                res_errors = res.get("errors") if res else None
                 if feerate is not None and isinstance(feerate, (int, float)):
-                    # feerate from estimatesmartfee is BTC per kvB; convert to sat/vB
                     sat_per_vb = round(float(feerate) * 1e8 / 1000)
                     result[key] = max(0, sat_per_vb)
+                    errors[key] = None
                 else:
                     result[key] = None
-            return result
+                    if isinstance(res_errors, list) and len(res_errors) > 0:
+                        errors[key] = str(res_errors[0])
+                    else:
+                        errors[key] = "Insufficient data or no feerate found"
+            return result, errors
         except Exception:
-            return None
+            return None, None
 
     def handle_network_data(self):
         """Handle network data requests (hashrate and difficulty history from SQLite, optional fee estimates)."""
@@ -646,9 +695,11 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
                 "network_history": network_data,
                 "total_records": len(network_data)
             }
-            fee_estimates = self._get_fee_estimates()
+            fee_estimates, fee_estimate_errors = self._get_fee_estimates()
             if fee_estimates is not None:
                 data["fee_estimates"] = fee_estimates
+            if fee_estimate_errors is not None and any(fee_estimate_errors.get(k) for k in ("high_sat_per_vb", "medium_sat_per_vb", "low_sat_per_vb")):
+                data["fee_estimate_errors"] = fee_estimate_errors
             response = {
                 "status": "success",
                 "data": data

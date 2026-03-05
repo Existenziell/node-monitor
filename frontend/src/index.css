@@ -40,6 +40,11 @@
 }
 
 @layer components {
+  /* Align table body content with sortable header buttons (th px-2 + button px-2 = 1rem) */
+  .sortable-table td {
+    padding-left: 1rem;
+  }
+
   .radio-setting {
     @apply h-5 w-5 shrink-0 cursor-pointer rounded-full border-2 border-level-3
            bg-level-2

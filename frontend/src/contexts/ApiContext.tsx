@@ -7,6 +7,7 @@ import type {
   BtcPrices,
   ConfigSavePayload,
   ConfigStatus,
+  ConfigTestResult,
   DistributionData,
   NodeData,
   NetworkData,
@@ -154,6 +155,12 @@ export function ApiProvider({ children }: { children: React.ReactNode }) {
     return data as ConfigStatus;
   }, []);
 
+  const fetchConfigTest = useCallback(async (): Promise<ConfigTestResult> => {
+    const res = await fetch(`${API_BASE_URL}/config/test`);
+    const data = await res.json().catch(() => ({ ok: false, error: 'Request failed' }));
+    return data as ConfigTestResult;
+  }, []);
+
   const saveConfig = useCallback(
     async (payload: ConfigSavePayload): Promise<{ ok: boolean; error?: string }> => {
       const res = await fetch(`${API_BASE_URL}/config`, {
@@ -198,6 +205,7 @@ export function ApiProvider({ children }: { children: React.ReactNode }) {
     fetchPrice,
     callRpc,
     fetchConfigStatus,
+    fetchConfigTest,
     saveConfig,
     saveWalletName,
   };
