@@ -137,7 +137,7 @@ export function WalletTab() {
           <div className="space-y-4 p-4">
             <p className="text-level-4">No wallet is loaded. Choose a wallet to load and use.</p>
             {actionError && (
-              <div className="rounded-lg border border-semantic-error/50 bg-semantic-error/10 p-3 text-sm text-semantic-error">
+              <div className="callout-error">
                 {actionError}
               </div>
             )}
@@ -261,7 +261,7 @@ export function WalletTab() {
                 <button
                   type="button"
                   onClick={() => setBalanceVisible((v) => !v)}
-                  className="p-0.5 rounded text-level-4 hover:text-level-5 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                  className="icon-button-muted"
                   title={balanceVisible ? 'Hide balance' : 'Show balance'}
                   aria-label={balanceVisible ? 'Hide balance' : 'Show balance'}
                 >
@@ -364,7 +364,7 @@ export function WalletTab() {
                 unspentSort.sortedData.map((utxo, i) => (
                   <tr
                     key={`${utxo.txid ?? ''}-${utxo.vout ?? i}`}
-                    className="border-t border-level-3 hover:bg-level-3"
+                    className="table-row-hover"
                   >
                     <td className="p-2 text-level-5 font-mono" title={utxo.txid ?? ''}>
                       {truncateTxid(utxo.txid)}
@@ -412,7 +412,7 @@ export function WalletTab() {
                 transactionsSort.sortedData.map((tx, i) => (
                   <tr
                     key={`${tx.txid ?? ''}-${tx.vout ?? ''}-${i}`}
-                    className="border-t border-level-3 hover:bg-level-3"
+                    className="table-row-hover"
                   >
                     <td className="p-2 text-level-5 font-mono" title={tx.txid ?? ''}>
                       {truncateTxid(tx.txid)}

@@ -11,6 +11,7 @@ export default {
           3: 'var(--level-3)',
           4: 'var(--level-4)',
           5: 'var(--level-5)',
+          6: 'var(--level-6)',
         },
         accent: {
           DEFAULT: '#5a7a9a',

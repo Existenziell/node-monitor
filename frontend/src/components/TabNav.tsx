@@ -4,13 +4,6 @@ import { RefreshIcon, XIcon } from './Icons';
 
 export const TAB_NAV_DRAWER_ID = 'tab-nav-drawer';
 
-function tabButtonClass(active: boolean) {
-  return `px-4 py-2 rounded text-sm font-medium transition border ${active
-    ? 'text-accent border-accent'
-    : 'text-level-4 hover:bg-level-3 border-transparent'
-    }`;
-}
-
 export function TabNav({
   activeTab,
   onTabChange,
@@ -36,7 +29,7 @@ export function TabNav({
               key={id}
               type="button"
               onClick={() => onTabChange(id)}
-              className={tabButtonClass(activeTab === id)}
+              className={`tab-button ${activeTab === id ? 'tab-button-active' : ''}`}
             >
               {label}
             </button>
@@ -95,7 +88,7 @@ export function TabNav({
                 key={id}
                 type="button"
                 onClick={() => handleTabSelect(id)}
-                className={`w-full text-left ${tabButtonClass(activeTab === id)}`}
+                className={`w-full text-left tab-button ${activeTab === id ? 'tab-button-active' : ''}`}
               >
                 {label}
               </button>

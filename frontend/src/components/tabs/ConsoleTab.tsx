@@ -118,7 +118,7 @@ export function ConsoleTab() {
               <button
                 type="button"
                 onClick={() => toggleCategory(category)}
-                className="flex items-center gap-1.5 w-full text-left text-xs font-medium text-accent hover:text-accent-hover transition-colors mb-1.5"
+                className="method-list-link"
                 aria-expanded={!isCollapsed}
               >
                 <span

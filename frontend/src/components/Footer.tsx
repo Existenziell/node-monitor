@@ -18,7 +18,7 @@ export function Footer() {
             href={href}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 text-level-4 hover:text-level-5 rounded px-2 py-1 hover:bg-level-3 transition-colors"
+            className="nav-link-muted"
           >
             {label}
             <ExternalLinkIcon />

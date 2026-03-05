@@ -82,7 +82,7 @@ function GroupedInfoCard({
   const renderGroup = (heading: string | undefined, items: GroupedItem[]) => (
     <div className="space-y-3">
       {heading !== undefined && heading !== null && heading !== '' ? (
-        <h4 className="text-xs font-semibold uppercase tracking-wider text-level-4 border-b border-level-3 pb-1">
+        <h4 className="subsection-heading">
           {heading}
         </h4>
       ) : null}
@@ -402,10 +402,7 @@ function NodeTabContent({ data, loading }: { data: NodeData; loading: boolean })
     <div className="relative space-y-4">
       <LoadingOverlay show={isRefreshing} />
       {nodeWarning !== '' ? (
-        <div
-          className="rounded-lg border border-level-3 bg-level-2 p-4 text-level-5 border-l-4 border-l-semantic-warning"
-          role="alert"
-        >
+        <div className="callout-warning" role="alert">
           {nodeWarning}
         </div>
       ) : null}

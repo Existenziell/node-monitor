@@ -188,7 +188,7 @@ export function NetworkTab() {
                 </dd>
               </div>
               {feeEstimateErrors?.high_sat_per_vb && (
-                <p className="text-xs text-semantic-warning mt-0.5" role="status">
+                <p className="text-sm text-semantic-warning mt-0.5" role="status">
                   {feeEstimateErrors.high_sat_per_vb}
                 </p>
               )}
@@ -203,7 +203,7 @@ export function NetworkTab() {
                 </dd>
               </div>
               {feeEstimateErrors?.medium_sat_per_vb && (
-                <p className="text-xs text-semantic-warning mt-0.5" role="status">
+                <p className="text-sm text-semantic-warning mt-0.5" role="status">
                   {feeEstimateErrors.medium_sat_per_vb}
                 </p>
               )}
@@ -218,7 +218,7 @@ export function NetworkTab() {
                 </dd>
               </div>
               {feeEstimateErrors?.low_sat_per_vb && (
-                <p className="text-xs text-semantic-warning mt-0.5" role="status">
+                <p className="text-sm text-semantic-warning mt-0.5" role="status">
                   {feeEstimateErrors.low_sat_per_vb}
                 </p>
               )}

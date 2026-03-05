@@ -398,7 +398,7 @@ export function SettingsTab() {
                   }
                 }}
                 disabled={testLoading}
-                className="rounded border border-level-3 bg-level-2 px-3 py-2 text-sm font-medium text-level-5 hover:bg-level-3 disabled:opacity-50"
+                className="form-display"
               >
                 {testLoading ? 'Testing…' : 'Test connection'}
               </button>

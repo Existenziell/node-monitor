@@ -22,7 +22,7 @@ export function Console() {
   }, [lines]);
 
   return (
-    <div className="rounded border border-level-3 bg-level-2 mb-4">
+    <div className="console-panel">
       <div className="flex items-center justify-between px-3 py-2 border-b border-level-3">
         <span className="text-sm font-medium text-level-5">System Console</span>
         <div className="flex items-center gap-2">
@@ -35,7 +35,7 @@ export function Console() {
           <button
             type="button"
             onClick={clear}
-            className="px-2 py-1 text-sm rounded hover:bg-level-3"
+            className="console-tool-button"
           >
             Clear
           </button>

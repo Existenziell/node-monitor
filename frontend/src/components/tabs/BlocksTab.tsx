@@ -295,7 +295,7 @@ export function BlocksTab() {
               {blocksSort.sortedData.map((block) => (
                 <tr
                   key={block.block_height}
-                  className="border-t border-level-3 hover:bg-level-3"
+                  className="table-row-hover"
                 >
                   <td className="p-2 text-level-5">{block.block_height}</td>
                   <td className="p-2 text-level-5">{block.block_time ?? '-'}</td>

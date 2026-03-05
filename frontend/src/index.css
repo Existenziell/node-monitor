@@ -9,6 +9,7 @@
   --level-3: #e2e8f0;
   --level-4: #475569;
   --level-5: #0f172a;
+  --level-6: #020617;
   --accent: #5a7a9a;
   --color-error: #dc2626;
   --color-warning: #d97706;
@@ -22,6 +23,7 @@
   --level-3: #22242b;
   --level-4: #7e889f;
   --level-5: #b8c0d4;
+  --level-6: #e2e8f2;
   --accent: #5a7a9a;
   --color-error: #f87171;
   --color-warning: #fbbf24;
@@ -30,7 +32,7 @@
 
 @layer base {
   body {
-    @apply font-sans bg-level-1 text-level-4 min-h-screen text-sm antialiased;
+    @apply font-sans bg-level-1 text-level-4 min-h-screen text-base antialiased;
   }
 
   /* Hide number input spinners */
@@ -113,5 +115,65 @@
 
   .table-row-hover {
     @apply border-t border-level-3 hover:bg-level-3 transition-colors duration-150;
+  }
+
+  /* Tab nav */
+  .tab-button {
+    @apply px-4 py-2 rounded text-base font-medium transition border text-level-4 hover:bg-level-3 border-transparent;
+  }
+
+  .tab-button-active {
+    @apply text-accent border-accent;
+  }
+
+  /* Sortable table header button */
+  .sortable-th-button {
+    @apply flex items-center gap-1 w-full text-left font-medium hover:text-level-5 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-inset rounded px-2 py-3;
+  }
+
+  /* Muted nav/footer link */
+  .nav-link-muted {
+    @apply inline-flex items-center gap-1.5 text-base text-level-4 hover:text-level-5 rounded px-2 py-1 hover:bg-level-3 transition-colors;
+  }
+
+  /* Subsection heading (small uppercase divider) */
+  .subsection-heading {
+    @apply text-sm font-semibold uppercase tracking-wider text-level-4 border-b border-level-3 pb-1;
+  }
+
+  /* Callouts */
+  .callout-warning {
+    @apply rounded-lg border border-level-3 bg-level-2 p-4 text-level-5 border-l-4 border-l-semantic-warning;
+  }
+
+  .callout-error {
+    @apply rounded-lg p-3 text-sm text-semantic-error;
+    border: 1px solid color-mix(in srgb, var(--color-error) 50%, transparent);
+    background-color: color-mix(in srgb, var(--color-error) 12%, transparent);
+  }
+
+  /* Read-only display field */
+  .form-display {
+    @apply rounded border border-level-3 bg-level-2 px-3 py-2 text-sm font-medium text-level-5 hover:bg-level-3 disabled:opacity-50;
+  }
+
+  /* Console outer panel */
+  .console-panel {
+    @apply rounded border border-level-3 bg-level-2 mb-4;
+  }
+
+  /* ConsoleTab method list link */
+  .method-list-link {
+    @apply flex items-center gap-1.5 w-full text-left text-sm font-medium text-accent hover:text-accent-hover transition-colors mb-1.5;
+  }
+
+  /* Small icon-only muted button (e.g. copy) */
+  .icon-button-muted {
+    @apply p-0.5 rounded text-level-4 hover:text-level-5 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent;
+  }
+
+  /* Console toolbar button */
+  .console-tool-button {
+    @apply px-2 py-1 text-sm rounded hover:bg-level-3;
   }
 }

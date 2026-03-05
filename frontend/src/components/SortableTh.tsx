@@ -18,7 +18,7 @@ export function SortableTh({ label, sortKey, currentSortKey, sortDir, onSort, cl
       <button
         type="button"
         onClick={() => onSort(sortKey)}
-        className="flex items-center gap-1 w-full text-left font-medium hover:text-level-5 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-inset rounded px-2 py-3"
+        className="sortable-th-button"
       >
         {label}
         <span className="inline-block w-[1em] shrink-0 text-center text-accent" aria-hidden>
