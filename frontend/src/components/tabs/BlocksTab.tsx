@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
 import { useApi } from '@/contexts/ApiContext';
-import { useTheme } from '@/contexts/ThemeContext';
 import type { BlockRow, BlocksData, DistributionData } from '@/types';
 import { formatBytes, formatWeight } from '@/utils';
 import { useConsole } from '@/contexts/ConsoleContext';
@@ -81,10 +80,9 @@ function PoolDistributionChart({
   distribution: DistributionData | null;
   poolByIdentifier: Map<string, { name: string; icon?: string }>;
 }) {
-  const { isDark } = useTheme();
   const pieData = useMemo(() => {
     if (!distribution?.by_percentage) return [];
-    return Object.entries(distribution.by_percentage)
+    const sorted = Object.entries(distribution.by_percentage)
       .filter(([, pct]) => Number.isFinite(pct) && pct > 0)
       .map(([identifier, value]) => {
         const pool = poolByIdentifier.get(identifier) ?? (isUnknownPoolIdentifier(identifier) ? poolByIdentifier.get('unknown') : undefined);
@@ -94,6 +92,11 @@ function PoolDistributionChart({
         };
       })
       .sort((a, b) => b.value - a.value);
+    const top4 = sorted.slice(0, 4);
+    const rest = sorted.slice(4);
+    const othersValue = rest.reduce((sum, d) => sum + d.value, 0);
+    if (othersValue <= 0) return top4;
+    return [...top4, { name: 'Others', value: othersValue }];
   }, [distribution, poolByIdentifier]);
 
   if (pieData.length === 0) {
@@ -115,13 +118,14 @@ function PoolDistributionChart({
             cx="50%"
             cy="50%"
             outerRadius="70%"
-            stroke={isDark ? 'none' : undefined}
+            paddingAngle={1}
+            stroke="none"
           >
             {pieData.map((_, index) => (
               <Cell
                 key={index}
                 fill={PIE_COLORS[index % PIE_COLORS.length]}
-                stroke={isDark ? 'none' : undefined}
+                stroke="none"
               />
             ))}
           </Pie>
