@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import { Spinner } from '@/components/Spinner';
 
 interface LoadingOverlayProps {
@@ -8,7 +9,7 @@ interface LoadingOverlayProps {
 export function LoadingOverlay({ show, message = 'Refreshing...' }: LoadingOverlayProps) {
   if (!show) return null;
   const label = message || 'Loading';
-  return (
+  const overlay = (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-level-1/80 backdrop-blur-sm"
       role="status"
@@ -23,4 +24,5 @@ export function LoadingOverlay({ show, message = 'Refreshing...' }: LoadingOverl
       </div>
     </div>
   );
+  return createPortal(overlay, document.body);
 }

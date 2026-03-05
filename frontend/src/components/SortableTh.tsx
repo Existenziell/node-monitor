@@ -21,11 +21,9 @@ export function SortableTh({ label, sortKey, currentSortKey, sortDir, onSort, cl
         className="flex items-center gap-1 w-full text-left font-medium hover:text-level-5 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-inset rounded px-2 py-3"
       >
         {label}
-        {isActive && (
-          <span className="text-accent" aria-hidden>
-            {sortDir === 'asc' ? '↑' : '↓'}
-          </span>
-        )}
+        <span className="inline-block w-[1em] shrink-0 text-center text-accent" aria-hidden>
+          {isActive ? (sortDir === 'asc' ? '↑' : '↓') : '\u00A0'}
+        </span>
       </button>
     </th>
   );
