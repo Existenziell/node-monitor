@@ -193,7 +193,6 @@ export function NodeTab() {
     { label: 'Time offset (s)', value: network.timeoffset },
     { label: 'Relay fee', value: network.relayfee !== null && network.relayfee !== undefined ? formatBtcPerKvB(Number(network.relayfee)) : 'N/A' },
     { label: 'Incremental fee', value: network.incrementalfee !== null && network.incrementalfee !== undefined ? formatBtcPerKvB(Number(network.incrementalfee)) : 'N/A' },
-    { label: 'Warnings', value: network.warnings !== null && network.warnings !== undefined && String(network.warnings).trim() !== '' ? String(network.warnings) : 'None' },
     ...(data?.nettotals && (data.nettotals.totalbytessent !== null && data.nettotals.totalbytessent !== undefined || data.nettotals.totalbytesrecv !== null && data.nettotals.totalbytesrecv !== undefined)
       ? [
           { label: 'Total bytes sent', value: formatBytes(data.nettotals.totalbytessent) },
@@ -414,11 +413,24 @@ export function NodeTab() {
     indexingEntries.push({ label: 'No indexes', value: 'N/A' });
   }
 
+  const nodeWarning =
+    network.warnings !== null && network.warnings !== undefined && String(network.warnings).trim() !== ''
+      ? String(network.warnings).trim()
+      : '';
+
   const isRefreshing = loading && !!data && getRefreshTabId() === 'node';
 
   return (
     <div className="relative space-y-4">
       <LoadingOverlay show={isRefreshing} />
+      {nodeWarning !== '' ? (
+        <div
+          className="rounded-lg border border-level-3 bg-level-2 p-4 text-level-5 border-l-4 border-l-amber-500"
+          role="alert"
+        >
+          {nodeWarning}
+        </div>
+      ) : null}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <InfoCard title="Node Status" items={networkCardItems} />
         <InfoCard title="Blockchain Status" items={blockchainCardItems} />
