@@ -143,13 +143,6 @@ export function NetworkTab() {
         ? formatSeconds(blocksData.avg_block_time_seconds)
         : '—',
   });
-  if (blocksData?.seconds_since_last_block !== null && blocksData?.seconds_since_last_block !== undefined && Number.isFinite(blocksData.seconds_since_last_block)) {
-    blockHeightSubLines.push({
-      label: 'Time since last block',
-      value: formatSeconds(blocksData.seconds_since_last_block),
-    });
-  }
-
   const difficultySubLines: { label: string; value: string; progress?: number }[] = [];
   if (retargetProgress !== null && retargetLeft !== null) {
     difficultySubLines.push({
@@ -194,12 +187,6 @@ export function NetworkTab() {
             Fee estimates
           </h3>
           <dl className="space-y-1 text-sm">
-            {data?.connection_count !== null && data?.connection_count !== undefined && Number.isFinite(data.connection_count) && (
-              <div className="flex justify-between gap-4">
-                <dt className="text-level-4">Connections</dt>
-                <dd className="text-level-5">{Number(data.connection_count).toLocaleString()}</dd>
-              </div>
-            )}
             <div>
               <div className="flex justify-between gap-4">
                 <dt className="text-level-4">High priority</dt>

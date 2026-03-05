@@ -297,13 +297,13 @@ export function WalletTab() {
                 <dd className="text-level-5">{wallet.avoid_reuse === true ? 'Yes' : 'No'}</dd>
               </div>
             )}
-            {wallet.scanning !== null && wallet.scanning !== undefined && (
+            {typeof wallet.scanning === 'object' &&
+              wallet.scanning !== null &&
+              typeof (wallet.scanning as { progress?: number }).progress === 'number' && (
               <div className="flex justify-between">
                 <dt className="text-level-4">Scanning</dt>
                 <dd className="text-level-5">
-                  {typeof wallet.scanning === 'object' && typeof (wallet.scanning as { progress?: number }).progress === 'number'
-                    ? `${(wallet.scanning as { progress?: number }).progress}%`
-                    : 'Rescanning…'}
+                  {(wallet.scanning as { progress: number }).progress}%
                 </dd>
               </div>
             )}
