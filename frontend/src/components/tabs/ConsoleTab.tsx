@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useApi } from '@/contexts/ApiContext';
 import { SectionHeader } from '@/components/SectionHeader';
-import { RPC_COMMANDS_BY_CATEGORY, getSampleParams } from '@/data/rpcCommands';
+import { RPC_COMMANDS_BY_CATEGORY, getCommandDescription, getSampleParams } from '@/data/rpcCommands';
 
 const DEFAULT_COLLAPSED = new Set(['Wallet', 'Util', 'Raw transactions']);
 
@@ -110,72 +110,77 @@ export function ConsoleTab() {
   return (
     <div className="space-y-4">
       <div className="section-container">
-          <SectionHeader>RPC commands</SectionHeader>
-          {Object.entries(RPC_COMMANDS_BY_CATEGORY).map(([category, commands]) => {
-            const isCollapsed = collapsed.has(category);
-            return (
-              <div key={category} className="mb-3 last:mb-0">
-                <button
-                  type="button"
-                  onClick={() => toggleCategory(category)}
-                  className="flex items-center gap-1.5 w-full text-left text-xs font-medium text-accent hover:text-accent-hover transition-colors mb-1.5"
-                  aria-expanded={!isCollapsed}
+        <SectionHeader>RPC commands</SectionHeader>
+        {Object.entries(RPC_COMMANDS_BY_CATEGORY).map(([category, commands]) => {
+          const isCollapsed = collapsed.has(category);
+          return (
+            <div key={category} className="mb-3 last:mb-0">
+              <button
+                type="button"
+                onClick={() => toggleCategory(category)}
+                className="flex items-center gap-1.5 w-full text-left text-xs font-medium text-accent hover:text-accent-hover transition-colors mb-1.5"
+                aria-expanded={!isCollapsed}
+              >
+                <span
+                  className="inline-block transition-transform"
+                  style={{ transform: isCollapsed ? 'rotate(-90deg)' : 'none' }}
+                  aria-hidden
                 >
-                  <span
-                    className="inline-block transition-transform"
-                    style={{ transform: isCollapsed ? 'rotate(-90deg)' : 'none' }}
-                    aria-hidden
-                  >
-                    ▼
-                  </span>
-                  {category}
-                </button>
-                {!isCollapsed && (
-                  <div className="flex flex-wrap gap-1.5">
-                    {commands.map((cmd) => (
-                      <button
-                        key={cmd}
-                        type="button"
-                        onClick={() => handleCommandClick(cmd)}
-                        className={`px-2 py-1 rounded text-xs font-mono border transition ${
-                          method === cmd
-                            ? 'text-accent border-accent'
-                            : 'bg-level-2 text-level-4 border-level-3 hover:border-accent hover:text-accent'
+                  ▼
+                </span>
+                {category}
+              </button>
+              {!isCollapsed && (
+                <div className="flex flex-wrap gap-1.5">
+                  {commands.map((cmd) => (
+                    <button
+                      key={cmd}
+                      type="button"
+                      onClick={() => handleCommandClick(cmd)}
+                      className={`px-2 py-1 rounded text-sm  border transition ${method === cmd
+                        ? 'text-accent border-accent'
+                        : 'bg-level-2 text-level-5 border-level-3 hover:border-accent hover:text-accent'
                         }`}
-                        title={`Set method to ${cmd}`}
-                      >
-                        {cmd}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
+                    >
+                      {cmd}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       <div className="flex gap-4 flex-col lg:flex-row">
         <div className="flex-1 min-w-0 section-container">
           <SectionHeader>RPC Console</SectionHeader>
           <div className="space-y-3">
-            <div>
-              <label htmlFor="rpc-method" className="form-label-muted">
-                Method
-              </label>
-              <input
-                id="rpc-method"
-                type="text"
-                value={method}
-                onChange={(e) => setMethod(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    handleExecute();
-                  }
-                }}
-                className="form-input form-input-mono"
-                placeholder="getblockcount"
-              />
+            <div className="flex flex-wrap gap-4 items-start">
+              <div className="min-w-0 flex-grow">
+                <label htmlFor="rpc-method" className="form-label-muted">
+                  Method
+                </label>
+                <div className="flex flex-col md:flex-row gap-4 items-start md:items-center w-full border border-level-3 rounded-md p-2">
+                  <input
+                    id="rpc-method"
+                    type="text"
+                    value={method}
+                    onChange={(e) => setMethod(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleExecute();
+                      }
+                    }}
+                    className="form-input form-input-mono max-w-[220px]"
+                    placeholder="getblockcount"
+                  />
+                  <p className="text-level-5 flex-shrink-0">
+                    {getCommandDescription(method) || '—'}
+                  </p>
+                </div>
+              </div>
             </div>
             <div>
               <label htmlFor="rpc-params" className="form-label-muted">

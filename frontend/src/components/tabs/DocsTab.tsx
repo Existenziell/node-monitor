@@ -18,7 +18,7 @@ export function DocsTab() {
           <p className="text-level-5 mb-2 max-w-prose">
             This dashboard is a web app that talks to your node over RPC (and ZMQ when available).
             It shows chain and mempool status, recent blocks with mining pool attribution, network history
-            (hashrate, difficulty), peer list, optional wallet info, and basic host metrics.
+            (hashrate, difficulty), peer list, wallet info, and host metrics.
           </p>
           <p className="text-level-5 max-w-prose">
             A Python backend runs next to your node (or on the same machine), stores block and
@@ -37,7 +37,7 @@ export function DocsTab() {
             <li>Recent blocks view with pool attribution and basic stats.</li>
             <li>Historical network view (hashrate, difficulty) from SQLite.</li>
             <li>Node/mempool status, peer list, and basic host metrics.</li>
-            <li>Optional wallet tab powered by Bitcoin Core wallet RPCs.</li>
+            <li>Wallet tab powered by Bitcoin Core wallet RPCs.</li>
           </ul>
         </section>
 
