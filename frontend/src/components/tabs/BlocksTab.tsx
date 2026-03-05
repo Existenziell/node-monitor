@@ -33,6 +33,11 @@ function formatTimeSince(seconds: number): string {
   return `${m}:${String(s).padStart(2, '0')}`;
 }
 
+/** Identifier is an "unknown" pool when backend could not match a known pool (e.g. "Unknown Pool (hex...)" or "Solo Miner / Unknown"). */
+function isUnknownPoolIdentifier(identifier: string): boolean {
+  return identifier.startsWith('Unknown Pool (') || identifier === 'Solo Miner / Unknown';
+}
+
 function PoolCell({
   identifier,
   poolByIdentifier,
@@ -42,7 +47,9 @@ function PoolCell({
   poolByIdentifier: Map<string, { name: string; icon?: string }>;
   iconSize: number;
 }) {
-  const pool = identifier ? poolByIdentifier.get(identifier) : undefined;
+  const pool = identifier
+    ? poolByIdentifier.get(identifier) ?? (isUnknownPoolIdentifier(identifier) ? poolByIdentifier.get('unknown') : undefined)
+    : undefined;
   const displayName = pool?.name ?? identifier ?? '-';
   return (
     <div className="flex items-center gap-1.5 min-h-[20px]">
@@ -79,10 +86,13 @@ function PoolDistributionChart({
     if (!distribution?.by_percentage) return [];
     return Object.entries(distribution.by_percentage)
       .filter(([, pct]) => Number.isFinite(pct) && pct > 0)
-      .map(([identifier, value]) => ({
-        name: poolByIdentifier.get(identifier)?.name ?? identifier,
-        value: Number(value),
-      }))
+      .map(([identifier, value]) => {
+        const pool = poolByIdentifier.get(identifier) ?? (isUnknownPoolIdentifier(identifier) ? poolByIdentifier.get('unknown') : undefined);
+        return {
+          name: pool?.name ?? identifier,
+          value: Number(value),
+        };
+      })
       .sort((a, b) => b.value - a.value);
   }, [distribution, poolByIdentifier]);
 
