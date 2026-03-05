@@ -9,7 +9,7 @@ from typing import Dict, Any, Optional, List
 
 import requests
 
-from constants import DEFAULT_RPC_TIMEOUT
+from constants import DEFAULT_RPC_PORT, DEFAULT_RPC_TIMEOUT
 
 
 # Methods that must use the base RPC URL (no wallet path)
@@ -300,7 +300,7 @@ def create_rpc_connection():
             if rpc_host_env:
                 from urllib.parse import urlparse
                 parsed = urlparse(rpc_url)
-                port = rpc_port_env if rpc_port_env else (parsed.port or 8332)
+                port = rpc_port_env if rpc_port_env else (parsed.port or DEFAULT_RPC_PORT)
                 rpc_url = f"http://{rpc_host_env.strip()}:{port}"
             wallet_name = config.get("wallet_name")
             cookie_file = config.get("cookie_file")

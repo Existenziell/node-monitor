@@ -13,6 +13,8 @@ from typing import Dict, Any, Optional, Tuple
 import keyring
 from cryptography.fernet import Fernet
 
+from constants import DEFAULT_RPC_HOST, DEFAULT_RPC_PORT
+
 
 class ConfigService:
     """Centralized service for Bitcoin configuration management."""
@@ -35,7 +37,7 @@ class ConfigService:
         # Check for cookie authentication first
         cookie_file = self._find_bitcoin_cookie()
         if cookie_file:
-            rpc_port = self._get_input("RPC Port [8332]: ").strip() or "8332"
+            rpc_port = self._get_input(f"RPC Port [{DEFAULT_RPC_PORT}]: ").strip() or str(DEFAULT_RPC_PORT)
             try:
                 rpc_port = int(rpc_port)
                 if not 1024 <= rpc_port <= 65535:
@@ -47,7 +49,7 @@ class ConfigService:
             # Store cookie-based config
             config = {
                 "rpc_port": rpc_port,
-                "rpc_url": f"http://127.0.0.1:{rpc_port}",
+                "rpc_url": f"http://{DEFAULT_RPC_HOST}:{rpc_port}",
                 "cookie_file": str(cookie_file),
                 "auth_method": "cookie",
                 "created_at": self._get_timestamp(),
@@ -84,7 +86,7 @@ class ConfigService:
             print("❌ RPC Password is required")
             return False
 
-        rpc_port = self._get_input("RPC Port [8332]: ").strip() or "8332"
+        rpc_port = self._get_input(f"RPC Port [{DEFAULT_RPC_PORT}]: ").strip() or str(DEFAULT_RPC_PORT)
         try:
             rpc_port = int(rpc_port)
             if not 1024 <= rpc_port <= 65535:
@@ -107,7 +109,7 @@ class ConfigService:
         config = {
             "rpc_user": rpc_user,
             "rpc_port": rpc_port,
-            "rpc_url": f"http://127.0.0.1:{rpc_port}",
+            "rpc_url": f"http://{DEFAULT_RPC_HOST}:{rpc_port}",
             "use_keyring": True,
             "auth_method": "password",
             "created_at": self._get_timestamp(),
@@ -155,7 +157,7 @@ class ConfigService:
             config = {
                 "rpc_user": rpc_user,
                 "rpc_port": rpc_port,
-                "rpc_url": f"http://127.0.0.1:{rpc_port}",
+                "rpc_url": f"http://{DEFAULT_RPC_HOST}:{rpc_port}",
                 "encrypted_password": base64.b64encode(encrypted_password).decode(),
                 "use_keyring": False,
                 "created_at": self._get_timestamp(),
@@ -280,7 +282,7 @@ class ConfigService:
             with open(self.config_file, 'r', encoding='utf-8') as f:
                 config = json.load(f)
             status["auth_method"] = config.get("auth_method")
-            status["rpc_host"] = config.get("rpc_host", "127.0.0.1")
+            status["rpc_host"] = config.get("rpc_host", DEFAULT_RPC_HOST)
             status["rpc_port"] = config.get("rpc_port")
             status["cookie_file"] = config.get("cookie_file") if config.get("auth_method") == "cookie" else None
             status["wallet_name"] = config.get("wallet_name")
@@ -330,7 +332,7 @@ class ConfigService:
         except (ValueError, TypeError):
             return False, "rpc_port must be a number"
 
-        host = (rpc_host or "").strip() or "127.0.0.1"
+        host = (rpc_host or "").strip() or DEFAULT_RPC_HOST
         rpc_url = f"http://{host}:{rpc_port}"
 
         self.config_dir.mkdir(exist_ok=True)

@@ -24,6 +24,7 @@ except ImportError:
 
 from rpc_service import create_rpc_connection
 from price_service import get_bitcoin_price
+from constants import DEFAULT_ZMQ_ENDPOINT
 from error_service import error_service
 try:
     from block_store import (
@@ -39,7 +40,7 @@ except ImportError:
 class BlockchainMonitor:
     """Monitor Bitcoin blockchain activity and new blocks with ZMQ and polling support."""
 
-    def __init__(self, zmq_endpoint: str = "tcp://127.0.0.1:28332", exit_on_rpc_failure: bool = True):
+    def __init__(self, zmq_endpoint: str = DEFAULT_ZMQ_ENDPOINT, exit_on_rpc_failure: bool = True):
         """Initialize the monitor with RPC connection.
         If exit_on_rpc_failure is True (standalone), exit process when RPC is unavailable.
         If False (embedded e.g. in API), leave rpc_service None and run_loop will no-op until RPC is up."""
@@ -822,8 +823,8 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser(description='Bitcoin Blockchain Monitor with ZMQ support')
-    parser.add_argument('--zmq-endpoint', default='tcp://127.0.0.1:28332',
-                       help='ZMQ endpoint for block notifications (default: tcp://127.0.0.1:28332)')
+    parser.add_argument('--zmq-endpoint', default=DEFAULT_ZMQ_ENDPOINT,
+                       help=f'ZMQ endpoint for block notifications (default: {DEFAULT_ZMQ_ENDPOINT})')
     parser.add_argument('--interval', '-i', type=int, default=10, metavar='SECS',
                        help='Polling interval in seconds when running continuously (default: 10)')
     parser.add_argument('--status', '-s', action='store_true',

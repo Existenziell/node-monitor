@@ -27,12 +27,12 @@ export const VALID_TABS: TabId[] = TABS.map((t) => t.id);
 /** Shown when API/data load fails (e.g. in error state and loading gate). */
 export const API_SERVER_HINT = 'Make sure the API server is running.';
 
-/** Default RPC connection (match backend constants). */
-export const DEFAULT_RPC_HOST = '127.0.0.1';
-export const DEFAULT_RPC_PORT = '8332';
+/** Default RPC connection (from shared/constants.json). */
+export const DEFAULT_RPC_HOST = shared.DEFAULT_RPC_HOST as string;
+export const DEFAULT_RPC_PORT = String(shared.DEFAULT_RPC_PORT);
 
-/** Bitcoin network constants (match backend conceptually). */
-export const BITCOIN_HALVING_INTERVAL = 210_000;
-export const BITCOIN_RETARGET_INTERVAL = 2016;
+/** Bitcoin network constants (from shared/constants.json). */
+export const BITCOIN_HALVING_INTERVAL = shared.BITCOIN_HALVING_INTERVAL as number;
+export const BITCOIN_RETARGET_INTERVAL = shared.BITCOIN_RETARGET_INTERVAL as number;
 
 export const GITHUB_REPO_URL = 'https://github.com/Existenziell/node-monitor';

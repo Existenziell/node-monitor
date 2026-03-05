@@ -24,6 +24,8 @@ try:
     from config_service import config_service  # pyright: ignore[reportMissingImports]
     from constants import (  # pyright: ignore[reportMissingImports]
         API_SERVER_PORT,
+        DEFAULT_RPC_PORT,
+        DEFAULT_ZMQ_ENDPOINT,
         NODE_CACHE_SECONDS,
         WALLET_CACHE_SECONDS,
         BLOCKS_CACHE_SECONDS,
@@ -290,7 +292,7 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
             self.wfile.write(json.dumps({"ok": False, "error": "auth_method must be 'password' or 'cookie'"}).encode())
             return
         try:
-            rpc_port = int(data.get('rpc_port', 8332))
+            rpc_port = int(data.get('rpc_port', DEFAULT_RPC_PORT))
         except (ValueError, TypeError):
             self.wfile.write(json.dumps({"ok": False, "error": "rpc_port must be a number"}).encode())
             return
@@ -917,7 +919,7 @@ def start_api_server(port=None):
 
     try:
         from monitor_node import BlockchainMonitor
-        zmq_endpoint = os.environ.get("ZMQ_ENDPOINT", "tcp://127.0.0.1:28332")
+        zmq_endpoint = os.environ.get("ZMQ_ENDPOINT", DEFAULT_ZMQ_ENDPOINT)
         monitor = BlockchainMonitor(zmq_endpoint=zmq_endpoint, exit_on_rpc_failure=False)
         monitor_thread = threading.Thread(target=monitor.run_loop, kwargs={"interval": 10}, daemon=True)
         monitor_thread.start()
