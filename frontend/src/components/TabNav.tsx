@@ -41,33 +41,31 @@ export function TabNav({ activeTab, onTabChange, onRefresh }: TabNavProps) {
         ))}
       </nav>
 
-      {/* Mobile: compact row with current tab label + burger + optional refresh */}
-      <div className="flex sm:hidden items-center gap-2 flex-1 min-w-0">
-        <span className="text-sm font-medium text-level-5 truncate">
+      {/* Mobile: burger icon on the left, current nav title next to it, refresh on the right */}
+      <div className="flex sm:hidden items-center gap-2 w-full min-w-0">
+        <button
+          type="button"
+          onClick={() => setIsMobileOpen((o) => !o)}
+          className="p-2 rounded-md hover:bg-level-3"
+          aria-expanded={isMobileOpen}
+          aria-controls={DRAWER_ID}
+          aria-label="Toggle navigation"
+        >
+          <MenuIcon />
+        </button>
+        <span className="flex-1 text-sm font-medium text-level-5 truncate min-w-0">
           {activeLabel}
         </span>
-        <div className="flex items-center gap-1 shrink-0">
-          {showRefresh && (
-            <button
-              type="button"
-              onClick={onRefresh}
-              className="p-2 rounded-md hover:bg-level-3"
-              title="Refresh"
-            >
-              <RefreshIcon />
-            </button>
-          )}
+        {showRefresh && (
           <button
             type="button"
-            onClick={() => setIsMobileOpen((o) => !o)}
+            onClick={onRefresh}
             className="p-2 rounded-md hover:bg-level-3"
-            aria-expanded={isMobileOpen}
-            aria-controls={DRAWER_ID}
-            aria-label="Toggle navigation"
+            title="Refresh"
           >
-            <MenuIcon />
+            <RefreshIcon />
           </button>
-        </div>
+        )}
       </div>
 
       {/* Desktop: refresh button (right-aligned) */}
@@ -93,7 +91,9 @@ export function TabNav({ activeTab, onTabChange, onRefresh }: TabNavProps) {
         <button
           type="button"
           onClick={() => setIsMobileOpen(false)}
-          className="absolute inset-0 bg-black/40 transition-opacity"
+          className={`absolute inset-0 bg-black/40 transition-opacity ${
+            isMobileOpen ? 'opacity-100' : 'opacity-0'
+          }`}
           aria-label="Close navigation"
         />
         <aside

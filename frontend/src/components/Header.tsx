@@ -8,7 +8,7 @@ export function Header() {
   return (
     <header className="flex items-center justify-center gap-4 mb-4">
       <Logo />
-      <h1 className="text-2xl font-bold text-level-5">Bitcoin Dashboard</h1>
+      <h1 className="text-xl font-bold text-level-5 sm:text-2xl">Bitcoin Dashboard</h1>
       <div className="flex-1" />
       <button
         type="button"
