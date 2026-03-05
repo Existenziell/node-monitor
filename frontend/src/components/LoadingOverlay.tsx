@@ -1,3 +1,5 @@
+import { Spinner } from '@/components/Spinner';
+
 interface LoadingOverlayProps {
   show: boolean;
   message?: string;
@@ -14,10 +16,7 @@ export function LoadingOverlay({ show, message = 'Refreshing...' }: LoadingOverl
       aria-label={label}
     >
       <div className="flex flex-col items-center justify-center gap-3">
-        <div
-          className="h-8 w-8 animate-spin rounded-full border-2 border-level-3 border-t-accent"
-          aria-hidden
-        />
+        <Spinner size="lg" />
         <span className="min-h-[1.25rem] text-center text-sm font-medium text-level-4">
           {message || '\u00A0'}
         </span>

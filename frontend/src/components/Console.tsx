@@ -28,7 +28,7 @@ export function Console() {
         <div className="flex items-center gap-2">
           <span
             className={`inline-block w-3 h-3 rounded-full ${
-              connectionStatus === 'connected' ? 'bg-green-500' : 'bg-red-500'
+              connectionStatus === 'connected' ? 'bg-semantic-success' : 'bg-semantic-error'
             }`}
             title={connectionStatus}
           />

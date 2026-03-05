@@ -1,14 +1,8 @@
 import type { Peer } from '@/types';
 import { useTableSort } from '@/hooks/useTableSort';
+import { SectionHeader } from '@/components/SectionHeader';
 import { SortableTh } from '@/components/SortableTh';
-
-function formatBytes(n: number | undefined | null): string {
-  if (n === null || n === undefined || !Number.isFinite(n)) return '-';
-  if (n < 1024) return `${n} B`;
-  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
-  if (n < 1024 * 1024 * 1024) return `${(n / 1024 / 1024).toFixed(1)} MB`;
-  return `${(n / 1024 / 1024 / 1024).toFixed(2)} GB`;
-}
+import { formatBytes } from '@/utils';
 
 function formatPeerTime(epoch: number | undefined | null): string {
   if (epoch === null || epoch === undefined || !Number.isFinite(epoch) || epoch <= 0) return '-';
@@ -61,9 +55,7 @@ export function PeersTable({ peers }: { peers: Peer[] }) {
 
   return (
     <div className="rounded-lg bg-level-2 border border-level-3 overflow-hidden">
-      <h3 className="text-sm font-medium text-accent p-4 pb-2">
-        Peers ({peers.length})
-      </h3>
+      <SectionHeader className="px-4 pt-4">Peers ({peers.length})</SectionHeader>
       <div className="overflow-x-auto max-h-[60vh]">
         <table className="sortable-table w-full text-sm">
           <thead className="sticky top-0 bg-level-2 text-left">

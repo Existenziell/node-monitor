@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useApi } from '@/contexts/ApiContext';
+import { SectionHeader } from '@/components/SectionHeader';
 import { RPC_COMMANDS_BY_CATEGORY, getSampleParams } from '@/data/rpcCommands';
 
 const DEFAULT_COLLAPSED = new Set(['Wallet', 'Util', 'Raw transactions']);
@@ -109,10 +110,8 @@ export function ConsoleTab() {
   return (
     <div className="space-y-4">
       <div className="rounded border border-level-3 bg-level-2 overflow-hidden">
-        <div className="px-3 py-2 border-b border-level-3">
-          <h3 className="text-sm font-medium text-level-4">RPC commands</h3>
-        </div>
         <div className="p-3">
+          <SectionHeader>RPC commands</SectionHeader>
           {Object.entries(RPC_COMMANDS_BY_CATEGORY).map(([category, commands]) => {
             const isCollapsed = collapsed.has(category);
             return (
@@ -159,7 +158,7 @@ export function ConsoleTab() {
 
       <div className="flex gap-4 flex-col lg:flex-row">
         <div className="flex-1 min-w-0 rounded border border-level-3 bg-level-2 p-4">
-          <h3 className="py-2 border-b border-level-3 text-sm font-medium text-level-4 mb-3">RPC Console</h3>
+          <SectionHeader>RPC Console</SectionHeader>
           <div className="space-y-3">
             <div>
               <label htmlFor="rpc-method" className="block text-sm text-level-4 mb-1">
@@ -200,12 +199,10 @@ export function ConsoleTab() {
         </div>
 
         <div className="flex-1 min-w-0 rounded border border-level-3 bg-level-2 overflow-hidden flex flex-col">
-          <div className="px-3 py-2 border-b border-level-3 text-sm font-medium text-level-4">
-            Response
-          </div>
+          <SectionHeader className="px-3 pt-4">Response</SectionHeader>
           <div className="p-3 font-mono text-sm overflow-x-auto flex-1 min-h-[120px]">
             {error !== null ? (
-              <pre className="text-red-400 whitespace-pre-wrap break-words">{error}</pre>
+              <pre className="text-semantic-error whitespace-pre-wrap break-words">{error}</pre>
             ) : response !== null ? (
               <pre className="text-level-5 whitespace-pre-wrap break-words">
                 {formatResponseForDisplay(response)}

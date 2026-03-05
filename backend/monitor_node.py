@@ -12,7 +12,7 @@ import base64
 import signal
 import traceback
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, Any, Optional, List
 import requests
 
@@ -675,7 +675,7 @@ class BlockchainMonitor:
             'block_reward': round(block_reward, 8),
             'total_fees': round(total_fees, 8),
             'total_fees_usd': round(total_fees_usd, 2),
-            'block_time': datetime.fromtimestamp(block.get('time', 0)).strftime('%Y-%m-%d %H:%M:%S'),
+            'block_time': datetime.fromtimestamp(block.get('time', 0), tz=timezone.utc).strftime('%Y-%m-%d %H:%M:%S'),
             'time_since_last_block': time_since_last_block
         }
 

@@ -1,7 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useApi } from '@/contexts/ApiContext';
 import { useConsole } from '@/contexts/ConsoleContext';
+import { DEFAULT_RPC_HOST, DEFAULT_RPC_PORT } from '@/constants';
+import { SectionHeader } from '@/components/SectionHeader';
 import type { ConfigStatus, ConfigSavePayload, ConfigTestResult } from '@/types';
+import { getErrorMessage } from '@/utils';
 
 /** Baseline values from last load/save for dirty checking. rpcUser is null when masked. */
 interface SettingsBaseline {
@@ -13,7 +16,7 @@ interface SettingsBaseline {
   hasPassword: boolean;
 }
 
-export interface PendingChange {
+interface PendingChange {
   field: string;
   from?: string;
   to?: string;
@@ -44,9 +47,9 @@ function getPendingChanges(
   }
   const trim = (s: string) => (s || '').trim();
   if (trim(baseline.rpcHost) !== trim(current.rpcHost)) {
-    changes.push({ field: 'RPC Host', from: baseline.rpcHost || '127.0.0.1', to: current.rpcHost || '127.0.0.1' });
+    changes.push({ field: 'RPC Host', from: baseline.rpcHost || DEFAULT_RPC_HOST, to: current.rpcHost || DEFAULT_RPC_HOST });
   }
-  const normPort = (s: string) => String(parseInt(s, 10) || 8332);
+  const normPort = (s: string) => String(parseInt(s, 10) || Number(DEFAULT_RPC_PORT));
   if (normPort(baseline.rpcPort) !== normPort(current.rpcPort)) {
     changes.push({ field: 'RPC Port', from: baseline.rpcPort, to: current.rpcPort });
   }
@@ -90,10 +93,10 @@ export function SettingsTab() {
   const [lastSaved, setLastSaved] = useState<SettingsBaseline | null>(null);
 
   const [authMethod, setAuthMethod] = useState<'password' | 'cookie'>('password');
-  const [rpcHost, setRpcHost] = useState('127.0.0.1');
+  const [rpcHost, setRpcHost] = useState(DEFAULT_RPC_HOST);
   const [rpcUser, setRpcUser] = useState('');
   const [rpcPassword, setRpcPassword] = useState('');
-  const [rpcPort, setRpcPort] = useState('8332');
+  const [rpcPort, setRpcPort] = useState(DEFAULT_RPC_PORT);
   const [cookieFile, setCookieFile] = useState('');
 
   const loadStatus = useCallback(async () => {
@@ -103,8 +106,8 @@ export function SettingsTab() {
       const s = await fetchConfigStatus();
       setStatus(s);
       const method = s.auth_method === 'cookie' ? 'cookie' : 'password';
-      const host = (s.rpc_host ?? '127.0.0.1').trim() || '127.0.0.1';
-      const port = String(s.rpc_port ?? 8332);
+      const host = (s.rpc_host ?? DEFAULT_RPC_HOST).trim() || DEFAULT_RPC_HOST;
+      const port = String(s.rpc_port ?? DEFAULT_RPC_PORT);
       const cookie = s.cookie_file ?? '';
       setAuthMethod(method);
       setRpcHost(host);
@@ -135,13 +138,13 @@ export function SettingsTab() {
       setStatus(fallback);
       setLastSaved({
         authMethod: 'password',
-        rpcHost: '127.0.0.1',
-        rpcPort: '8332',
+        rpcHost: DEFAULT_RPC_HOST,
+        rpcPort: DEFAULT_RPC_PORT,
         rpcUser: null,
         cookieFile: '',
         hasPassword: false,
       });
-      log(`Settings: could not load config status: ${(e as Error).message}`, 'warning');
+      log(`Settings: could not load config status: ${getErrorMessage(e)}`, 'warning');
     } finally {
       setLoading(false);
     }
@@ -172,8 +175,8 @@ export function SettingsTab() {
       setMessage(null);
       const payload: ConfigSavePayload = {
         auth_method: authMethod,
-        rpc_host: rpcHost.trim() || '127.0.0.1',
-        rpc_port: parseInt(rpcPort, 10) || 8332,
+        rpc_host: rpcHost.trim() || DEFAULT_RPC_HOST,
+        rpc_port: parseInt(rpcPort, 10) || Number(DEFAULT_RPC_PORT),
       };
       if (authMethod === 'password') {
         payload.rpc_user = rpcUser.trim() || undefined;
@@ -190,7 +193,7 @@ export function SettingsTab() {
           setRpcPassword('');
           setLastSaved({
             authMethod: payload.auth_method,
-            rpcHost: payload.rpc_host ?? '127.0.0.1',
+            rpcHost: payload.rpc_host ?? DEFAULT_RPC_HOST,
             rpcPort: String(payload.rpc_port),
             rpcUser: payload.rpc_user ?? null,
             cookieFile: payload.cookie_file ?? '',
@@ -201,7 +204,7 @@ export function SettingsTab() {
           setMessage({ type: 'error', text: result.error ?? 'Save failed' });
         }
       } catch (e) {
-        setMessage({ type: 'error', text: (e as Error).message });
+        setMessage({ type: 'error', text: getErrorMessage(e) });
       } finally {
         setSaving(false);
       }
@@ -218,7 +221,7 @@ export function SettingsTab() {
   return (
     <div className="space-y-4">
       <div className="rounded-lg bg-level-2 border border-level-3 p-4 max-w-xl">
-        <h2 className="text-lg font-medium text-accent mb-4">Node configuration</h2>
+        <SectionHeader as="h2">Node configuration</SectionHeader>
         {status && !status.config_exists && (
           <p className="text-level-5 text-sm mb-4">
             No configuration found. Enter RPC credentials or cookie path to connect to your Bitcoin
@@ -229,8 +232,8 @@ export function SettingsTab() {
           <div
             className={`mb-4 p-2 rounded text-sm ${
               message.type === 'success'
-                ? 'bg-green-500/20 text-green-800'
-                : 'bg-red-500/20 text-red-800'
+                ? 'bg-semantic-success/20 text-semantic-success'
+                : 'bg-semantic-error/20 text-semantic-error'
             }`}
           >
             {message.text}
@@ -251,7 +254,7 @@ export function SettingsTab() {
                 const r = await fetchConfigTest();
                 setTestResult(r);
               } catch (e) {
-                setTestResult({ ok: false, error: (e as Error).message });
+                setTestResult({ ok: false, error: getErrorMessage(e) });
               } finally {
                 setTestLoading(false);
               }
@@ -262,7 +265,7 @@ export function SettingsTab() {
             {testLoading ? 'Testing…' : 'Test connection'}
           </button>
           {testResult && !testLoading && (
-            <span className={`text-sm ${testResult.ok ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+            <span className={`text-sm ${testResult.ok ? 'text-semantic-success' : 'text-semantic-error'}`}>
               {testResult.ok
                 ? `Connected${testResult.version ? ` (${testResult.version})` : ''}`
                 : `Connection failed: ${testResult.error ?? 'Unknown error'}`}
@@ -357,7 +360,7 @@ export function SettingsTab() {
               value={rpcHost}
               onChange={(e) => setRpcHost(e.target.value)}
               className="w-full rounded border border-level-3 bg-level-2 px-3 py-2 text-level-5"
-              placeholder="127.0.0.1 or Bitcoin node IP/hostname"
+              placeholder={`${DEFAULT_RPC_HOST} or Bitcoin node IP/hostname`}
             />
           </div>
 
@@ -378,7 +381,7 @@ export function SettingsTab() {
 
           {lastSaved && (
             <div className="rounded-lg border border-level-3 bg-level-2 p-3">
-              <h3 className="text-sm font-medium text-level-5 mb-2">Pending changes</h3>
+              <SectionHeader>Pending changes</SectionHeader>
               {hasPendingChanges ? (
                 <ul className="text-sm text-level-4 space-y-1 list-disc list-inside">
                   {pendingChanges.map((c, i) => (

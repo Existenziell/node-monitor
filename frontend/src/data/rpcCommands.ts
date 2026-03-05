@@ -203,8 +203,6 @@ export const RPC_SAMPLE_PARAMS: Record<string, string> = {
   walletcreatefundedpsbt: formatParams([[], [], 0, {}]),
 };
 
-export const RPC_COMMANDS = Object.values(RPC_COMMANDS_BY_CATEGORY).flat();
-
 export function getSampleParams(method: string): string {
   return RPC_SAMPLE_PARAMS[method] ?? '[]';
 }

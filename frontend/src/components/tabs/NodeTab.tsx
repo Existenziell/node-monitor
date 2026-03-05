@@ -2,19 +2,14 @@ import { useEffect } from 'react';
 import { useApi } from '@/contexts/ApiContext';
 import type { NodeData, Peer } from '@/types';
 import { useConsole } from '@/contexts/ConsoleContext';
-import { getRefreshTabId, clearRefreshTabId } from '@/refreshState';
+import { getRefreshTabId } from '@/refreshState';
+import { useClearRefreshOnDone } from '@/hooks/useClearRefreshOnDone';
 import { useApiData } from '@/hooks/useApiData';
 import { useTabData } from '@/hooks/useTabData';
 import { LoadingOverlay } from '@/components/LoadingOverlay';
-import { formatDifficulty } from '@/utils';
-
-function formatBytes(n: number | undefined | null): string {
-  if (n === null || n === undefined || !Number.isFinite(n)) return '-';
-  if (n < 1024) return `${n} B`;
-  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
-  if (n < 1024 * 1024 * 1024) return `${(n / 1024 / 1024).toFixed(1)} MB`;
-  return `${(n / 1024 / 1024 / 1024).toFixed(2)} GB`;
-}
+import { LoadingErrorGate } from '@/components/LoadingErrorGate';
+import { SectionHeader } from '@/components/SectionHeader';
+import { formatBytes, formatDifficulty } from '@/utils';
 
 function formatBtcPerKvB(n: number | undefined | null): string {
   if (n === null || n === undefined || !Number.isFinite(n)) return '-';
@@ -59,9 +54,7 @@ function InfoCard({
 }) {
   return (
     <div className="rounded-lg bg-level-2 border border-level-3 p-4">
-      <h3 className="text-sm font-medium text-accent mb-2">
-        {title}
-      </h3>
+      <SectionHeader>{title}</SectionHeader>
       <dl className="space-y-1 text-sm">
         {items.map(({ label, value }) => (
           <div key={label} className="flex justify-between gap-4">
@@ -108,7 +101,7 @@ function GroupedInfoCard({
   return (
     <div className="rounded-lg bg-level-2 border border-level-3 p-4">
       {title !== undefined && title !== null && title !== '' ? (
-        <h3 className="text-sm font-medium text-accent mb-3">{title}</h3>
+        <SectionHeader>{title}</SectionHeader>
       ) : null}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <div>{renderGroup(leftGroup.heading, leftGroup.items)}</div>
@@ -127,11 +120,7 @@ export function NodeTab() {
 
   const { data, loading, error } = nodeState;
 
-  useEffect(() => {
-    if (!loading) {
-      clearRefreshTabId('node');
-    }
-  }, [loading]);
+  useClearRefreshOnDone(loading, 'node');
 
   useEffect(() => {
     if (data?.blockchain && typeof data.blockchain.blocks === 'number') {
@@ -139,23 +128,14 @@ export function NodeTab() {
     }
   }, [data, log]);
 
-  if (loading && !data) {
-    return (
-      <div className="p-4 text-level-4 flex items-center gap-2">
-        <span className="h-4 w-4 animate-spin rounded-full border-2 border-level-3 border-t-accent" aria-hidden />
-        Loading node…
-      </div>
-    );
-  }
+  return (
+    <LoadingErrorGate loading={loading} error={error} data={data} loadingLabel="node">
+      {data !== null && data !== undefined ? <NodeTabContent data={data} loading={loading} /> : null}
+    </LoadingErrorGate>
+  );
+}
 
-  if (error && !data) {
-    return (
-      <div className="p-4 text-red-400">
-        Error loading node data: {error.message}. Make sure the API server is running.
-      </div>
-    );
-  }
-
+function NodeTabContent({ data, loading }: { data: NodeData; loading: boolean }) {
   const blockchain = (data?.blockchain ?? {}) as Record<string, unknown>;
   const network = (data?.network ?? {}) as Record<string, unknown>;
   const mempool = (data?.mempool ?? {}) as Record<string, unknown>;
@@ -418,14 +398,14 @@ export function NodeTab() {
       ? String(network.warnings).trim()
       : '';
 
-  const isRefreshing = loading && !!data && getRefreshTabId() === 'node';
+  const isRefreshing = loading && getRefreshTabId() === 'node';
 
   return (
     <div className="relative space-y-4">
       <LoadingOverlay show={isRefreshing} />
       {nodeWarning !== '' ? (
         <div
-          className="rounded-lg border border-level-3 bg-level-2 p-4 text-level-5 border-l-4 border-l-amber-500"
+          className="rounded-lg border border-level-3 bg-level-2 p-4 text-level-5 border-l-4 border-l-semantic-warning"
           role="alert"
         >
           {nodeWarning}

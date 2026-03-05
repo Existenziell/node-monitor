@@ -1,16 +1,17 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback } from 'react';
 import { useApi } from '@/contexts/ApiContext';
 import type { BlocksData, NodeData, NetworkData, Peer, BtcPrices } from '@/types';
-import { getRefreshTabId, clearRefreshTabId } from '@/refreshState';
+import { getRefreshTabId } from '@/refreshState';
+import { useClearRefreshOnDoneMulti } from '@/hooks/useClearRefreshOnDone';
 import { useApiData } from '@/hooks/useApiData';
 import { useTabData } from '@/hooks/useTabData';
 import { NetworkHistoryChart } from '@/components/NetworkHistoryChart';
 import { PeersTable } from '@/components/PeersTable';
 import { LoadingOverlay } from '@/components/LoadingOverlay';
-import { formatDifficulty } from '@/utils';
-
-const HALVING_INTERVAL = 210_000;
-const RETARGET_INTERVAL = 2016;
+import { LoadingErrorGate } from '@/components/LoadingErrorGate';
+import { SectionHeader } from '@/components/SectionHeader';
+import { BITCOIN_HALVING_INTERVAL, BITCOIN_RETARGET_INTERVAL } from '@/constants';
+import { formatDifficulty, getErrorMessage } from '@/utils';
 
 function SummaryCard({
   title,
@@ -23,9 +24,7 @@ function SummaryCard({
 }) {
   return (
     <div className="rounded-lg bg-level-2 border border-level-3 p-4">
-      <h3 className="text-xs font-semibold uppercase tracking-wider text-level-4 mb-1">
-        {title}
-      </h3>
+      <SectionHeader>{title}</SectionHeader>
       <p className="text-2xl font-semibold text-level-5 mb-2">{value}</p>
       {subLines?.length ? (
         <div className="space-y-1.5 text-sm">
@@ -93,28 +92,7 @@ export function NetworkTab() {
   const { data: priceData } = priceState;
   const blocksData = blocksState.data;
 
-  useEffect(() => {
-    if (!loading && !networkLoading && !blocksState.loading) {
-      clearRefreshTabId('network');
-    }
-  }, [loading, networkLoading, blocksState.loading]);
-
-  if (loading && !data) {
-    return (
-      <div className="p-4 text-level-4 flex items-center gap-2">
-        <span className="h-4 w-4 animate-spin rounded-full border-2 border-level-3 border-t-accent" aria-hidden />
-        Loading network…
-      </div>
-    );
-  }
-
-  if (error && !data) {
-    return (
-      <div className="p-4 text-red-400">
-        Error loading node data: {error.message}. Make sure the API server is running.
-      </div>
-    );
-  }
+  useClearRefreshOnDoneMulti([loading, networkLoading, blocksState.loading], 'network');
 
   const blockchain = (data?.blockchain ?? {}) as Record<string, unknown>;
   const blocks = typeof blockchain.blocks === 'number' ? blockchain.blocks : null;
@@ -123,10 +101,10 @@ export function NetworkTab() {
   const feeEstimates = networkData?.fee_estimates;
   const feeEstimateErrors = networkData?.fee_estimate_errors;
 
-  const halvingProgress = blocks !== null ? (blocks % HALVING_INTERVAL) / HALVING_INTERVAL : null;
-  const halvingLeft = blocks !== null ? HALVING_INTERVAL - (blocks % HALVING_INTERVAL) : null;
-  const retargetProgress = blocks !== null ? (blocks % RETARGET_INTERVAL) / RETARGET_INTERVAL : null;
-  const retargetLeft = blocks !== null ? RETARGET_INTERVAL - (blocks % RETARGET_INTERVAL) : null;
+  const halvingProgress = blocks !== null ? (blocks % BITCOIN_HALVING_INTERVAL) / BITCOIN_HALVING_INTERVAL : null;
+  const halvingLeft = blocks !== null ? BITCOIN_HALVING_INTERVAL - (blocks % BITCOIN_HALVING_INTERVAL) : null;
+  const retargetProgress = blocks !== null ? (blocks % BITCOIN_RETARGET_INTERVAL) / BITCOIN_RETARGET_INTERVAL : null;
+  const retargetLeft = blocks !== null ? BITCOIN_RETARGET_INTERVAL - (blocks % BITCOIN_RETARGET_INTERVAL) : null;
 
   const blockHeightSubLines: { label: string; value: string; progress?: number }[] = [];
   if (halvingProgress !== null && halvingLeft !== null) {
@@ -178,6 +156,7 @@ export function NetworkTab() {
     (loading || networkLoading || blocksState.loading) && !!data && getRefreshTabId() === 'network';
 
   return (
+    <LoadingErrorGate loading={loading} error={error} data={data} loadingLabel="network">
     <div className="relative space-y-4">
       <LoadingOverlay show={isRefreshing} />
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -197,9 +176,7 @@ export function NetworkTab() {
           subLines={btcPriceSubLines}
         />
         <div className="rounded-lg bg-level-2 border border-level-3 p-4">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-level-4 mb-2">
-            Fee estimates
-          </h3>
+          <SectionHeader>Fee estimates</SectionHeader>
           <dl className="space-y-1 text-sm">
             <div>
               <div className="flex justify-between gap-4">
@@ -211,7 +188,7 @@ export function NetworkTab() {
                 </dd>
               </div>
               {feeEstimateErrors?.high_sat_per_vb && (
-                <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5" role="status">
+                <p className="text-xs text-semantic-warning mt-0.5" role="status">
                   {feeEstimateErrors.high_sat_per_vb}
                 </p>
               )}
@@ -226,7 +203,7 @@ export function NetworkTab() {
                 </dd>
               </div>
               {feeEstimateErrors?.medium_sat_per_vb && (
-                <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5" role="status">
+                <p className="text-xs text-semantic-warning mt-0.5" role="status">
                   {feeEstimateErrors.medium_sat_per_vb}
                 </p>
               )}
@@ -241,7 +218,7 @@ export function NetworkTab() {
                 </dd>
               </div>
               {feeEstimateErrors?.low_sat_per_vb && (
-                <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5" role="status">
+                <p className="text-xs text-semantic-warning mt-0.5" role="status">
                   {feeEstimateErrors.low_sat_per_vb}
                 </p>
               )}
@@ -251,12 +228,12 @@ export function NetworkTab() {
       </div>
       <PeersTable peers={peers} />
       <div className="rounded-lg bg-level-2 border border-level-3 p-4">
-        <h3 className="text-sm font-medium text-accent mb-2">Network history</h3>
+        <SectionHeader>Network history</SectionHeader>
         {networkLoading && !networkData ? (
           <div className="min-h-[240px]" aria-hidden />
         ) : networkError && !networkData ? (
-          <p className="text-sm text-red-400">
-            Error loading network data: {networkError.message}. Ensure the block monitor is running and network data is being recorded.
+          <p className="text-sm text-semantic-error">
+            Error loading network data: {getErrorMessage(networkError)}. Ensure the block monitor is running and network data is being recorded.
           </p>
         ) : (networkData?.network_history?.length ?? 0) === 0 ? (
           <p className="text-sm text-level-4">
@@ -267,5 +244,6 @@ export function NetworkTab() {
         )}
       </div>
     </div>
+    </LoadingErrorGate>
   );
 }

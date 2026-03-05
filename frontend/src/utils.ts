@@ -4,6 +4,16 @@
 
 import type { WalletTransaction } from '@/types';
 
+/** Safe message from unknown error (catch blocks, API responses). */
+export function getErrorMessage(e: unknown): string {
+  if (e instanceof Error) return e.message;
+  if (typeof e === 'string') return e;
+  if (e !== null && typeof e === 'object' && 'message' in e && typeof (e as { message: unknown }).message === 'string') {
+    return (e as { message: string }).message;
+  }
+  return String(e);
+}
+
 /** Merge class names (e.g. Tailwind). Filters out falsy values and joins with spaces. */
 export function cn(
   ...classes: (string | undefined | null | false)[]
@@ -40,11 +50,13 @@ export function formatDuration(seconds: number): string {
   return `${hours}h ${remainingMinutes}m`;
 }
 
-export function formatBytes(bytes: number | undefined): string {
+export function formatBytes(bytes: number | undefined | null): string {
   if (bytes === null || bytes === undefined || !Number.isFinite(bytes) || bytes < 0) return '-';
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+  if (bytes < 1024 * 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+  return `${(bytes / (1024 * 1024 * 1024 * 1024)).toFixed(2)} TB`;
 }
 
 export function formatWeight(wu: number | undefined): string {

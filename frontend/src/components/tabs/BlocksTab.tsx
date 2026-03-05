@@ -4,11 +4,14 @@ import { useApi } from '@/contexts/ApiContext';
 import type { BlockRow, BlocksData, DistributionData } from '@/types';
 import { formatBytes, formatWeight } from '@/utils';
 import { useConsole } from '@/contexts/ConsoleContext';
-import { getRefreshTabId, clearRefreshTabId } from '@/refreshState';
+import { getRefreshTabId } from '@/refreshState';
+import { useClearRefreshOnDone } from '@/hooks/useClearRefreshOnDone';
 import { useApiData } from '@/hooks/useApiData';
 import { useTabData } from '@/hooks/useTabData';
 import { useTableSort } from '@/hooks/useTableSort';
 import { LoadingOverlay } from '@/components/LoadingOverlay';
+import { LoadingErrorGate } from '@/components/LoadingErrorGate';
+import { SectionHeader } from '@/components/SectionHeader';
 import { SortableTh } from '@/components/SortableTh';
 
 const PIE_COLORS = [
@@ -162,11 +165,7 @@ export function BlocksTab() {
 
   useTabData(load, 'blocks');
 
-  useEffect(() => {
-    if (!loading) {
-      clearRefreshTabId('blocks');
-    }
-  }, [loading]);
+  useClearRefreshOnDone(loading, 'blocks');
 
   useEffect(() => {
     loadPools().catch(() => {});
@@ -198,18 +197,31 @@ export function BlocksTab() {
 
   const blockTimeStr = data?.blocks?.[0]?.block_time ?? null;
   const blockTimestamp = blockTimeStr ? parseBlockTimeUtc(blockTimeStr) : null;
-  const [, setTick] = useState(0);
+  const apiSecondsSince = data?.seconds_since_last_block;
+  const useApiSeconds =
+    apiSecondsSince !== null &&
+    apiSecondsSince !== undefined &&
+    Number.isFinite(apiSecondsSince) &&
+    apiSecondsSince >= 0;
+  const [tick, setTick] = useState(0);
 
   useEffect(() => {
-    if (blockTimeStr === null || blockTimeStr === undefined) return;
+    setTick(0);
+  }, [blockTimeStr, apiSecondsSince]);
+
+  useEffect(() => {
+    if ((blockTimeStr === null || blockTimeStr === undefined) && !useApiSeconds) return;
     const id = setInterval(() => setTick((t) => t + 1), 1000);
     return () => clearInterval(id);
-  }, [blockTimeStr]);
+  }, [blockTimeStr, useApiSeconds]);
 
   const elapsedSeconds =
     blockTimestamp !== null ? Math.max(0, (Date.now() - blockTimestamp) / 1000) : null;
-  const timeSinceLastFormatted =
-    elapsedSeconds !== null ? formatTimeSince(Math.floor(elapsedSeconds)) : '-';
+  const timeSinceLastFormatted = useApiSeconds
+    ? formatTimeSince(Math.floor((apiSecondsSince ?? 0) + tick))
+    : elapsedSeconds !== null
+      ? formatTimeSince(Math.floor(elapsedSeconds))
+      : '-';
 
   const blocks = data?.blocks ?? [];
   const blocksSort = useTableSort<BlockRow>({
@@ -229,33 +241,17 @@ export function BlocksTab() {
     defaultSortDir: 'desc',
   });
 
-  if (loading && !data) {
-    return (
-      <div className="p-4 text-level-4 flex items-center gap-2">
-        <span className="h-4 w-4 animate-spin rounded-full border-2 border-level-3 border-t-accent" aria-hidden />
-        Loading blocks…
-      </div>
-    );
-  }
-
-  if (error && !data) {
-    return (
-      <div className="p-4 text-red-400">
-        Error loading blocks: {error.message}. Make sure the API server is running.
-      </div>
-    );
-  }
-
   const chainHeight = data?.chain_height ?? null;
   const nextBlockHeight = chainHeight !== null && chainHeight !== undefined ? chainHeight + 1 : null;
 
   return (
+    <LoadingErrorGate loading={loading} error={error} data={data} loadingLabel="blocks">
     <div className="relative space-y-4">
       <LoadingOverlay show={loading && !!data && getRefreshTabId() === 'blocks'} />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="rounded-lg bg-level-2 border border-level-3 p-4 space-y-4">
           <section>
-            <h3 className="text-sm font-medium text-level-4 mb-3">Current block</h3>
+            <SectionHeader>Current block</SectionHeader>
             <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
               <dt className="text-level-4">Next block</dt>
               <dd className="text-level-5 font-medium tabular-nums">
@@ -275,12 +271,13 @@ export function BlocksTab() {
           </section>
         </div>
         <div className="rounded-lg bg-level-2 border border-level-3 p-4">
-          <h3 className="text-sm font-medium text-level-4 mb-3">Pool distribution</h3>
+          <SectionHeader>Pool distribution</SectionHeader>
           <PoolDistributionChart distribution={distribution ?? null} poolByIdentifier={poolByIdentifier} />
         </div>
       </div>
 
       <div className="rounded-lg bg-level-2 border border-level-3 overflow-hidden">
+        <SectionHeader className="px-4 pt-4">Previous Blocks</SectionHeader>
         <div className="overflow-x-auto max-h-[60vh]">
           <table className="sortable-table w-full text-sm">
             <thead className="sticky top-0 bg-level-2 text-left">
@@ -324,5 +321,6 @@ export function BlocksTab() {
         </div>
       </div>
     </div>
+    </LoadingErrorGate>
   );
 }

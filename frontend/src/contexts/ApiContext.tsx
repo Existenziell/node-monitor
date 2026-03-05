@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useCallback } from 'react';
-import { API_BASE_URL, MAX_RETRIES, RETRY_DELAY_MS } from '@/constants';
+import { API_BASE_URL, API_SERVER_HINT, MAX_RETRIES, RETRY_DELAY_MS } from '@/constants';
 import { useConsole } from '@/contexts/ConsoleContext';
+import { getErrorMessage } from '@/utils';
 import type {
   ApiContextValue,
   BlocksData,
@@ -68,8 +69,8 @@ export function ApiProvider({ children }: { children: React.ReactNode }) {
       log('Node data retrieved successfully', 'success');
       return result.data;
     } catch (e) {
-      log(`Node connection failed: ${(e as Error).message}`, 'error');
-      log('Make sure the API server is running: python3 backend/api_server.py', 'warning');
+      log(`Node connection failed: ${getErrorMessage(e)}`, 'error');
+      log(`${API_SERVER_HINT} (e.g. python3 backend/api_server.py)`, 'warning');
       throw e;
     }
   }, [fetchWithRetry, log, setConnectionStatus]);
@@ -82,7 +83,7 @@ export function ApiProvider({ children }: { children: React.ReactNode }) {
       log(`Loaded ${result.data.blocks?.length ?? 0} blocks from API`, 'success');
       return result.data;
     } catch (e) {
-      log(`Error loading blockchain data: ${(e as Error).message}`, 'error');
+      log(`Error loading blockchain data: ${getErrorMessage(e)}`, 'error');
       throw e;
     }
   }, [fetchWithRetry, log, setConnectionStatus]);
@@ -95,7 +96,7 @@ export function ApiProvider({ children }: { children: React.ReactNode }) {
       log('Wallet data retrieved successfully', 'success');
       return result.data;
     } catch (e) {
-      log(`Wallet connection failed: ${(e as Error).message}`, 'error');
+      log(`Wallet connection failed: ${getErrorMessage(e)}`, 'error');
       throw e;
     }
   }, [fetchWithRetry, log, setConnectionStatus]);

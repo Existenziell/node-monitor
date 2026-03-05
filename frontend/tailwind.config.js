@@ -24,6 +24,11 @@ export default {
           warning: '#FFA500',
           error: '#ff6b6b',
         },
+        semantic: {
+          error: 'var(--color-error)',
+          warning: 'var(--color-warning)',
+          success: 'var(--color-success)',
+        },
       },
       fontFamily: {
         sans: ['"DM Sans"', 'system-ui', 'sans-serif'],
