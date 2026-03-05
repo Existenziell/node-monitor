@@ -17,6 +17,7 @@ export const TABS: TabWithLabel[] = [
   { id: 'blocks', label: 'Blocks' },
   { id: 'wallet', label: 'Wallet' },
   { id: 'console', label: 'Console' },
+  { id: 'docs', label: 'Docs' },
   { id: 'settings', label: 'Settings' },
 ];
 

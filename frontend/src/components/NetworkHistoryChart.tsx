@@ -34,6 +34,16 @@ function toChartPoints(history: NetworkHistoryEntry[]): ChartPoint[] {
   );
   return sorted.map((entry) => {
     const date = parse(entry.timestamp, TIMESTAMP_FORMAT, new Date());
+    const rawHashrate = entry.hashRate;
+    const hashrateNum =
+      rawHashrate !== null && rawHashrate !== undefined
+        ? Number(rawHashrate)
+        : null;
+    const rawDifficulty = entry.difficulty;
+    const difficultyNum =
+      rawDifficulty !== null && rawDifficulty !== undefined
+        ? Number(rawDifficulty)
+        : null;
     return {
       time: date.getTime(),
       timeLabel: entry.timestamp,
@@ -42,12 +52,12 @@ function toChartPoints(history: NetworkHistoryEntry[]): ChartPoint[] {
           ? entry.blockHeight
           : null,
       hashrate:
-        entry.hashRate !== null && entry.hashRate !== undefined && Number.isFinite(entry.hashRate)
-          ? entry.hashRate
+        hashrateNum !== null && Number.isFinite(hashrateNum)
+          ? hashrateNum
           : null,
       difficulty:
-        entry.difficulty !== null && entry.difficulty !== undefined && Number.isFinite(entry.difficulty)
-          ? entry.difficulty
+        difficultyNum !== null && Number.isFinite(difficultyNum)
+          ? difficultyNum
           : null,
     };
   });
@@ -64,7 +74,7 @@ export function NetworkHistoryChart({ networkHistory }: NetworkHistoryChartProps
       <ResponsiveContainer width="100%" height="100%">
         <LineChart
           data={data}
-          margin={{ top: 8, right: 8, left: 4, bottom: 4 }}
+          margin={{ top: 8, right: 56, left: 56, bottom: 8 }}
         >
           <CartesianGrid
             strokeDasharray="3 3"
@@ -91,10 +101,11 @@ export function NetworkHistoryChart({ networkHistory }: NetworkHistoryChartProps
             tickFormatter={(v) => `${v} TH/s`}
             tick={{ fill: 'currentColor', fontSize: 12 }}
             className="text-level-4"
+            width={80}
             label={{
               value: 'Hashrate (TH/s)',
               angle: -90,
-              position: 'insideLeft',
+              position: 'left',
               style: { fill: 'currentColor', fontSize: 12 },
             }}
           />
@@ -104,10 +115,11 @@ export function NetworkHistoryChart({ networkHistory }: NetworkHistoryChartProps
             tickFormatter={(v) => formatDifficulty(v)}
             tick={{ fill: 'currentColor', fontSize: 12 }}
             className="text-level-4"
+            width={80}
             label={{
               value: 'Difficulty',
               angle: 90,
-              position: 'insideRight',
+              position: 'right',
               style: { fill: 'currentColor', fontSize: 12 },
             }}
           />

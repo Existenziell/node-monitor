@@ -61,7 +61,7 @@ YAHOO_FINANCE_TICKER = "BTC-USD"
 DEFAULT_CONFIG_DIR = ".bitcoin_secure"
 DEFAULT_DATA_DIR = "data"
 BLOCKS_JSON_MAX_ENTRIES = 100
-BLOCKS_DISPLAY_LIMIT = 20  # Max blocks returned by API / shown in frontend
+BLOCKS_DISPLAY_LIMIT = 100  # Max blocks returned by API / shown in frontend
 DIFFICULTY_JSON_MAX_ENTRIES = 100
 
 # SQLite (blocks/network/distribution when block monitor runs in API)

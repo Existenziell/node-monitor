@@ -211,7 +211,7 @@ export function ConsoleTab() {
                 {formatResponseForDisplay(response)}
               </pre>
             ) : (
-              <p className="text-level-3 text-sm">Response will appear here after Execute.</p>
+              <p className="text-level-4 text-sm">Response will appear here after Execute.</p>
             )}
           </div>
         </div>

@@ -6,7 +6,7 @@ import { SVGProps } from "react";
 
 // --- Tab navigation ---
 
-export type TabId = 'node' | 'blocks' | 'wallet' | 'console' | 'settings';
+export type TabId = 'node' | 'blocks' | 'wallet' | 'console' | 'docs' | 'settings';
 
 export interface TabWithLabel {
   id: TabId;

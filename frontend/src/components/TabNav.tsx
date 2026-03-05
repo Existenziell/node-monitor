@@ -21,7 +21,7 @@ export function TabNav({ activeTab, onTabChange, onRefresh }: TabNavProps) {
           </button>
         ))}
       </nav>
-      {activeTab !== 'console' && activeTab !== 'settings' && (
+      {activeTab !== 'console' && activeTab !== 'docs' && activeTab !== 'settings' && (
         <button
           type="button"
           onClick={onRefresh}

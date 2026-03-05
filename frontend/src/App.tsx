@@ -10,6 +10,7 @@ import { NodeTab } from '@/components/tabs/NodeTab';
 import { BlocksTab } from '@/components/tabs/BlocksTab';
 import { WalletTab } from '@/components/tabs/WalletTab';
 import { ConsoleTab } from '@/components/tabs/ConsoleTab';
+import { DocsTab } from '@/components/tabs/DocsTab';
 import { SettingsTab } from '@/components/tabs/SettingsTab';
 import type { TabId } from '@/types';
 
@@ -23,6 +24,8 @@ function TabContent({ tab }: { tab: TabId }) {
       return <WalletTab />;
     case 'console':
       return <ConsoleTab />;
+    case 'docs':
+      return <DocsTab />;
     case 'settings':
       return <SettingsTab />;
     default:
