@@ -263,15 +263,15 @@ export function BlocksTab() {
           <table className="w-full text-sm">
             <thead className="sticky top-0 bg-level-2 text-left">
               <tr>
-                <th className="p-2 text-level-4">Height</th>
-                <th className="p-2 text-level-4">Time</th>
-                <th className="p-2 text-level-4">Pool</th>
-                <th className="p-2 text-level-4">Tx Count</th>
-                <th className="p-2 text-level-4">Weight</th>
-                <th className="p-2 text-level-4">Size</th>
-                <th className="p-2 text-level-4">Reward</th>
-                <th className="p-2 text-level-4">Fees</th>
-                <th className="p-2 text-level-4">Fees (USD)</th>
+                <th className="px-2 py-3 text-level-4">Height</th>
+                <th className="px-2 py-3 text-level-4">Time</th>
+                <th className="px-2 py-3 text-level-4">Pool</th>
+                <th className="px-2 py-3 text-level-4">Tx Count</th>
+                <th className="px-2 py-3 text-level-4">Weight</th>
+                <th className="px-2 py-3 text-level-4">Size</th>
+                <th className="px-2 py-3 text-level-4">Reward</th>
+                <th className="px-2 py-3 text-level-4">Fees</th>
+                <th className="px-2 py-3 text-level-4">Fees (USD)</th>
               </tr>
             </thead>
             <tbody>

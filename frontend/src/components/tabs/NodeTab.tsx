@@ -465,18 +465,18 @@ export function NodeTab() {
             <table className="w-full text-sm">
               <thead className="sticky top-0 bg-level-2 text-left">
                 <tr>
-                  <th className="p-2 text-level-4">Address</th>
-                  <th className="p-2 text-level-4">Network</th>
-                  <th className="p-2 text-level-4">Direction</th>
-                  <th className="p-2 text-level-4">Version</th>
-                  <th className="p-2 text-level-4">Connection type</th>
-                  <th className="p-2 text-level-4">Connected</th>
-                  <th className="p-2 text-level-4">Last recv</th>
-                  <th className="p-2 text-level-4">Sent</th>
-                  <th className="p-2 text-level-4">Recv</th>
-                  <th className="p-2 text-level-4">Ping</th>
-                  <th className="p-2 text-level-4">Starting height</th>
-                  <th className="p-2 text-level-4">Transport</th>
+                  <th className="px-2 py-3 text-level-4">Address</th>
+                  <th className="px-2 py-3 text-level-4">Network</th>
+                  <th className="px-2 py-3 text-level-4">Direction</th>
+                  <th className="px-2 py-3 text-level-4">Version</th>
+                  <th className="px-2 py-3 text-level-4">Connection type</th>
+                  <th className="px-2 py-3 text-level-4">Connected</th>
+                  <th className="px-2 py-3 text-level-4">Last recv</th>
+                  <th className="px-2 py-3 text-level-4">Sent</th>
+                  <th className="px-2 py-3 text-level-4">Recv</th>
+                  <th className="px-2 py-3 text-level-4">Ping</th>
+                  <th className="px-2 py-3 text-level-4">Starting height</th>
+                  <th className="px-2 py-3 text-level-4">Transport</th>
                 </tr>
               </thead>
               <tbody>

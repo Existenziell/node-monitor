@@ -213,7 +213,7 @@ export function WalletTab() {
               <dd className="text-accent">{Number(balance).toFixed(8)} BTC</dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-level-4">Tx count</dt>
+              <dt className="text-level-4" title="Distinct transactions in the wallet (from getwalletinfo)">Tx count</dt>
               <dd className="text-level-5">{wallet.txcount !== null && wallet.txcount !== undefined ? String(wallet.txcount) : 'N/A'}</dd>
             </div>
           </dl>
@@ -226,11 +226,11 @@ export function WalletTab() {
           <table className="w-full text-sm">
             <thead className="sticky top-0 bg-level-2 text-left">
               <tr>
-                <th className="p-2 text-level-4">Txid</th>
-                <th className="p-2 text-level-4">Vout</th>
-                <th className="p-2 text-level-4">Address</th>
-                <th className="p-2 text-level-4">Amount (BTC)</th>
-                <th className="p-2 text-level-4">Confirmations</th>
+                <th className="px-2 py-3 text-level-4">Txid</th>
+                <th className="px-2 py-3 text-level-4">Vout</th>
+                <th className="px-2 py-3 text-level-4">Address</th>
+                <th className="px-2 py-3 text-level-4">Amount (BTC)</th>
+                <th className="px-2 py-3 text-level-4">Confirmations</th>
               </tr>
             </thead>
             <tbody>
@@ -266,16 +266,18 @@ export function WalletTab() {
       </div>
 
       <div className="rounded-lg bg-level-2 border border-level-3 overflow-hidden">
-        <h3 className="text-sm font-medium text-accent p-4 pb-2">Transactions ({transactions.length})</h3>
+        <h3 className="text-sm font-medium text-accent p-4 pb-2" title="listtransactions can return multiple entries per transaction (e.g. per address or category), so this count may exceed Tx count.">
+          Transactions ({transactions.length} entries)
+        </h3>
         <div className="overflow-x-auto max-h-[60vh]">
           <table className="w-full text-sm">
             <thead className="sticky top-0 bg-level-2 text-left">
               <tr>
-                <th className="p-2 text-level-4">Txid</th>
-                <th className="p-2 text-level-4">Category</th>
-                <th className="p-2 text-level-4">Amount (BTC)</th>
-                <th className="p-2 text-level-4">Confirmations</th>
-                <th className="p-2 text-level-4">Time</th>
+                <th className="px-2 py-3 text-level-4">Txid</th>
+                <th className="px-2 py-3 text-level-4">Category</th>
+                <th className="px-2 py-3 text-level-4">Amount (BTC)</th>
+                <th className="px-2 py-3 text-level-4">Confirmations</th>
+                <th className="px-2 py-3 text-level-4">Time</th>
               </tr>
             </thead>
             <tbody>
