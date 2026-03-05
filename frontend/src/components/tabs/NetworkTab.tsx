@@ -151,7 +151,21 @@ export function NetworkTab() {
       progress: retargetProgress * 100,
     });
   }
-  difficultySubLines.push({ label: 'Next adjustment', value: '—' });
+  const avgBlockTimeSeconds = blocksData?.avg_block_time_seconds;
+  const nextAdjustmentSeconds =
+    retargetLeft !== null &&
+    avgBlockTimeSeconds !== null &&
+    avgBlockTimeSeconds !== undefined &&
+    Number.isFinite(avgBlockTimeSeconds)
+      ? retargetLeft * avgBlockTimeSeconds
+      : null;
+  difficultySubLines.push({
+    label: 'Next adjustment',
+    value:
+      nextAdjustmentSeconds !== null && Number.isFinite(nextAdjustmentSeconds)
+        ? formatSeconds(nextAdjustmentSeconds)
+        : '—',
+  });
 
   const btcPriceUsd = priceData?.USD;
   const btcPriceEur =
