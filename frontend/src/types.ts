@@ -6,7 +6,7 @@ import { SVGProps } from "react";
 
 // --- Tab navigation ---
 
-export type TabId = 'node' | 'blocks' | 'wallet' | 'console' | 'docs' | 'settings';
+export type TabId = 'node' | 'network' | 'blocks' | 'wallet' | 'console' | 'docs' | 'settings';
 
 export interface TabWithLabel {
   id: TabId;
@@ -21,6 +21,13 @@ export interface TabNavProps {
 
 // --- API / data (ApiContext) ---
 
+/** BTC price per currency (e.g. USD, EUR) from mempool.space. */
+export interface BtcPrices {
+  USD?: number;
+  EUR?: number;
+  [key: string]: number | undefined;
+}
+
 export interface ApiContextValue {
   apiBaseUrl: string;
   fetchWithRetry: <T>(endpoint: string) => Promise<{ data: T }>;
@@ -30,6 +37,7 @@ export interface ApiContextValue {
   fetchNetwork: () => Promise<NetworkData>;
   fetchPools: () => Promise<Pool[]>;
   fetchDistribution: () => Promise<DistributionData>;
+  fetchPrice: () => Promise<BtcPrices>;
   callRpc: (method: string, params?: unknown[]) => Promise<Record<string, unknown>>;
   fetchConfigStatus: () => Promise<ConfigStatus>;
   saveConfig: (payload: ConfigSavePayload) => Promise<{ ok: boolean; error?: string }>;
@@ -131,9 +139,7 @@ export interface BlocksData {
   total_blocks?: number;
   cached?: boolean;
   avg_block_time_seconds?: number | null;
-  /** Current chain tip height (from RPC). Next block being searched = chain_height + 1. */
   chain_height?: number | null;
-  /** Seconds since the tip block was found (how long we've been waiting for the next block). */
   seconds_since_last_block?: number | null;
 }
 
@@ -177,9 +183,16 @@ export interface NetworkHistoryEntry {
   difficulty?: number;
 }
 
+export interface FeeEstimates {
+  high_sat_per_vb?: number | null;
+  medium_sat_per_vb?: number | null;
+  low_sat_per_vb?: number | null;
+}
+
 export interface NetworkData {
   network_history?: NetworkHistoryEntry[];
   total_records?: number;
+  fee_estimates?: FeeEstimates | null;
 }
 
 export interface Pool {

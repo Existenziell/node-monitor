@@ -11,6 +11,8 @@ import os
 import threading
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse
+from urllib.request import urlopen
+from urllib.error import URLError, HTTPError
 
 # Ensure backend directory is on path (when run as python3 backend/api_server.py)
 _backend_dir = os.path.dirname(os.path.abspath(__file__))
@@ -54,6 +56,8 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
         self._wallet_cache = None
         self._wallet_cache_time = None
         self._pools_data = None
+        self._price_cache = None
+        self._price_cache_time = None
         super().__init__(*args, **kwargs)
 
     def do_GET(self):  # pylint: disable=invalid-name
@@ -82,6 +86,8 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
                 self.handle_distribution_data()
             elif path == '/api/health':
                 self.handle_health()
+            elif path == '/api/price':
+                self.handle_price()
             elif path == '/api/config/status':
                 self.handle_config_status()
             elif path == '/api/pools':
@@ -522,6 +528,40 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
         except (ValueError, TypeError):
             return None
 
+    def _get_tip_block_from_rpc(self):
+        """When DB has no blocks, fetch current tip from RPC so 'time since last block' can be shown."""
+        try:
+            from datetime import datetime, timezone
+            chain_height = self._get_chain_height()
+            if chain_height is None:
+                return None
+            hash_resp = self.rpc_service.get_block_hash(chain_height)
+            block_hash = hash_resp.get("result") if isinstance(hash_resp.get("result"), str) else None
+            if not block_hash:
+                return None
+            block_resp = self.rpc_service.get_block(block_hash, 1)
+            block = block_resp.get("result") if isinstance(block_resp.get("result"), dict) else None
+            if not block or not isinstance(block.get("time"), (int, float)):
+                return None
+            block_time_str = datetime.fromtimestamp(
+                int(block["time"]), tz=timezone.utc
+            ).strftime("%Y-%m-%d %H:%M:%S")
+            return {
+                "block_height": chain_height,
+                "block_hash": block.get("hash"),
+                "block_time": block_time_str,
+                "mining_pool": None,
+                "transaction_count": block.get("nTx"),
+                "block_size": block.get("size"),
+                "block_weight": block.get("weight"),
+                "block_reward": None,
+                "total_fees": None,
+                "total_fees_usd": None,
+                "time_since_last_block": "",
+            }
+        except Exception:
+            return None
+
     def handle_blocks_data(self):
         """Handle blocks data requests from SQLite (with in-memory cache)."""
         try:
@@ -547,6 +587,10 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
                 return
 
             blocks_data = get_recent_blocks(BLOCKS_DISPLAY_LIMIT, self._get_db_path())
+            if not blocks_data and self.rpc_service is not None:
+                tip_block = self._get_tip_block_from_rpc()
+                if tip_block is not None:
+                    blocks_data = [tip_block]
             avg_block_time = self._compute_avg_block_time(blocks_data)
             self._blocks_cache = blocks_data
             self._blocks_cache_time = now
@@ -573,17 +617,41 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
             }
             self.wfile.write(json.dumps(error_response).encode())
 
+    def _get_fee_estimates(self):
+        """Return fee estimates in sat/vB for high/medium/low (2, 4, 6 blocks), or None if RPC unavailable."""
+        if self.rpc_service is None:
+            return None
+        try:
+            result = {}
+            for blocks, key in [(2, "high_sat_per_vb"), (4, "medium_sat_per_vb"), (6, "low_sat_per_vb")]:
+                resp = self.rpc_service.estimate_smart_fee(blocks)
+                res = resp.get("result") if isinstance(resp.get("result"), dict) else None
+                feerate = res.get("feerate") if res else None
+                if feerate is not None and isinstance(feerate, (int, float)):
+                    # feerate from estimatesmartfee is BTC per kvB; convert to sat/vB
+                    sat_per_vb = round(float(feerate) * 1e8 / 1000)
+                    result[key] = max(0, sat_per_vb)
+                else:
+                    result[key] = None
+            return result
+        except Exception:
+            return None
+
     def handle_network_data(self):
-        """Handle network data requests (hashrate and difficulty history from SQLite)."""
+        """Handle network data requests (hashrate and difficulty history from SQLite, optional fee estimates)."""
         try:
             from constants import DIFFICULTY_JSON_MAX_ENTRIES
             network_data = get_network_history(DIFFICULTY_JSON_MAX_ENTRIES, self._get_db_path())
+            data = {
+                "network_history": network_data,
+                "total_records": len(network_data)
+            }
+            fee_estimates = self._get_fee_estimates()
+            if fee_estimates is not None:
+                data["fee_estimates"] = fee_estimates
             response = {
                 "status": "success",
-                "data": {
-                    "network_history": network_data,
-                    "total_records": len(network_data)
-                }
+                "data": data
             }
             self.wfile.write(json.dumps(response, indent=2).encode())
 
@@ -620,6 +688,42 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
             error_response = {
                 "status": "error",
                 "message": f"Failed to get distribution data: {str(e)}"
+            }
+            self.wfile.write(json.dumps(error_response).encode())
+
+    def _cached_fetch_prices(self):
+        """Fetch BTC prices from mempool.space, with in-memory cache (60s TTL)."""
+        api = 'https://mempool.space/api'
+        price_cache_seconds = 60
+        from datetime import datetime
+        now = datetime.now()
+        if (self._price_cache is not None and self._price_cache_time is not None and
+                (now - self._price_cache_time).total_seconds() < price_cache_seconds):
+            return self._price_cache
+        try:
+            with urlopen(f'{api}/v1/prices', timeout=10) as resp:
+                data = json.loads(resp.read().decode())
+            if isinstance(data, dict):
+                self._price_cache = data
+                self._price_cache_time = now
+                return data
+        except (URLError, HTTPError, json.JSONDecodeError, OSError):
+            pass
+        return self._price_cache if self._price_cache is not None else {}
+
+    def handle_price(self):
+        """Handle BTC price requests (mempool.space, cached)."""
+        try:
+            data = self._cached_fetch_prices()
+            response = {
+                "status": "success",
+                "data": data
+            }
+            self.wfile.write(json.dumps(response, indent=2).encode())
+        except Exception as e:
+            error_response = {
+                "status": "error",
+                "message": f"Failed to get price data: {str(e)}"
             }
             self.wfile.write(json.dumps(error_response).encode())
 

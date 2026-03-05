@@ -4,6 +4,7 @@ import { useConsole } from '@/contexts/ConsoleContext';
 import type {
   ApiContextValue,
   BlocksData,
+  BtcPrices,
   ConfigSavePayload,
   ConfigStatus,
   DistributionData,
@@ -109,6 +110,11 @@ export function ApiProvider({ children }: { children: React.ReactNode }) {
     }
   }, [fetchWithRetry, setConnectionStatus]);
 
+  const fetchPrice = useCallback(async (): Promise<BtcPrices> => {
+    const result = await fetchWithRetry<BtcPrices>('/price');
+    return result.data;
+  }, [fetchWithRetry]);
+
   const fetchPools = useCallback(async (): Promise<Pool[]> => {
     const res = await fetch(`${API_BASE_URL}/pools`);
     const data = await res.json();
@@ -189,6 +195,7 @@ export function ApiProvider({ children }: { children: React.ReactNode }) {
     fetchNetwork,
     fetchPools,
     fetchDistribution,
+    fetchPrice,
     callRpc,
     fetchConfigStatus,
     saveConfig,

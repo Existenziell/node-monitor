@@ -1,12 +1,12 @@
-import { useCallback, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useApi } from '@/contexts/ApiContext';
-import type { NodeData, NetworkData, Peer } from '@/types';
+import type { NodeData, Peer } from '@/types';
 import { useConsole } from '@/contexts/ConsoleContext';
 import { getRefreshTabId, clearRefreshTabId } from '@/refreshState';
 import { useApiData } from '@/hooks/useApiData';
 import { useTabData } from '@/hooks/useTabData';
-import { NetworkHistoryChart } from '@/components/NetworkHistoryChart';
 import { LoadingOverlay } from '@/components/LoadingOverlay';
+import { formatDifficulty } from '@/utils';
 
 function formatBytes(n: number | undefined | null): string {
   if (n === null || n === undefined || !Number.isFinite(n)) return '-';
@@ -26,31 +26,6 @@ function formatBtc(n: number | undefined | null): string {
   return `${Number(n).toFixed(8)} BTC`;
 }
 
-function formatPeerTime(epoch: number | undefined | null): string {
-  if (epoch === null || epoch === undefined || !Number.isFinite(epoch) || epoch <= 0) return '-';
-  try {
-    const date = new Date(epoch * 1000);
-    const now = Date.now();
-    const diffMs = now - date.getTime();
-    const diffM = Math.floor(diffMs / 60000);
-    const diffH = Math.floor(diffM / 60);
-    const diffD = Math.floor(diffH / 24);
-    if (diffM < 1) return 'just now';
-    if (diffM < 60) return `${diffM}m ago`;
-    if (diffH < 24) return `${diffH}h ago`;
-    if (diffD < 7) return `${diffD}d ago`;
-    return date.toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' });
-  } catch {
-    return '-';
-  }
-}
-
-function formatSubver(subver: string | undefined | null): string {
-  if (subver === null || subver === undefined || subver === '') return '-';
-  const s = String(subver).replace(/^\/+|\/+$/g, '').trim();
-  return s || '-';
-}
-
 /** Extract UA comment from subversion string, e.g. "/Satoshi:22.0.0(my comment)/" -> "my comment". */
 function parseUaComment(subversion: string | undefined | null): string {
   if (subversion === null || subversion === undefined || subversion === '') return '–';
@@ -62,17 +37,6 @@ function parseUaComment(subversion: string | undefined | null): string {
 function subversionWithoutUaComment(subversion: string | undefined | null): string {
   if (subversion === null || subversion === undefined || subversion === '') return 'N/A';
   return String(subversion).replace(/\s*\([^)]*\)\s*/, '').trim() || 'N/A';
-}
-
-/** Format difficulty with T (trillion), G (billion), M (million) suffix. */
-function formatDifficulty(n: number | undefined | null): string {
-  if (n === null || n === undefined || !Number.isFinite(n) || n <= 0) return 'N/A';
-  const num = Number(n);
-  if (num >= 1e12) return `${(num / 1e12).toFixed(2)} T`;
-  if (num >= 1e9) return `${(num / 1e9).toFixed(2)} G`;
-  if (num >= 1e6) return `${(num / 1e6).toFixed(2)} M`;
-  if (num >= 1e3) return `${(num / 1e3).toFixed(2)} K`;
-  return num.toLocaleString();
 }
 
 function InfoCard({
@@ -144,26 +108,19 @@ function GroupedInfoCard({
 }
 
 export function NodeTab() {
-  const { fetchNode, fetchNetwork } = useApi();
+  const { fetchNode } = useApi();
   const nodeState = useApiData<NodeData>(fetchNode);
-  const networkState = useApiData<NetworkData>(fetchNetwork);
   const { log } = useConsole();
 
-  const loadBoth = useCallback(
-    () => Promise.all([nodeState.load(), networkState.load()]),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [nodeState.load, networkState.load]
-  );
-  useTabData(loadBoth, 'node');
+  useTabData(nodeState.load, 'node');
 
   const { data, loading, error } = nodeState;
-  const { data: networkData, loading: networkLoading, error: networkError } = networkState;
 
   useEffect(() => {
-    if (!loading && !networkLoading) {
+    if (!loading) {
       clearRefreshTabId('node');
     }
-  }, [loading, networkLoading]);
+  }, [loading]);
 
   useEffect(() => {
     if (data?.blockchain && typeof data.blockchain.blocks === 'number') {
@@ -437,14 +394,13 @@ export function NodeTab() {
     indexingEntries.push({ label: 'No indexes', value: 'N/A' });
   }
 
-  const isRefreshing =
-    (loading || networkLoading) && !!data && getRefreshTabId() === 'node';
+  const isRefreshing = loading && !!data && getRefreshTabId() === 'node';
 
   return (
     <div className="relative space-y-4">
       <LoadingOverlay show={isRefreshing} />
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <InfoCard title="Network Status" items={networkCardItems} />
+        <InfoCard title="Node Status" items={networkCardItems} />
         <InfoCard title="Blockchain Status" items={blockchainCardItems} />
         <InfoCard title="Mempool Status" items={mempoolCardItems} />
       </div>
@@ -455,78 +411,6 @@ export function NodeTab() {
           leftGroup={{ items: hostSystemItems }}
           rightGroup={{ heading: 'Process (bitcoind)', items: processBitcoindItems }}
         />
-      </div>
-      {peers.length > 0 && (
-        <div className="rounded-lg bg-level-2 border border-level-3 overflow-hidden">
-          <h3 className="text-sm font-medium text-accent p-4 pb-2">
-            Peers ({peers.length})
-          </h3>
-          <div className="overflow-x-auto max-h-[60vh]">
-            <table className="w-full text-sm">
-              <thead className="sticky top-0 bg-level-2 text-left">
-                <tr>
-                  <th className="px-2 py-3 text-level-4">Address</th>
-                  <th className="px-2 py-3 text-level-4">Network</th>
-                  <th className="px-2 py-3 text-level-4">Direction</th>
-                  <th className="px-2 py-3 text-level-4">Version</th>
-                  <th className="px-2 py-3 text-level-4">Connection type</th>
-                  <th className="px-2 py-3 text-level-4">Connected</th>
-                  <th className="px-2 py-3 text-level-4">Last recv</th>
-                  <th className="px-2 py-3 text-level-4">Sent</th>
-                  <th className="px-2 py-3 text-level-4">Recv</th>
-                  <th className="px-2 py-3 text-level-4">Ping</th>
-                  <th className="px-2 py-3 text-level-4">Starting height</th>
-                  <th className="px-2 py-3 text-level-4">Transport</th>
-                </tr>
-              </thead>
-              <tbody>
-                {peers.map((peer, index) => (
-                  <tr
-                    key={String(peer.id ?? peer.addr ?? index)}
-                    className="border-t border-level-3 hover:bg-level-3"
-                  >
-                    <td className="p-2 text-level-5 font-mono truncate max-w-[180px]" title={peer.addr ?? ''}>
-                      {peer.addr ?? '-'}
-                    </td>
-                    <td className="p-2 text-level-5">{peer.network ?? '-'}</td>
-                    <td className="p-2 text-level-5">{peer.inbound === true ? 'In' : peer.inbound === false ? 'Out' : '-'}</td>
-                    <td className="p-2 text-level-5 truncate max-w-[140px]" title={peer.subver ?? ''}>
-                      {formatSubver(peer.subver)}
-                    </td>
-                    <td className="p-2 text-level-5">{peer.connection_type ?? '-'}</td>
-                    <td className="p-2 text-level-5">{formatPeerTime(peer.conntime)}</td>
-                    <td className="p-2 text-level-5">{formatPeerTime(peer.lastrecv)}</td>
-                    <td className="p-2 text-level-5">{formatBytes(peer.bytessent)}</td>
-                    <td className="p-2 text-level-5">{formatBytes(peer.bytesrecv)}</td>
-                    <td className="p-2 text-level-5">
-                      {peer.pingtime !== null && peer.pingtime !== undefined && Number.isFinite(peer.pingtime) ? `${Number(peer.pingtime).toFixed(0)} ms` : '-'}
-                    </td>
-                    <td className="p-2 text-level-5">
-                      {peer.startingheight !== null && peer.startingheight !== undefined && Number.isFinite(peer.startingheight) ? Number(peer.startingheight).toLocaleString() : '-'}
-                    </td>
-                    <td className="p-2 text-level-5">{peer.transport_protocol_type ?? '-'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-      <div className="rounded-lg bg-level-2 border border-level-3 p-4">
-        <h3 className="text-sm font-medium text-accent mb-2">Network history</h3>
-        {networkLoading && !networkData ? (
-          <div className="min-h-[240px]" aria-hidden />
-        ) : networkError && !networkData ? (
-          <p className="text-sm text-red-400">
-            Error loading network data: {networkError.message}. Ensure the block monitor is running and network data is being recorded.
-          </p>
-        ) : (networkData?.network_history?.length ?? 0) === 0 ? (
-          <p className="text-sm text-level-4">
-            No network history yet. Data is recorded over time when the block monitor is running.
-          </p>
-        ) : (
-          <NetworkHistoryChart networkHistory={networkData?.network_history ?? []} />
-        )}
       </div>
     </div>
   );

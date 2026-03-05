@@ -54,12 +54,14 @@ export function formatWeight(wu: number | undefined): string {
   return String(Math.round(wu));
 }
 
-export function formatDifficulty(value: number): string {
-  if (!Number.isFinite(value)) return 'N/A';
-  if (Math.abs(value) >= 1e12) {
-    return `${(value / 1e12).toFixed(2)}T`;
-  }
-  return value.toLocaleString();
+export function formatDifficulty(value: number | undefined | null): string {
+  if (value === null || value === undefined || !Number.isFinite(value) || value <= 0) return 'N/A';
+  const num = Number(value);
+  if (num >= 1e12) return `${(num / 1e12).toFixed(2)} T`;
+  if (num >= 1e9) return `${(num / 1e9).toFixed(2)} G`;
+  if (num >= 1e6) return `${(num / 1e6).toFixed(2)} M`;
+  if (num >= 1e3) return `${(num / 1e3).toFixed(2)} K`;
+  return num.toLocaleString();
 }
 
 export function truncateTxid(txid: string | undefined): string {

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
 import { useApi } from '@/contexts/ApiContext';
 import type { BlockRow, BlocksData, DistributionData } from '@/types';
@@ -30,6 +30,13 @@ function formatTimeSince(seconds: number): string {
   const m = Math.floor(seconds / 60);
   const s = Math.floor(seconds % 60);
   return `${m}:${String(s).padStart(2, '0')}`;
+}
+
+/** Parse block_time UTC string (YYYY-MM-DD HH:mm:ss) to timestamp ms, or null. */
+function parseBlockTimeUtc(blockTimeStr: string): number | null {
+  if (!blockTimeStr || typeof blockTimeStr !== 'string') return null;
+  const ts = Date.parse(blockTimeStr + 'Z');
+  return Number.isFinite(ts) ? ts : null;
 }
 
 /** Identifier is an "unknown" pool when backend could not match a known pool (e.g. "Unknown Pool (hex...)" or "Solo Miner / Unknown"). */
@@ -187,30 +194,20 @@ export function BlocksTab() {
     }
   }, [data, log]);
 
-  const secondsSinceLastBlock = data?.seconds_since_last_block ?? null;
-  const timerBaseRef = useRef({ baseSeconds: 0, fetchedAt: 0 });
-  const [, setTimerTick] = useState(0);
+  const blockTimeStr = data?.blocks?.[0]?.block_time ?? null;
+  const blockTimestamp = blockTimeStr ? parseBlockTimeUtc(blockTimeStr) : null;
+  const [, setTick] = useState(0);
 
   useEffect(() => {
-    if (secondsSinceLastBlock === null || secondsSinceLastBlock === undefined || secondsSinceLastBlock < 0) return;
-    timerBaseRef.current = { baseSeconds: secondsSinceLastBlock, fetchedAt: Date.now() };
-  }, [secondsSinceLastBlock]);
-
-  useEffect(() => {
-    if (secondsSinceLastBlock === null || secondsSinceLastBlock === undefined || secondsSinceLastBlock < 0) return;
-    const id = setInterval(() => setTimerTick((t) => t + 1), 1000);
+    if (blockTimeStr === null || blockTimeStr === undefined) return;
+    const id = setInterval(() => setTick((t) => t + 1), 1000);
     return () => clearInterval(id);
-  }, [secondsSinceLastBlock]);
+  }, [blockTimeStr]);
 
+  const elapsedSeconds =
+    blockTimestamp !== null ? Math.max(0, (Date.now() - blockTimestamp) / 1000) : null;
   const timeSinceLastFormatted =
-    secondsSinceLastBlock !== null && secondsSinceLastBlock !== undefined && secondsSinceLastBlock >= 0
-      ? formatTimeSince(
-          Math.floor(
-            timerBaseRef.current.baseSeconds +
-              (Date.now() - timerBaseRef.current.fetchedAt) / 1000
-          )
-        )
-      : '-';
+    elapsedSeconds !== null ? formatTimeSince(Math.floor(elapsedSeconds)) : '-';
 
   if (loading && !data) {
     return (
@@ -239,7 +236,7 @@ export function BlocksTab() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="rounded-lg bg-level-2 border border-level-3 p-4 space-y-4">
           <section>
-            <h3 className="text-sm font-medium text-level-4 mb-3">Current block (being searched)</h3>
+            <h3 className="text-sm font-medium text-level-4 mb-3">Current block</h3>
             <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
               <dt className="text-level-4">Next block</dt>
               <dd className="text-level-5 font-medium tabular-nums">
@@ -249,6 +246,12 @@ export function BlocksTab() {
               <dd className="text-level-5">Not yet found</dd>
               <dt className="text-level-4">Time since last block</dt>
               <dd className="text-level-5 tabular-nums">{timeSinceLastFormatted}</dd>
+              <dt className="text-level-4">Average block time</dt>
+              <dd className="text-level-5 tabular-nums">
+                {data?.avg_block_time_seconds != null && Number.isFinite(data.avg_block_time_seconds)
+                  ? formatTimeSince(Math.floor(data.avg_block_time_seconds))
+                  : '-'}
+              </dd>
             </dl>
           </section>
         </div>

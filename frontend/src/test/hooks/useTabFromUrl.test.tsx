@@ -31,6 +31,18 @@ describe('useTabFromUrl', () => {
     expect(screen.getByTestId('tab')).toHaveTextContent('blocks');
   });
 
+  it('returns network when tab=network in URL', () => {
+    window.history.replaceState({}, '', '/?tab=network');
+    render(<TestComponent />);
+    expect(screen.getByTestId('tab')).toHaveTextContent('network');
+  });
+
+  it('falls back to node when tab is invalid', () => {
+    window.history.replaceState({}, '', '/?tab=invalid');
+    render(<TestComponent />);
+    expect(screen.getByTestId('tab')).toHaveTextContent('node');
+  });
+
   it('setTab updates state and URL', async () => {
     window.history.replaceState({}, '', '/');
     const user = userEvent.setup();

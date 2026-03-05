@@ -88,20 +88,29 @@ describe('formatWeight', () => {
 });
 
 describe('formatDifficulty', () => {
-  it('returns "N/A" for non-finite value', () => {
+  it('returns "N/A" for non-finite or invalid value', () => {
     expect(formatDifficulty(NaN)).toBe('N/A');
     expect(formatDifficulty(Infinity)).toBe('N/A');
+    expect(formatDifficulty(null as unknown as number)).toBe('N/A');
+    expect(formatDifficulty(undefined as unknown as number)).toBe('N/A');
+    expect(formatDifficulty(0)).toBe('N/A');
+    expect(formatDifficulty(-1)).toBe('N/A');
   });
 
   it('formats large values with T suffix', () => {
-    expect(formatDifficulty(1e12)).toBe('1.00T');
-    expect(formatDifficulty(2.5e12)).toBe('2.50T');
-    expect(formatDifficulty(-1e12)).toBe('-1.00T');
+    expect(formatDifficulty(1e12)).toBe('1.00 T');
+    expect(formatDifficulty(2.5e12)).toBe('2.50 T');
   });
 
-  it('formats normal values with toLocaleString', () => {
-    expect(formatDifficulty(1000)).toBe('1,000');
-    expect(formatDifficulty(50000)).toBe('50,000');
+  it('formats G, M, K suffixes', () => {
+    expect(formatDifficulty(1e9)).toBe('1.00 G');
+    expect(formatDifficulty(1e6)).toBe('1.00 M');
+    expect(formatDifficulty(1e3)).toBe('1.00 K');
+  });
+
+  it('formats small values with toLocaleString', () => {
+    expect(formatDifficulty(500)).toBe('500');
+    expect(formatDifficulty(999)).toBe('999');
   });
 });
 

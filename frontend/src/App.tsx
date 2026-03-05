@@ -7,6 +7,7 @@ import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { TabNav } from '@/components/TabNav';
 import { NodeTab } from '@/components/tabs/NodeTab';
+import { NetworkTab } from '@/components/tabs/NetworkTab';
 import { BlocksTab } from '@/components/tabs/BlocksTab';
 import { WalletTab } from '@/components/tabs/WalletTab';
 import { ConsoleTab } from '@/components/tabs/ConsoleTab';
@@ -18,6 +19,8 @@ function TabContent({ tab }: { tab: TabId }) {
   switch (tab) {
     case 'node':
       return <NodeTab />;
+    case 'network':
+      return <NetworkTab />;
     case 'blocks':
       return <BlocksTab />;
     case 'wallet':

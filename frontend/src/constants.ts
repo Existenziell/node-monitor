@@ -14,6 +14,7 @@ export const THEME_DARK = 'dark';
 
 export const TABS: TabWithLabel[] = [
   { id: 'node', label: 'Node' },
+  { id: 'network', label: 'Network' },
   { id: 'blocks', label: 'Blocks' },
   { id: 'wallet', label: 'Wallet' },
   { id: 'console', label: 'Console' },
