@@ -256,7 +256,7 @@ export function SettingsTab() {
           )}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-level-5 mb-1">
+              <label className="form-label">
                 Authentication
               </label>
               <div className="flex gap-4">
@@ -286,7 +286,7 @@ export function SettingsTab() {
             {authMethod === 'password' && (
               <>
                 <div>
-                  <label htmlFor="rpc_user" className="block text-sm font-medium text-level-5 mb-1">
+                  <label htmlFor="rpc_user" className="form-label">
                     RPC Username
                   </label>
                   <input
@@ -294,13 +294,13 @@ export function SettingsTab() {
                     type="text"
                     value={rpcUser}
                     onChange={(e) => setRpcUser(e.target.value)}
-                    className="w-full rounded border border-level-3 bg-level-2 px-3 py-2 text-level-5"
+                    className="form-input"
                     placeholder={status?.rpc_user_masked ? `${status.rpc_user_masked} (current)` : 'bitcoinrpc'}
                     autoComplete="username"
                   />
                 </div>
                 <div>
-                  <label htmlFor="rpc_password" className="block text-sm font-medium text-level-5 mb-1">
+                  <label htmlFor="rpc_password" className="form-label">
                     RPC Password
                   </label>
                   <input
@@ -308,7 +308,7 @@ export function SettingsTab() {
                     type="password"
                     value={rpcPassword}
                     onChange={(e) => setRpcPassword(e.target.value)}
-                    className="w-full rounded border border-level-3 bg-level-2 px-3 py-2 text-level-5"
+                    className="form-input"
                     placeholder={status?.config_exists ? 'Leave blank to keep current' : 'Required'}
                     autoComplete="current-password"
                   />
@@ -318,7 +318,7 @@ export function SettingsTab() {
 
             {authMethod === 'cookie' && (
               <div>
-                <label htmlFor="cookie_file" className="block text-sm font-medium text-level-5 mb-1">
+                <label htmlFor="cookie_file" className="form-label">
                   Cookie file path
                 </label>
                 <input
@@ -326,14 +326,14 @@ export function SettingsTab() {
                   type="text"
                   value={cookieFile}
                   onChange={(e) => setCookieFile(e.target.value)}
-                  className="w-full rounded border border-level-3 bg-level-2 px-3 py-2 text-level-5 font-mono text-sm"
+                  className="form-input form-input-mono"
                   placeholder="e.g. /home/user/.bitcoin/.cookie"
                 />
               </div>
             )}
 
             <div>
-              <label htmlFor="rpc_host" className="block text-sm font-medium text-level-5 mb-1">
+              <label htmlFor="rpc_host" className="form-label">
                 RPC Host
               </label>
               <input
@@ -341,13 +341,13 @@ export function SettingsTab() {
                 type="text"
                 value={rpcHost}
                 onChange={(e) => setRpcHost(e.target.value)}
-                className="w-full rounded border border-level-3 bg-level-2 px-3 py-2 text-level-5"
+                className="form-input"
                 placeholder={`${DEFAULT_RPC_HOST} or Bitcoin node IP/hostname`}
               />
             </div>
 
             <div>
-              <label htmlFor="rpc_port" className="block text-sm font-medium text-level-5 mb-1">
+              <label htmlFor="rpc_port" className="form-label">
                 RPC Port
               </label>
               <input
@@ -357,7 +357,7 @@ export function SettingsTab() {
                 max={65535}
                 value={rpcPort}
                 onChange={(e) => setRpcPort(e.target.value)}
-                className="w-full rounded border border-level-3 bg-level-2 px-3 py-2 text-level-5"
+                className="form-input"
               />
             </div>
 
@@ -379,7 +379,7 @@ export function SettingsTab() {
                 type="submit"
                 disabled={saving || !hasPendingChanges}
                 title={!hasPendingChanges ? 'No changes to save' : undefined}
-                className="px-4 py-2 rounded font-medium bg-accent text-accent-foreground border border-accent hover:bg-accent-hover disabled:opacity-50"
+                className="btn-primary"
               >
                 {saving ? 'Saving…' : 'Save configuration'}
               </button>
@@ -418,7 +418,7 @@ export function SettingsTab() {
           {status?.config_exists && (
             <div className="space-y-2">
               <div>
-                <label className="block text-sm font-medium text-level-4 mb-1">Default wallet</label>
+                <label className="form-label-muted">Default wallet</label>
                 {Array.isArray(status.loaded_wallets) ? (
                   <select
                     value={status.wallet_name ?? ''}
@@ -444,7 +444,7 @@ export function SettingsTab() {
                       }
                     }}
                     disabled={walletSaveLoading}
-                    className="block w-full rounded border border-level-3 bg-level-2 px-3 py-2 text-level-5 focus:border-accent focus:outline-none disabled:opacity-50"
+                    className="form-input"
                   >
                     <option value="">None</option>
                     {status.loaded_wallets.map((w) => (

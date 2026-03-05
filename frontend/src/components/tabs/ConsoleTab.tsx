@@ -159,7 +159,7 @@ export function ConsoleTab() {
           <SectionHeader>RPC Console</SectionHeader>
           <div className="space-y-3">
             <div>
-              <label htmlFor="rpc-method" className="block text-sm text-level-4 mb-1">
+              <label htmlFor="rpc-method" className="form-label-muted">
                 Method
               </label>
               <input
@@ -173,12 +173,12 @@ export function ConsoleTab() {
                     handleExecute();
                   }
                 }}
-                className="w-full rounded border border-level-3 bg-level-2 px-3 py-2 font-mono text-sm text-level-5 focus:border-accent focus:outline-none"
+                className="form-input form-input-mono"
                 placeholder="getblockcount"
               />
             </div>
             <div>
-              <label htmlFor="rpc-params" className="block text-sm text-level-4 mb-1">
+              <label htmlFor="rpc-params" className="form-label-muted">
                 Params (JSON array)
               </label>
               <textarea
@@ -186,7 +186,7 @@ export function ConsoleTab() {
                 value={paramsStr}
                 onChange={(e) => setParamsStr(e.target.value)}
                 rows={3}
-                className="w-full rounded border border-level-3 bg-level-2 px-3 py-2 font-mono text-sm text-level-5 focus:border-accent focus:outline-none resize-y"
+                className="form-input form-input-mono resize-y"
                 placeholder='[]'
                 spellCheck={false}
               />
@@ -195,7 +195,7 @@ export function ConsoleTab() {
               type="button"
               onClick={handleExecute}
               disabled={loading}
-              className="px-4 py-2 rounded font-medium bg-accent text-accent-foreground border border-accent hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed"
+              className="btn-primary"
             >
               {loading ? 'Executing…' : 'Execute'}
             </button>

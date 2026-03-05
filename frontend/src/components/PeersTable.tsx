@@ -74,26 +74,26 @@ export function PeersTable({ peers }: { peers: Peer[] }) {
             {sort.sortedData.map((peer, index) => (
               <tr
                 key={String(peer.id ?? peer.addr ?? index)}
-                className="border-t border-level-3 hover:bg-level-3"
+                className="table-row-hover"
               >
-                <td className="p-2 text-level-5 font-mono truncate max-w-[180px]" title={peer.addr ?? ''}>
+                <td className="table-cell font-mono truncate max-w-[180px]" title={peer.addr ?? ''}>
                   {peer.addr ?? '-'}
                 </td>
-                <td className="p-2 text-level-5 truncate max-w-[140px]" title={peer.subver ?? ''}>
+                <td className="table-cell truncate max-w-[140px]" title={peer.subver ?? ''}>
                   {formatSubver(peer.subver)}
                 </td>
-                <td className="p-2 text-level-5">{peer.connection_type ?? '-'}</td>
-                <td className="p-2 text-level-5">{formatPeerTime(peer.conntime)}</td>
-                <td className="p-2 text-level-5">{formatPeerTime(peer.lastrecv)}</td>
-                <td className="p-2 text-level-5">{formatBytes(peer.bytessent)}</td>
-                <td className="p-2 text-level-5">{formatBytes(peer.bytesrecv)}</td>
-                <td className="p-2 text-level-5">
+                <td className="table-cell">{peer.connection_type ?? '-'}</td>
+                <td className="table-cell">{formatPeerTime(peer.conntime)}</td>
+                <td className="table-cell">{formatPeerTime(peer.lastrecv)}</td>
+                <td className="table-cell">{formatBytes(peer.bytessent)}</td>
+                <td className="table-cell">{formatBytes(peer.bytesrecv)}</td>
+                <td className="table-cell">
                   {peer.pingtime !== null && peer.pingtime !== undefined && Number.isFinite(peer.pingtime) ? `${Number(peer.pingtime).toFixed(0)} ms` : '-'}
                 </td>
-                <td className="p-2 text-level-5">
+                <td className="table-cell">
                   {peer.startingheight !== null && peer.startingheight !== undefined && Number.isFinite(peer.startingheight) ? Number(peer.startingheight).toLocaleString() : '-'}
                 </td>
-                <td className="p-2 text-level-5">{peer.transport_protocol_type ?? '-'}</td>
+                <td className="table-cell">{peer.transport_protocol_type ?? '-'}</td>
               </tr>
             ))}
           </tbody>

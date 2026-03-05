@@ -7,7 +7,7 @@ export function DocsTab() {
       <SectionHeader as="h2">Node Monitor docs</SectionHeader>
       <article className="prose prose-sm max-w-none prose-headings:text-level-5 prose-p:text-level-5 prose-li:text-level-5">
         <section className="mb-6">
-          <h3 className="text-base font-semibold text-level-5 mb-1 mt-6">
+          <h3 className="section-heading mt-6">
             Overview
           </h3>
           <p className="text-level-5 mb-2 max-w-prose">
@@ -29,7 +29,7 @@ export function DocsTab() {
         </section>
 
         <section className="mb-6">
-          <h3 className="text-base font-semibold text-level-5 mb-1">
+          <h3 className="section-heading">
             Main features
           </h3>
           <ul className="list-disc list-inside text-level-5 space-y-1">
@@ -42,17 +42,17 @@ export function DocsTab() {
         </section>
 
         <section className="mb-2">
-          <h3 className="text-base font-semibold text-level-5 mb-1">
+          <h3 className="section-heading">
             More information
           </h3>
           <p className="text-level-5 mb-2">
-            Full setup, Tor, deployment, and testing: <a href={`${GITHUB_REPO_URL}/blob/main/README.md`} className="text-accent underline hover:no-underline" target="_blank" rel="noreferrer noopener">README on GitHub</a>.
+            Full setup, Tor, deployment, and testing: <a href={`${GITHUB_REPO_URL}/blob/main/README.md`} className="link-accent" target="_blank" rel="noreferrer noopener">README on GitHub</a>.
           </p>
           <p className="text-level-5 mb-1">Related sites:</p>
           <ul className="list-disc list-inside text-level-5 space-y-1">
-            <li><a href="https://mempool.space" className="text-accent underline hover:no-underline" target="_blank" rel="noreferrer noopener">mempool.space</a> — block explorer &amp; mempool</li>
-            <li><a href="https://www.blockchain.com/explorer" className="text-accent underline hover:no-underline" target="_blank" rel="noreferrer noopener">blockchain.com</a> — explorer</li>
-            <li><a href="https://bitcoin.org" className="text-accent underline hover:no-underline" target="_blank" rel="noreferrer noopener">bitcoin.org</a> — Bitcoin project</li>
+            <li><a href="https://mempool.space" className="link-accent" target="_blank" rel="noreferrer noopener">mempool.space</a> — block explorer &amp; mempool</li>
+            <li><a href="https://www.blockchain.com/explorer" className="link-accent" target="_blank" rel="noreferrer noopener">blockchain.com</a> — explorer</li>
+            <li><a href="https://bitcoin.org" className="link-accent" target="_blank" rel="noreferrer noopener">bitcoin.org</a> — Bitcoin project</li>
           </ul>
         </section>
       </article>

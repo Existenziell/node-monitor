@@ -68,4 +68,50 @@
   .square-button {
     @apply p-2.5 rounded-md hover:bg-level-3 flex-shrink-0 transition-colors duration-200;
   }
+
+  /* Form inputs (text, number, select, textarea) */
+  .form-input {
+    @apply w-full rounded border border-level-3 bg-level-2 px-3 py-2 text-level-5 transition-colors duration-200 focus:border-accent focus:outline-none disabled:opacity-50;
+  }
+
+  .form-input.form-input-mono {
+    @apply font-mono text-sm;
+  }
+
+  .form-input.form-input-surface-1 {
+    @apply bg-level-1;
+  }
+
+  /* Primary action button */
+  .btn-primary {
+    @apply px-4 py-2 rounded font-medium bg-accent text-accent-foreground border border-accent hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200;
+  }
+
+  /* Form labels */
+  .form-label {
+    @apply block text-sm font-medium text-level-5 mb-1;
+  }
+
+  .form-label-muted {
+    @apply block text-sm font-medium text-level-4 mb-1;
+  }
+
+  /* Accent link (e.g. docs) */
+  .link-accent {
+    @apply text-accent underline hover:no-underline;
+  }
+
+  /* Section heading (e.g. docs h3) */
+  .section-heading {
+    @apply text-base font-semibold text-level-5 mb-1;
+  }
+
+  /* Table cell and row (e.g. PeersTable) */
+  .table-cell {
+    @apply p-2 text-level-5;
+  }
+
+  .table-row-hover {
+    @apply border-t border-level-3 hover:bg-level-3 transition-colors duration-150;
+  }
 }

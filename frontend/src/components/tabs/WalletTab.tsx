@@ -152,7 +152,7 @@ export function WalletTab() {
                       value={createName}
                       onChange={(e) => setCreateName(e.target.value)}
                       placeholder="e.g. mywallet"
-                      className="mt-1 block w-full rounded border border-level-3 bg-level-1 px-3 py-2 text-level-5 focus:border-accent focus:outline-none"
+                      className="form-input form-input-surface-1 mt-1 block"
                     />
                   </label>
                   <label className="text-sm text-level-4">
@@ -162,7 +162,7 @@ export function WalletTab() {
                       value={createPassphrase}
                       onChange={(e) => setCreatePassphrase(e.target.value)}
                       placeholder="Leave empty for no encryption"
-                      className="mt-1 block w-full rounded border border-level-3 bg-level-1 px-3 py-2 text-level-5 focus:border-accent focus:outline-none"
+                      className="form-input form-input-surface-1 mt-1 block"
                     />
                   </label>
                   <button
@@ -182,7 +182,7 @@ export function WalletTab() {
                   <select
                     value={selectedWallet}
                     onChange={(e) => setSelectedWallet(e.target.value)}
-                    className="mt-1 block w-full rounded border border-level-3 bg-level-1 px-3 py-2 text-level-5 focus:border-accent focus:outline-none"
+                    className="form-input form-input-surface-1 mt-1 block"
                   >
                     <option value="">—</option>
                     {wallets.map((w) => (
@@ -213,7 +213,7 @@ export function WalletTab() {
           <SectionHeader>Config</SectionHeader>
           {(data?.loadedWallets?.length ?? 0) > 1 && (
             <div className="mb-4">
-              <label className="block text-sm font-medium text-level-4 mb-1">Active wallet</label>
+              <label className="form-label-muted">Active wallet</label>
               <select
                 value={String(wallet.walletname ?? '')}
                 onChange={async (e) => {
@@ -232,7 +232,7 @@ export function WalletTab() {
                   }
                 }}
                 disabled={actionLoading}
-                className="block w-full rounded border border-level-3 bg-level-1 px-3 py-2 text-level-5 focus:border-accent focus:outline-none disabled:opacity-50"
+                className="form-input form-input-surface-1"
               >
                 {(data?.loadedWallets ?? []).map((w) => (
                   <option key={w} value={w}>
