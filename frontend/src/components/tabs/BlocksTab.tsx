@@ -248,7 +248,7 @@ export function BlocksTab() {
               <dd className="text-level-5 tabular-nums">{timeSinceLastFormatted}</dd>
               <dt className="text-level-4">Average block time</dt>
               <dd className="text-level-5 tabular-nums">
-                {data?.avg_block_time_seconds != null && Number.isFinite(data.avg_block_time_seconds)
+                {data?.avg_block_time_seconds !== null && data?.avg_block_time_seconds !== undefined && Number.isFinite(data.avg_block_time_seconds)
                   ? formatTimeSince(Math.floor(data.avg_block_time_seconds))
                   : '-'}
               </dd>
