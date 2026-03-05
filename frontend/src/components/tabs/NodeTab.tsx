@@ -53,7 +53,7 @@ function InfoCard({
   items: { label: string; value: unknown }[];
 }) {
   return (
-    <div className="rounded-lg bg-level-2 border border-level-3 p-4">
+    <div className="section-container">
       <SectionHeader>{title}</SectionHeader>
       <dl className="space-y-1 text-sm">
         {items.map(({ label, value }) => (
@@ -99,10 +99,8 @@ function GroupedInfoCard({
     </div>
   );
   return (
-    <div className="rounded-lg bg-level-2 border border-level-3 p-4">
-      {title !== undefined && title !== null && title !== '' ? (
-        <SectionHeader>{title}</SectionHeader>
-      ) : null}
+    <div className="section-container">
+      <SectionHeader>{title}</SectionHeader>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <div>{renderGroup(leftGroup.heading, leftGroup.items)}</div>
         <div>{renderGroup(rightGroup.heading, rightGroup.items)}</div>

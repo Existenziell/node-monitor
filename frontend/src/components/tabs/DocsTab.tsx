@@ -1,9 +1,10 @@
 import { GITHUB_REPO_URL } from '@/constants';
+import { SectionHeader } from '../SectionHeader';
 
 export function DocsTab() {
   return (
-    <div className="rounded-lg bg-level-2 border border-level-3 p-4 max-h-[70vh] overflow-y-auto">
-      <h2 className="text-lg font-semibold text-accent mb-4">Node Monitor docs</h2>
+    <div className="section-container max-h-[70vh] overflow-y-auto">
+      <SectionHeader as="h2">Node Monitor docs</SectionHeader>
       <article className="prose prose-sm max-w-none prose-headings:text-level-5 prose-p:text-level-5 prose-li:text-level-5">
         <section className="mb-4">
           <h3 className="text-base font-semibold text-level-5 mb-1">

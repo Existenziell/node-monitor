@@ -66,10 +66,15 @@ export function WalletTab() {
     setActionError(null);
     setActionLoading(true);
     try {
-      const res = await callRpc('loadwallet', [name]);
-      const err = (res as { error?: unknown })?.error;
-      if (err !== null && err !== undefined) {
-        throw new Error(getErrorMessage(err));
+      const alreadyLoaded =
+        data?.noWallet === true &&
+        (data?.wallets?.includes(name) || data?.loadedWallets?.includes(name));
+      if (!alreadyLoaded) {
+        const res = await callRpc('loadwallet', [name]);
+        const err = (res as { error?: unknown })?.error;
+        if (err !== null && err !== undefined) {
+          throw new Error(getErrorMessage(err));
+        }
       }
       const save = await saveWalletName(name);
       if (!save.ok) throw new Error(save.error ?? 'Failed to save wallet');
@@ -137,7 +142,7 @@ export function WalletTab() {
               </div>
             )}
             {wallets.length === 0 ? (
-              <div className="rounded-lg bg-level-2 border border-level-3 p-4 space-y-4">
+              <div className="section-container space-y-4">
                 <p className="text-level-4">No wallets found. Create one to get started.</p>
                 <div className="flex flex-col gap-3 max-w-sm">
                   <label className="text-sm text-level-4">
@@ -171,7 +176,7 @@ export function WalletTab() {
                 </div>
               </div>
             ) : (
-              <div className="rounded-lg bg-level-2 border border-level-3 p-4 space-y-3">
+              <div className="section-container space-y-3">
                 <label className="text-sm text-level-4 block">
                   Select a wallet
                   <select
@@ -204,13 +209,52 @@ export function WalletTab() {
     <div className="relative space-y-4">
       <LoadingOverlay show={loading && !!data && getRefreshTabId() === 'wallet'} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="rounded-lg bg-level-2 border border-level-3 p-4">
-          <SectionHeader>Wallet</SectionHeader>
+        <div className="section-container">
+          <SectionHeader>Config</SectionHeader>
+          {(data?.loadedWallets?.length ?? 0) > 1 && (
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-level-4 mb-1">Active wallet</label>
+              <select
+                value={String(wallet.walletname ?? '')}
+                onChange={async (e) => {
+                  const name = e.target.value;
+                  if (!name || name === wallet.walletname) return;
+                  setActionError(null);
+                  setActionLoading(true);
+                  try {
+                    const save = await saveWalletName(name);
+                    if (!save.ok) throw new Error(save.error ?? 'Failed to save wallet');
+                    await load();
+                  } catch (err) {
+                    setActionError(getErrorMessage(err));
+                  } finally {
+                    setActionLoading(false);
+                  }
+                }}
+                disabled={actionLoading}
+                className="block w-full rounded border border-level-3 bg-level-1 px-3 py-2 text-level-5 focus:border-accent focus:outline-none disabled:opacity-50"
+              >
+                {(data?.loadedWallets ?? []).map((w) => (
+                  <option key={w} value={w}>
+                    {w}
+                  </option>
+                ))}
+              </select>
+              {actionError && (
+                <p className="mt-1 text-sm text-semantic-error">{actionError}</p>
+              )}
+            </div>
+          )}
           <dl className="text-sm space-y-1">
             <div className="flex justify-between">
               <dt className="text-level-4">Wallet name</dt>
               <dd className="text-level-5">{String(wallet.walletname ?? 'N/A')}</dd>
             </div>
+          </dl>
+        </div>
+        <div className="section-container">
+          <SectionHeader>Wallet</SectionHeader>
+          <dl className="text-sm space-y-1">
             <div className="flex justify-between items-center gap-2">
               <dt className="text-level-4 flex items-center gap-1.5">
                 Balance
@@ -296,8 +340,8 @@ export function WalletTab() {
         </div>
       </div>
 
-      <div className="rounded-lg bg-level-2 border border-level-3 overflow-hidden">
-        <SectionHeader className="px-4 pt-4">UTXOs ({unspent.length})</SectionHeader>
+      <div className="section-container">
+        <SectionHeader>UTXOs ({unspent.length})</SectionHeader>
         <div className="overflow-x-auto max-h-[60vh]">
           <table className="sortable-table w-full text-sm">
             <thead className="sticky top-0 bg-level-2 text-left">
@@ -341,8 +385,8 @@ export function WalletTab() {
         </div>
       </div>
 
-      <div className="rounded-lg bg-level-2 border border-level-3 overflow-hidden">
-        <SectionHeader className="px-4 pt-4" title="listtransactions can return multiple entries per transaction (e.g. per address or category), so this count may exceed Tx count.">
+      <div className="section-container">
+        <SectionHeader>
           Transactions ({transactions.length})
         </SectionHeader>
         <div className="overflow-x-auto max-h-[60vh]">

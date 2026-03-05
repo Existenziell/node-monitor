@@ -131,6 +131,8 @@ export interface ConfigStatus {
   cookie_file: string | null;
   wallet_name: string | null;
   node_configured: boolean;
+  /** Loaded wallet names from listwallets (when RPC available). */
+  loaded_wallets?: string[];
   error?: string;
 }
 
@@ -204,6 +206,8 @@ export interface WalletData {
   noWallet?: boolean;
   /** Available wallet names when noWallet is true (from listwallets). */
   wallets?: string[];
+  /** All currently loaded wallet names (from listwallets). Used for wallet switcher. */
+  loadedWallets?: string[];
 }
 
 export interface NetworkHistoryEntry {

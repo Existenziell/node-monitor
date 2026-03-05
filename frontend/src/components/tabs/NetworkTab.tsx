@@ -23,7 +23,7 @@ function SummaryCard({
   subLines?: { label: string; value: string; progress?: number }[];
 }) {
   return (
-    <div className="rounded-lg bg-level-2 border border-level-3 p-4">
+    <div className="section-container">
       <SectionHeader>{title}</SectionHeader>
       <p className="text-2xl font-semibold text-level-5 mb-2">{value}</p>
       {subLines?.length ? (
@@ -175,7 +175,7 @@ export function NetworkTab() {
           value={formatPrice(btcPriceUsd)}
           subLines={btcPriceSubLines}
         />
-        <div className="rounded-lg bg-level-2 border border-level-3 p-4">
+        <div className="section-container">
           <SectionHeader>Fee estimates</SectionHeader>
           <dl className="space-y-1 text-sm">
             <div>
@@ -227,7 +227,7 @@ export function NetworkTab() {
         </div>
       </div>
       <PeersTable peers={peers} />
-      <div className="rounded-lg bg-level-2 border border-level-3 p-4">
+      <div className="section-container">
         <SectionHeader>Network history</SectionHeader>
         {networkLoading && !networkData ? (
           <div className="min-h-[240px]" aria-hidden />

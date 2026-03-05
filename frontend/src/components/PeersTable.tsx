@@ -54,8 +54,8 @@ export function PeersTable({ peers }: { peers: Peer[] }) {
   }
 
   return (
-    <div className="rounded-lg bg-level-2 border border-level-3 overflow-hidden">
-      <SectionHeader className="px-4 pt-4">Peers ({peers.length})</SectionHeader>
+    <div className="section-container">
+      <SectionHeader>Peers ({peers.length})</SectionHeader>
       <div className="overflow-x-auto max-h-[60vh]">
         <table className="sortable-table w-full text-sm">
           <thead className="sticky top-0 bg-level-2 text-left">

@@ -60,7 +60,11 @@
            accent-accent;
   }
 
+  .section-container {
+    @apply rounded-lg bg-level-2 border border-level-3 overflow-hidden p-4;
+  }
+
   .section-header {
-    @apply text-base text-accent border-b border-level-3 pb-2 mb-2;
+    @apply text-base text-accent px-4 py-2 mb-3 bg-level-3 -mx-4 -mt-4 rounded-t-lg border border-red-300;
   }
 }

@@ -109,8 +109,7 @@ export function ConsoleTab() {
 
   return (
     <div className="space-y-4">
-      <div className="rounded border border-level-3 bg-level-2 overflow-hidden">
-        <div className="p-3">
+      <div className="section-container">
           <SectionHeader>RPC commands</SectionHeader>
           {Object.entries(RPC_COMMANDS_BY_CATEGORY).map(([category, commands]) => {
             const isCollapsed = collapsed.has(category);
@@ -153,11 +152,10 @@ export function ConsoleTab() {
               </div>
             );
           })}
-        </div>
       </div>
 
       <div className="flex gap-4 flex-col lg:flex-row">
-        <div className="flex-1 min-w-0 rounded border border-level-3 bg-level-2 p-4">
+        <div className="flex-1 min-w-0 section-container">
           <SectionHeader>RPC Console</SectionHeader>
           <div className="space-y-3">
             <div>
@@ -198,8 +196,8 @@ export function ConsoleTab() {
           </div>
         </div>
 
-        <div className="flex-1 min-w-0 rounded border border-level-3 bg-level-2 overflow-hidden flex flex-col">
-          <SectionHeader className="px-3 pt-4">Response</SectionHeader>
+        <div className="section-container">
+          <SectionHeader>Response</SectionHeader>
           <div className="p-3 font-mono text-sm overflow-x-auto flex-1 min-h-[120px]">
             {error !== null ? (
               <pre className="text-semantic-error whitespace-pre-wrap break-words">{error}</pre>

@@ -84,7 +84,7 @@ function getPendingChanges(
 
 export function SettingsTab() {
   const { activeTab } = useTabFromUrl();
-  const { fetchConfigStatus, fetchConfigTest, saveConfig } = useApi();
+  const { fetchConfigStatus, fetchConfigTest, saveConfig, saveWalletName } = useApi();
   const { log } = useConsole();
   const [status, setStatus] = useState<ConfigStatus | null>(null);
   const [loading, setLoading] = useState(true);
@@ -93,6 +93,7 @@ export function SettingsTab() {
   const [testResult, setTestResult] = useState<ConfigTestResult | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [lastSaved, setLastSaved] = useState<SettingsBaseline | null>(null);
+  const [walletSaveLoading, setWalletSaveLoading] = useState(false);
 
   const [authMethod, setAuthMethod] = useState<'password' | 'cookie'>('password');
   const [rpcHost, setRpcHost] = useState(DEFAULT_RPC_HOST);
@@ -226,7 +227,7 @@ export function SettingsTab() {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-lg bg-level-2 border border-level-3 p-4 max-w-xl">
+      <div className="section-container max-w-xl">
         <SectionHeader as="h2">Node configuration</SectionHeader>
         {status && !status.config_exists && (
           <p className="text-level-5 text-sm mb-4">
@@ -246,9 +247,46 @@ export function SettingsTab() {
           </div>
         )}
         {status?.config_exists && (
-          <p className="text-sm text-level-4 mb-4">
-            Default wallet: {status.wallet_name !== null && status.wallet_name !== undefined && status.wallet_name !== '' ? status.wallet_name : 'None'}
-          </p>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-level-4 mb-1">Default wallet</label>
+            {Array.isArray(status.loaded_wallets) ? (
+              <select
+                value={status.wallet_name ?? ''}
+                onChange={async (e) => {
+                  const value = e.target.value;
+                  const name = value === '' ? null : value;
+                  setWalletSaveLoading(true);
+                  setMessage(null);
+                  try {
+                    const result = await saveWalletName(name);
+                    if (result.ok) {
+                      await loadStatus();
+                      window.dispatchEvent(new CustomEvent('tab-refresh', { detail: 'wallet' }));
+                    } else {
+                      setMessage({ type: 'error', text: result.error ?? 'Failed to save default wallet' });
+                    }
+                  } catch (err) {
+                    setMessage({ type: 'error', text: getErrorMessage(err) });
+                  } finally {
+                    setWalletSaveLoading(false);
+                  }
+                }}
+                disabled={walletSaveLoading}
+                className="block w-full max-w-xs rounded border border-level-3 bg-level-2 px-3 py-2 text-level-5 focus:border-accent focus:outline-none disabled:opacity-50"
+              >
+                <option value="">None</option>
+                {status.loaded_wallets.map((w) => (
+                  <option key={w} value={w}>
+                    {w}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <p className="text-sm text-level-4">
+                {status.wallet_name !== null && status.wallet_name !== undefined && status.wallet_name !== '' ? status.wallet_name : 'None'}
+              </p>
+            )}
+          </div>
         )}
         <div className="mb-4 flex flex-wrap items-center gap-2">
           <button
@@ -385,20 +423,16 @@ export function SettingsTab() {
             />
           </div>
 
-          {lastSaved && (
+          {lastSaved && hasPendingChanges && (
             <div className="rounded-lg border border-level-3 bg-level-2 p-3">
               <SectionHeader>Pending changes</SectionHeader>
-              {hasPendingChanges ? (
-                <ul className="text-sm text-level-4 space-y-1 list-disc list-inside">
-                  {pendingChanges.map((c, i) => (
-                    <li key={i}>
-                      {c.field}: {c.from !== null && c.from !== undefined ? `${c.from} → ` : ''}{c.to ?? ''}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-sm text-level-4">No pending changes</p>
-              )}
+              <ul className="text-sm text-level-4 space-y-1 list-disc list-inside">
+                {pendingChanges.map((c, i) => (
+                  <li key={i}>
+                    {c.field}: {c.from !== null && c.from !== undefined ? `${c.from} → ` : ''}{c.to ?? ''}
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
 

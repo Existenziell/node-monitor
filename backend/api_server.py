@@ -220,6 +220,15 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
         """GET /api/config/status - safe config status for frontend (no secrets)."""
         try:
             status = config_service.get_config_status()
+            if self.rpc_service is not None:
+                try:
+                    list_result = self.rpc_service.list_wallets()
+                    loaded = list_result.get('result') if 'result' in list_result else []
+                    if not isinstance(loaded, list):
+                        loaded = []
+                    status["loaded_wallets"] = [str(w) for w in loaded]
+                except Exception:
+                    status["loaded_wallets"] = []
             self.wfile.write(json.dumps(status).encode())
         except Exception as e:
             self.wfile.write(json.dumps({
@@ -394,6 +403,20 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
                 self.wfile.write(json.dumps(self._wallet_cache, indent=2).encode())
                 return
 
+            # No default wallet in config: show "no wallet selected" and list of loaded wallets
+            if not self.rpc_service.wallet_name:
+                list_result = self.rpc_service.list_wallets()
+                wallets = list_result.get('result') if 'result' in list_result else []
+                if not isinstance(wallets, list):
+                    wallets = []
+                wallets = [str(w) for w in wallets]
+                no_wallet_response = {
+                    "status": "success",
+                    "data": {"noWallet": True, "wallets": wallets, "loadedWallets": wallets}
+                }
+                self.wfile.write(json.dumps(no_wallet_response, indent=2).encode())
+                return
+
             # Get wallet info first; if no wallet loaded, return list of wallets for frontend
             wallet_info = self.rpc_service.get_wallet_info()
             if self._is_no_wallet_error(wallet_info):
@@ -404,7 +427,7 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
                 wallets = [str(w) for w in wallets]
                 no_wallet_response = {
                     "status": "success",
-                    "data": {"noWallet": True, "wallets": wallets}
+                    "data": {"noWallet": True, "wallets": wallets, "loadedWallets": wallets}
                 }
                 self.wfile.write(json.dumps(no_wallet_response, indent=2).encode())
                 return
@@ -422,6 +445,12 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
 
             balances_result = balances.get('result') if 'result' in balances and balances.get('error') is None else None
 
+            list_result = self.rpc_service.list_wallets()
+            loaded_wallets = list_result.get('result') if 'result' in list_result else []
+            if not isinstance(loaded_wallets, list):
+                loaded_wallets = []
+            loaded_wallets = [str(w) for w in loaded_wallets]
+
             response = {
                 "status": "success",
                 "data": {
@@ -429,7 +458,8 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
                     "balance": balance.get('result') if 'result' in balance else None,
                     "balances": balances_result,
                     "unspent": unspent.get('result') if 'result' in unspent else None,
-                    "transactions": transactions.get('result') if 'result' in transactions else None
+                    "transactions": transactions.get('result') if 'result' in transactions else None,
+                    "loadedWallets": loaded_wallets
                 }
             }
 

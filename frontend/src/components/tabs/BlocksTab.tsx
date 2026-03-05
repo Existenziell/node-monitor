@@ -249,10 +249,9 @@ export function BlocksTab() {
     <div className="relative space-y-4">
       <LoadingOverlay show={loading && !!data && getRefreshTabId() === 'blocks'} />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="rounded-lg bg-level-2 border border-level-3 p-4 space-y-4">
-          <section>
-            <SectionHeader>Current block</SectionHeader>
-            <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+        <div className="section-container">
+          <SectionHeader>Current block</SectionHeader>
+          <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
               <dt className="text-level-4">Next block</dt>
               <dd className="text-level-5 font-medium tabular-nums">
                 {nextBlockHeight !== null ? `#${nextBlockHeight.toLocaleString()}` : '-'}
@@ -267,17 +266,16 @@ export function BlocksTab() {
                   ? formatTimeSince(Math.floor(data.avg_block_time_seconds))
                   : '-'}
               </dd>
-            </dl>
-          </section>
+          </dl>
         </div>
-        <div className="rounded-lg bg-level-2 border border-level-3 p-4">
+        <div className="section-container">
           <SectionHeader>Pool distribution</SectionHeader>
           <PoolDistributionChart distribution={distribution ?? null} poolByIdentifier={poolByIdentifier} />
         </div>
       </div>
 
-      <div className="rounded-lg bg-level-2 border border-level-3 overflow-hidden">
-        <SectionHeader className="px-4 pt-4">Previous Blocks</SectionHeader>
+      <div className="section-container">
+        <SectionHeader>Previous Blocks</SectionHeader>
         <div className="overflow-x-auto max-h-[60vh]">
           <table className="sortable-table w-full text-sm">
             <thead className="sticky top-0 bg-level-2 text-left">
