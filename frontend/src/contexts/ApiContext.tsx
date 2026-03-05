@@ -1,7 +1,5 @@
 import React, { createContext, useContext, useCallback } from 'react';
-import { API_BASE_URL, API_SERVER_HINT, MAX_RETRIES, RETRY_DELAY_MS } from '@/constants';
-import { useConsole } from '@/contexts/ConsoleContext';
-import { getErrorMessage } from '@/utils';
+import { API_BASE_URL, MAX_RETRIES, RETRY_DELAY_MS } from '@/constants';
 import type {
   ApiContextValue,
   BlocksData,
@@ -30,8 +28,6 @@ export type {
 } from '@/types';
 
 export function ApiProvider({ children }: { children: React.ReactNode }) {
-  const { log, setConnectionStatus } = useConsole();
-
   const fetchWithRetry = useCallback(
     async <T,>(endpoint: string): Promise<{ data: T }> => {
       const url = `${API_BASE_URL}${endpoint}`;
@@ -50,67 +46,34 @@ export function ApiProvider({ children }: { children: React.ReactNode }) {
         } catch (err) {
           lastError = err instanceof Error ? err : new Error(String(err));
           if (attempt < MAX_RETRIES - 1) {
-            log(`API retrying in ${RETRY_DELAY_MS / 1000}s (${attempt + 1}/${MAX_RETRIES})`, 'warning');
             await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
           }
         }
       }
-      setConnectionStatus('disconnected');
       throw lastError ?? new Error('Request failed');
     },
-    [log, setConnectionStatus]
+    []
   );
 
   const fetchNode = useCallback(async (): Promise<NodeData> => {
-    log('Connecting to Bitcoin node...', 'webserver');
-    try {
-      const result = await fetchWithRetry<NodeData>('/node');
-      setConnectionStatus('connected');
-      log('Node data retrieved successfully', 'success');
-      return result.data;
-    } catch (e) {
-      log(`Node connection failed: ${getErrorMessage(e)}`, 'error');
-      log(`${API_SERVER_HINT} (e.g. python3 backend/api_server.py)`, 'warning');
-      throw e;
-    }
-  }, [fetchWithRetry, log, setConnectionStatus]);
+    const result = await fetchWithRetry<NodeData>('/node');
+    return result.data;
+  }, [fetchWithRetry]);
 
   const fetchBlocks = useCallback(async (): Promise<BlocksData> => {
-    log('Fetching blockchain data...', 'data-fetch');
-    try {
-      const result = await fetchWithRetry<BlocksData>('/blocks');
-      setConnectionStatus('connected');
-      log(`Loaded ${result.data.blocks?.length ?? 0} blocks from API`, 'success');
-      return result.data;
-    } catch (e) {
-      log(`Error loading blockchain data: ${getErrorMessage(e)}`, 'error');
-      throw e;
-    }
-  }, [fetchWithRetry, log, setConnectionStatus]);
+    const result = await fetchWithRetry<BlocksData>('/blocks');
+    return result.data;
+  }, [fetchWithRetry]);
 
   const fetchWallet = useCallback(async (): Promise<WalletData> => {
-    log('Fetching wallet data...', 'webserver');
-    try {
-      const result = await fetchWithRetry<WalletData>('/wallet');
-      setConnectionStatus('connected');
-      log('Wallet data retrieved successfully', 'success');
-      return result.data;
-    } catch (e) {
-      log(`Wallet connection failed: ${getErrorMessage(e)}`, 'error');
-      throw e;
-    }
-  }, [fetchWithRetry, log, setConnectionStatus]);
+    const result = await fetchWithRetry<WalletData>('/wallet');
+    return result.data;
+  }, [fetchWithRetry]);
 
   const fetchNetwork = useCallback(async (): Promise<NetworkData> => {
-    try {
-      const result = await fetchWithRetry<NetworkData>('/network');
-      setConnectionStatus('connected');
-      return result.data;
-    } catch (e) {
-      setConnectionStatus('disconnected');
-      throw e;
-    }
-  }, [fetchWithRetry, setConnectionStatus]);
+    const result = await fetchWithRetry<NetworkData>('/network');
+    return result.data;
+  }, [fetchWithRetry]);
 
   const fetchPrice = useCallback(async (): Promise<BtcPrices> => {
     const result = await fetchWithRetry<BtcPrices>('/price');

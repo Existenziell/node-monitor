@@ -2,17 +2,17 @@ import { describe, it, expect } from 'vitest';
 import { render, screen, act } from '@testing-library/react';
 import App from '@/App';
 import { ThemeProvider } from '@/contexts/ThemeContext';
-import { ConsoleProvider } from '@/contexts/ConsoleContext';
 import { ApiProvider } from '@/contexts/ApiContext';
+import { RefreshProvider } from '@/contexts/RefreshContext';
 
 function WrappedApp() {
   return (
     <ThemeProvider>
-      <ConsoleProvider>
-        <ApiProvider>
+      <ApiProvider>
+        <RefreshProvider>
           <App />
-        </ApiProvider>
-      </ConsoleProvider>
+        </RefreshProvider>
+      </ApiProvider>
     </ThemeProvider>
   );
 }

@@ -2,7 +2,6 @@ import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, act } from '@testing-library/react';
 import { ApiProvider, useApi } from '@/contexts/ApiContext';
-import { ConsoleProvider } from '@/contexts/ConsoleContext';
 
 function catchErrorBoundary(children: React.ReactNode): { caught: Error | null } {
   let caught: Error | null = null;
@@ -48,11 +47,9 @@ describe('ApiContext', () => {
       json: () => Promise.resolve({ status: 'success', data: {} }),
     });
     render(
-      <ConsoleProvider>
-        <ApiProvider>
-          <TestConsumer />
-        </ApiProvider>
-      </ConsoleProvider>
+      <ApiProvider>
+        <TestConsumer />
+      </ApiProvider>
     );
     expect(screen.getByTestId('base-url')).toHaveTextContent('/api');
   });
@@ -78,11 +75,9 @@ describe('ApiContext', () => {
       );
     }
     render(
-      <ConsoleProvider>
-        <ApiProvider>
-          <Consumer />
-        </ApiProvider>
-      </ConsoleProvider>
+      <ApiProvider>
+        <Consumer />
+      </ApiProvider>
     );
     await act(async () => {
       (screen.getByRole('button', { name: /fetch/i }) as HTMLButtonElement).click();
@@ -104,11 +99,7 @@ describe('ApiContext', () => {
     };
     window.addEventListener('error', handleError);
     try {
-      const { caught } = catchErrorBoundary(
-        <ConsoleProvider>
-          <BadConsumer />
-        </ConsoleProvider>
-      );
+      const { caught } = catchErrorBoundary(<BadConsumer />);
       expect(caught?.message).toBe(expectedMsg);
     } finally {
       window.removeEventListener('error', handleError);

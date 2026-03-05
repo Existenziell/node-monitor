@@ -2,8 +2,8 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from '@/App';
 import { ThemeProvider } from '@/contexts/ThemeContext';
-import { ConsoleProvider } from '@/contexts/ConsoleContext';
 import { ApiProvider } from '@/contexts/ApiContext';
+import { RefreshProvider } from '@/contexts/RefreshContext';
 import '@/index.css';
 
 const rootEl = document.getElementById('root');
@@ -13,11 +13,11 @@ if (!rootEl) {
 ReactDOM.createRoot(rootEl).render(
   <React.StrictMode>
     <ThemeProvider>
-      <ConsoleProvider>
-        <ApiProvider>
+      <ApiProvider>
+        <RefreshProvider>
           <App />
-        </ApiProvider>
-      </ConsoleProvider>
+        </RefreshProvider>
+      </ApiProvider>
     </ThemeProvider>
   </React.StrictMode>
 );

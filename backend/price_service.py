@@ -13,7 +13,7 @@ from typing import Optional, Dict, Any
 import requests
 import yfinance as yf
 
-from constants import DEFAULT_API_TIMEOUT, MAX_RETRY_ATTEMPTS, RETRY_BASE_DELAY
+from constants import COINGECKO_API_URL, DEFAULT_API_TIMEOUT, MAX_RETRY_ATTEMPTS, RETRY_BASE_DELAY
 
 
 @dataclass
@@ -55,8 +55,7 @@ class PriceService:
         self._apis = [
             {
                 'name': 'CoinGecko',
-                'url': ('https://api.coingecko.com/api/v3/simple/price?'
-                        'ids=bitcoin&vs_currencies=usd'),
+                'url': f'{COINGECKO_API_URL}?ids=bitcoin&vs_currencies=usd',
                 'parser': self._parse_coingecko_response,
                 'timeout': 5
             },
@@ -81,26 +80,22 @@ class PriceService:
         with self._lock:
             current_time = time.time()
 
-            # Check if we have valid cached data
             if not force_refresh and 'current' in self._cache:
                 cached_data = self._cache['current']
                 if (current_time - cached_data.timestamp.timestamp()) < self._cache_duration:
                     return cached_data.price
 
-            # Check rate limiting
             if current_time - self._last_fetch_time < self._min_fetch_interval:
                 if 'current' in self._cache:
                     return self._cache['current'].price
                 return None
 
-            # Fetch fresh data
             price_data = self._fetch_price_data()
             if price_data:
                 self._cache['current'] = price_data
                 self._last_fetch_time = current_time
                 return price_data.price
 
-            # Return cached data if available, even if stale
             if 'current' in self._cache:
                 return self._cache['current'].price
 
@@ -123,13 +118,11 @@ class PriceService:
         cache_key = f"historical_{start_date}_{end_date}"
 
         with self._lock:
-            # Check cache first
             if cache_key in self._cache:
                 cached_data = self._cache[cache_key]
                 if (time.time() - cached_data.timestamp.timestamp()) < self._cache_duration:
                     return cached_data.price
 
-            # Fetch historical data
             try:
                 data = yf.download('BTC-USD',
                                  start=start_date,
@@ -138,7 +131,6 @@ class PriceService:
                                  progress=False)
 
                 if data is not None and not data.empty:
-                    # Cache the result
                     self._cache[cache_key] = PriceData(
                         price=data,
                         timestamp=datetime.now(),
@@ -276,7 +268,6 @@ class PriceService:
         }
 
 
-# Global instance for easy access
 price_service = PriceService()
 
 

@@ -10,22 +10,10 @@ import {
   Legend,
   Line,
 } from 'recharts';
-import type { NetworkHistoryEntry } from '@/types';
+import type { ChartPoint, NetworkHistoryChartProps, NetworkHistoryEntry } from '@/types';
 import { formatDifficulty } from '@/utils';
 
 const TIMESTAMP_FORMAT = 'yyyy-MM-dd HH:mm:ss';
-
-interface ChartPoint {
-  time: number;
-  timeLabel: string;
-  blockHeight: number | null;
-  hashrate: number | null;
-  difficulty: number | null;
-}
-
-interface NetworkHistoryChartProps {
-  networkHistory: NetworkHistoryEntry[];
-}
 
 function toChartPoints(history: NetworkHistoryEntry[]): ChartPoint[] {
   const sorted = [...history].sort(

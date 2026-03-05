@@ -1,15 +1,13 @@
-import { useEffect } from 'react';
 import { useApi } from '@/contexts/ApiContext';
-import type { NodeData, Peer } from '@/types';
-import { useConsole } from '@/contexts/ConsoleContext';
-import { getRefreshTabId } from '@/refreshState';
-import { useClearRefreshOnDone } from '@/hooks/useClearRefreshOnDone';
+import type { GroupedItem, NodeData, Peer } from '@/types';
+import { useRefreshState, useRefreshDone } from '@/contexts/RefreshContext';
 import { useApiData } from '@/hooks/useApiData';
 import { useTabData } from '@/hooks/useTabData';
 import { LoadingOverlay } from '@/components/LoadingOverlay';
 import { LoadingErrorGate } from '@/components/LoadingErrorGate';
 import { SectionHeader } from '@/components/SectionHeader';
 import { formatBytes, formatDifficulty } from '@/utils';
+import { KNOWN_INDEXES } from '@/data/indexTypes';
 
 function formatBtcPerKvB(n: number | undefined | null): string {
   if (n === null || n === undefined || !Number.isFinite(n)) return '-';
@@ -69,7 +67,6 @@ function InfoCard({
   );
 }
 
-type GroupedItem = { label: string; value: unknown };
 function GroupedInfoCard({
   title,
   leftGroup,
@@ -112,19 +109,12 @@ function GroupedInfoCard({
 export function NodeTab() {
   const { fetchNode } = useApi();
   const nodeState = useApiData<NodeData>(fetchNode);
-  const { log } = useConsole();
 
   useTabData(nodeState.load, 'node');
 
   const { data, loading, error } = nodeState;
 
-  useClearRefreshOnDone(loading, 'node');
-
-  useEffect(() => {
-    if (data?.blockchain && typeof data.blockchain.blocks === 'number') {
-      log(`Node synced to block #${data.blockchain.blocks.toLocaleString()}`, 'info');
-    }
-  }, [data, log]);
+  useRefreshDone(loading, 'node');
 
   return (
     <LoadingErrorGate loading={loading} error={error} data={data} loadingLabel="node">
@@ -344,16 +334,6 @@ function NodeTabContent({ data, loading }: { data: NodeData; loading: boolean })
     },
   ];
 
-  // Known index types to show in a fixed order; display name used as label
-  const KNOWN_INDEXES: { key: string; label: string }[] = [
-    { key: 'txindex', label: 'Txindex' },
-    { key: 'addrindex', label: 'Addrindex' },
-    { key: 'timestampindex', label: 'Timestampindex' },
-    { key: 'spentindex', label: 'Spentindex' },
-    { key: 'coinstatsindex', label: 'Coinstatsindex' },
-    { key: 'basic block filter index', label: 'Block filter index' },
-  ];
-
   const formatIndexValue = (info: { synced?: boolean; best_block_height?: number } | undefined) => {
     if (!info) return 'Disabled';
     const synced = info.synced === true;
@@ -396,7 +376,8 @@ function NodeTabContent({ data, loading }: { data: NodeData; loading: boolean })
       ? String(network.warnings).trim()
       : '';
 
-  const isRefreshing = loading && getRefreshTabId() === 'node';
+  const { refreshTabId } = useRefreshState();
+  const isRefreshing = loading && refreshTabId === 'node';
 
   return (
     <div className="relative space-y-4">

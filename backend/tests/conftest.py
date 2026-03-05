@@ -12,13 +12,17 @@ _backend = Path(__file__).resolve().parent.parent
 if str(_backend) not in sys.path:
     sys.path.insert(0, str(_backend))
 
+from constants import DEFAULT_RPC_HOST, DEFAULT_RPC_PORT
+
+DEFAULT_TEST_RPC_URL = f"http://{DEFAULT_RPC_HOST}:{DEFAULT_RPC_PORT}"
+
 
 @pytest.fixture
 def sample_config():
     """Minimal valid config dict for cookie auth (no keyring)."""
     return {
-        "rpc_url": "http://127.0.0.1:8332",
-        "rpc_port": 8332,
+        "rpc_url": DEFAULT_TEST_RPC_URL,
+        "rpc_port": DEFAULT_RPC_PORT,
         "cookie_file": "/nonexistent/cookie",
         "auth_method": "cookie",
     }

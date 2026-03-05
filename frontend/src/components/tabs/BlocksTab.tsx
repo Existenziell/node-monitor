@@ -3,9 +3,7 @@ import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from 'recha
 import { useApi } from '@/contexts/ApiContext';
 import type { BlockRow, BlocksData, DistributionData } from '@/types';
 import { formatBytes, formatWeight } from '@/utils';
-import { useConsole } from '@/contexts/ConsoleContext';
-import { getRefreshTabId } from '@/refreshState';
-import { useClearRefreshOnDone } from '@/hooks/useClearRefreshOnDone';
+import { useRefreshState, useRefreshDone } from '@/contexts/RefreshContext';
 import { useApiData } from '@/hooks/useApiData';
 import { useTabData } from '@/hooks/useTabData';
 import { useTableSort } from '@/hooks/useTableSort';
@@ -161,11 +159,11 @@ export function BlocksTab() {
   const { data, loading, error, load } = useApiData<BlocksData>(fetchBlocks);
   const { data: pools, load: loadPools } = useApiData(fetchPools);
   const { data: distribution, load: loadDistribution } = useApiData(fetchDistribution);
-  const { log } = useConsole();
+  const { refreshTabId } = useRefreshState();
 
   useTabData(load, 'blocks');
 
-  useClearRefreshOnDone(loading, 'blocks');
+  useRefreshDone(loading, 'blocks');
 
   useEffect(() => {
     loadPools().catch(() => {});
@@ -187,13 +185,6 @@ export function BlocksTab() {
     }
     return map;
   }, [pools]);
-
-  useEffect(() => {
-    if (data?.blocks?.length && data.blocks[0]) {
-      const b = data.blocks[0] as BlockRow;
-      log(`Latest block: #${b.block_height} (${b.mining_pool ?? 'unknown'})`, 'block-found');
-    }
-  }, [data, log]);
 
   const blockTimeStr = data?.blocks?.[0]?.block_time ?? null;
   const blockTimestamp = blockTimeStr ? parseBlockTimeUtc(blockTimeStr) : null;
@@ -247,7 +238,7 @@ export function BlocksTab() {
   return (
     <LoadingErrorGate loading={loading} error={error} data={data} loadingLabel="blocks">
     <div className="relative space-y-4">
-      <LoadingOverlay show={loading && !!data && getRefreshTabId() === 'blocks'} />
+      <LoadingOverlay show={loading && !!data && refreshTabId === 'blocks'} />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="section-container">
           <SectionHeader>Current block</SectionHeader>

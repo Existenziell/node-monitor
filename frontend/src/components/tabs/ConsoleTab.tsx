@@ -207,7 +207,7 @@ export function ConsoleTab() {
           </div>
         </div>
 
-        <div className="section-container">
+        <div className="flex-1 min-w-0 section-container">
           <SectionHeader>Response</SectionHeader>
           <div className="p-3 font-mono text-sm overflow-x-auto flex-1 min-h-[120px]">
             {error !== null ? (

@@ -24,7 +24,7 @@ except ImportError:
 
 from rpc_service import create_rpc_connection
 from price_service import get_bitcoin_price
-from constants import DEFAULT_ZMQ_ENDPOINT
+from constants import API_SERVER_URL, DEFAULT_ZMQ_ENDPOINT
 from error_service import error_service
 try:
     from block_store import (
@@ -213,7 +213,6 @@ class BlockchainMonitor:
     def _process_new_block_hash_zmq(self, block_hash: str) -> None:
         """Process a new block hash received via ZMQ"""
         try:
-            # Get block details from RPC
             block_result = self.rpc_service.rpc_call('getblock', [block_hash])
             if 'result' not in block_result:
                 return
@@ -223,7 +222,6 @@ class BlockchainMonitor:
                 return
             current_height = block.get('height', 0)
 
-            # Check if this is actually a new block
             if current_height <= self.last_block_height:
                 return
 
@@ -260,14 +258,12 @@ class BlockchainMonitor:
                 blockchain_info = block_or_info
                 block_hash = blockchain_info.get('bestblockhash')
 
-                # Check cache first
                 cache_key = f"block_{block_hash}"
                 if cache_key in self._block_cache:
                     cached_data = self._block_cache[cache_key]
                     if time.time() - cached_data.get('timestamp', 0) < self._cache_max_age:
                         block = cached_data['data']
                     else:
-                        # Cache expired, remove it
                         del self._block_cache[cache_key]
                         block = None
                 else:
@@ -280,7 +276,6 @@ class BlockchainMonitor:
                     block = block_result['result']
                     if block is None:
                         return self._handle_block_error()
-                    # Cache the block data
                     self._block_cache[cache_key] = {
                         'data': block,
                         'timestamp': time.time()
@@ -291,7 +286,6 @@ class BlockchainMonitor:
             time_since_last_block = self._get_time_since_last_block(current_block_time)
             self._calculate_and_log_fees(block, mining_pool, time_since_last_block)
 
-            # Update last seen height and time to prevent detection loop
             self.last_block_height = current_height
             self.last_block_time = current_block_time
             return True
@@ -388,17 +382,14 @@ class BlockchainMonitor:
         """Check for known mining pool signatures"""
         mining_pools = self._get_mining_pool_signatures()
 
-        # Check for known pool signatures
         for signature, pool_name in mining_pools.items():
             if signature.lower() in coinbase_bytes.lower():
                 return pool_name
 
-        # Check for slash-separated format
         slash_pool = self._check_slash_format(coinbase_bytes)
         if slash_pool:
             return slash_pool
 
-        # Return truncated hex if no known pool found
         if len(coinbase_hex) > 20:
             return f"Unknown Pool ({coinbase_hex[:20]}...)"
 
@@ -406,10 +397,8 @@ class BlockchainMonitor:
 
     def _get_mining_pool_signatures(self):
         """Get dictionary of mining pool signatures from API"""
-        # Try to get signatures from API
         try:
-            # Get the API URL (could be configurable)
-            api_url = os.getenv('POOLS_API_URL', 'http://localhost:8081')
+            api_url = os.getenv('POOLS_API_URL', API_SERVER_URL)
             response = requests.get(f"{api_url}/api/pools/signatures", timeout=5)
 
             if response.status_code == 200:
@@ -438,7 +427,6 @@ class BlockchainMonitor:
     def calculate_block_btc(self, block):
         """Calculate total BTC in block (block reward + transaction fees)"""
         try:
-            # Get the coinbase transaction (first transaction)
             if not block.get('tx') or len(block['tx']) == 0:
                 return None
 
@@ -515,9 +503,7 @@ class BlockchainMonitor:
             script_pub_key = vout.get('scriptPubKey', {})
             asm = script_pub_key.get('asm', '')
 
-            # OP_RETURN transactions start with "OP_RETURN"
             if asm.startswith('OP_RETURN'):
-                # Extract the data after OP_RETURN
                 parts = asm.split(' ', 1)
                 if len(parts) > 1:
                     hex_data = parts[1]
@@ -543,13 +529,11 @@ class BlockchainMonitor:
             if self._try_json_decoding(data_bytes, decoded_results):
                 return " | ".join(decoded_results)
 
-            # Less common formats
             self._try_url_decoding(data_bytes, decoded_results)
             self._try_address_decoding(data_bytes, decoded_results)
             self._try_timestamp_decoding(data_bytes, decoded_results)
             self._try_numeric_decoding(data_bytes, decoded_results)
 
-            # Return results or fallback to hex
             if decoded_results:
                 return " | ".join(decoded_results)
             return f"Hex: {hex_data}"
@@ -639,21 +623,15 @@ class BlockchainMonitor:
         if not pool_name:
             return 'Unknown'
 
-        # Remove non-printable ASCII characters and limit to basic printable characters
-        # Allow letters, numbers, spaces, and common punctuation
+        # Sanitize pool name for display and storage
         sanitized = ''.join(
             c for c in pool_name
             if c.isprintable() and (c.isalnum() or c in ' .-_/()[]{}:')
         )
-
-        # Remove excessive whitespace
         sanitized = ' '.join(sanitized.split())
-
-        # Limit length to reasonable size
         if len(sanitized) > 50:
             sanitized = sanitized[:50].strip()
 
-        # If sanitization resulted in empty string, return Unknown
         if not sanitized or sanitized.isspace():
             return 'Unknown'
 
@@ -742,11 +720,9 @@ class BlockchainMonitor:
         """Check and log network data if enough time has passed"""
         current_time = datetime.now()
 
-        # Check if enough time has passed since last network data log
         if (self._last_network_log_time is None or
             (current_time - self._last_network_log_time).total_seconds() >= self._network_log_interval):
 
-            # Get current network data
             hashrate = self.get_network_hashrate()
             difficulty = self.get_network_difficulty()
 
@@ -755,7 +731,6 @@ class BlockchainMonitor:
                 self._persist_network_snapshot(hashrate, difficulty)
                 self._last_network_log_time = current_time
 
-                # Update cached values
                 if hashrate is not None:
                     self._last_hashrate = hashrate
                 if difficulty is not None:
@@ -832,7 +807,6 @@ def main():
 
     args = parser.parse_args()
 
-    # Create monitor instance
     monitor = BlockchainMonitor(args.zmq_endpoint)
 
     if args.status:

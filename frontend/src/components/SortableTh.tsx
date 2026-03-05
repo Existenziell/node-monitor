@@ -1,13 +1,4 @@
-import type { SortDir } from '@/hooks/useTableSort';
-
-interface SortableThProps {
-  label: string;
-  sortKey: string;
-  currentSortKey: string | null;
-  sortDir: SortDir;
-  onSort: (key: string) => void;
-  className?: string;
-}
+import type { SortableThProps } from '@/types';
 
 export function SortableTh({ label, sortKey, currentSortKey, sortDir, onSort, className }: SortableThProps) {
   const isActive = currentSortKey === sortKey;

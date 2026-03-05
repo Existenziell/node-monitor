@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { VALID_TABS } from '@/constants';
+import { VALID_TABS } from '@/data/tabs';
 import type { TabId } from '@/types';
 
 function getTabFromUrl(): TabId {

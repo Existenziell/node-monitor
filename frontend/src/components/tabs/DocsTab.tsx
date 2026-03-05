@@ -1,5 +1,14 @@
-import { GITHUB_REPO_URL } from '@/constants';
+import {
+  GITHUB_REPO_URL,
+  BITCOIN_CORE_GITHUB_URL,
+  BITCOIN_RPC_DOCS_URL,
+  MEMPOOL_SPACE_BASE_URL,
+  BLOCKCHAIN_EXPLORER_URL,
+  BITCOIN_ORG_URL,
+} from '@/data/links';
 import { SectionHeader } from '../SectionHeader';
+
+const README_URL = `${GITHUB_REPO_URL}/blob/main/README.md`;
 
 export function DocsTab() {
   return (
@@ -20,11 +29,20 @@ export function DocsTab() {
             It shows chain and mempool status, recent blocks with mining pool attribution, network history
             (hashrate, difficulty), peer list, wallet info, and host metrics.
           </p>
-          <p className="text-level-5 max-w-prose">
-            A Python backend runs next to your node (or on the same machine), stores block and
-            network data in SQLite, and serves a REST API. The frontend you are viewing now calls that API and renders
-            the Node, Blocks, Wallet, and Console tabs. You can run it locally for development or deploy it (e.g. on a
-            Raspberry Pi) for always-on monitoring.
+        </section>
+
+        <section className="mb-6">
+          <h3 className="section-heading">
+            Architecture
+          </h3>
+          <p className="text-level-5 mb-2 max-w-prose">
+            The backend is Python: it runs a block monitor in a background thread, writes blocks and network
+            history to SQLite (<code>data/node_monitor.db</code>), and serves a REST API. The frontend you are
+            viewing (Vite/React) calls <code>/api</code> and renders the Node, Blocks, Wallet, and Console tabs.
+            Your Bitcoin node is queried via RPC and, when configured, receives block and transaction notifications
+            over ZMQ. You can run the dashboard locally for development or deploy it (e.g. on a Raspberry Pi) for
+            always-on monitoring. Full setup steps are in the{' '}
+            <a href={README_URL} className="link-accent" target="_blank" rel="noreferrer noopener">README on GitHub</a>.
           </p>
         </section>
 
@@ -41,22 +59,36 @@ export function DocsTab() {
           </ul>
         </section>
 
-        <section className="mb-2">
+        <section className="mb-6">
           <h3 className="section-heading">
-            More information
+            Tabs at a glance
           </h3>
-          <p className="text-level-5 mb-2">
-            Full setup, Tor, deployment, and testing: <a href={`${GITHUB_REPO_URL}/blob/main/README.md`} className="link-accent" target="_blank" rel="noreferrer noopener">README on GitHub</a>.
-          </p>
-          <p className="text-level-5 mb-1">Related sites:</p>
           <ul className="list-disc list-inside text-level-5 space-y-1">
-            <li><a href="https://mempool.space" className="link-accent" target="_blank" rel="noreferrer noopener">mempool.space</a> — block explorer &amp; mempool</li>
-            <li><a href="https://www.blockchain.com/explorer" className="link-accent" target="_blank" rel="noreferrer noopener">blockchain.com</a> — explorer</li>
-            <li><a href="https://bitcoin.org" className="link-accent" target="_blank" rel="noreferrer noopener">bitcoin.org</a> — Bitcoin project</li>
+            <li><strong>Node</strong> — chain sync, network info, mempool, peers, host metrics.</li>
+            <li><strong>Network</strong> — historical hashrate and difficulty.</li>
+            <li><strong>Blocks</strong> — recent blocks and mining pool attribution.</li>
+            <li><strong>Wallet</strong> — Bitcoin Core wallet RPCs (balances, transactions).</li>
+            <li><strong>Console</strong> — run Bitcoin Core RPC commands; see <a href={BITCOIN_RPC_DOCS_URL} className="link-accent" target="_blank" rel="noreferrer noopener">Bitcoin Core RPC reference</a> for the full API.</li>
+            <li><strong>Docs</strong> — this page.</li>
+            <li><strong>Settings</strong> — RPC and API configuration.</li>
+          </ul>
+        </section>
+
+        <section className="mb-6">
+          <p className="text-level-5 mb-1 mt-4">Bitcoin Core &amp; resources:</p>
+          <ul className="list-disc list-inside text-level-5 space-y-1">
+            <li><a href={BITCOIN_CORE_GITHUB_URL} className="link-accent" target="_blank" rel="noreferrer noopener">Bitcoin Core (GitHub)</a> — source code, releases, docs</li>
+            <li><a href={BITCOIN_RPC_DOCS_URL} className="link-accent" target="_blank" rel="noreferrer noopener">Bitcoin Core RPC reference</a> — full RPC API for the Console tab</li>
+          </ul>
+
+          <p className="text-level-5 mb-1 mt-4">Explorers &amp; general:</p>
+          <ul className="list-disc list-inside text-level-5 space-y-1">
+            <li><a href={MEMPOOL_SPACE_BASE_URL} className="link-accent" target="_blank" rel="noreferrer noopener">mempool.space</a> — block explorer &amp; mempool</li>
+            <li><a href={BLOCKCHAIN_EXPLORER_URL} className="link-accent" target="_blank" rel="noreferrer noopener">blockchain.com</a> — explorer</li>
+            <li><a href={BITCOIN_ORG_URL} className="link-accent" target="_blank" rel="noreferrer noopener">bitcoin.org</a> — Bitcoin project</li>
           </ul>
         </section>
       </article>
     </div>
   );
 }
-

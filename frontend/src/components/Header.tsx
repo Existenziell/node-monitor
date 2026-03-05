@@ -1,4 +1,4 @@
-import { TABS } from '@/constants';
+import { TABS } from '@/data/tabs';
 import type { HeaderProps } from '@/types';
 import { useTheme } from '@/contexts/ThemeContext';
 import { MenuIcon, MoonIcon, RefreshIcon, SunIcon } from './Icons';

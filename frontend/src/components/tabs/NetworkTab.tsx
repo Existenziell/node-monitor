@@ -1,8 +1,7 @@
 import { useCallback } from 'react';
 import { useApi } from '@/contexts/ApiContext';
 import type { BlocksData, NodeData, NetworkData, Peer, BtcPrices } from '@/types';
-import { getRefreshTabId } from '@/refreshState';
-import { useClearRefreshOnDoneMulti } from '@/hooks/useClearRefreshOnDone';
+import { useRefreshState, useRefreshDoneMulti } from '@/contexts/RefreshContext';
 import { useApiData } from '@/hooks/useApiData';
 import { useTabData } from '@/hooks/useTabData';
 import { NetworkHistoryChart } from '@/components/NetworkHistoryChart';
@@ -92,7 +91,7 @@ export function NetworkTab() {
   const { data: priceData } = priceState;
   const blocksData = blocksState.data;
 
-  useClearRefreshOnDoneMulti([loading, networkLoading, blocksState.loading], 'network');
+  useRefreshDoneMulti([loading, networkLoading, blocksState.loading], 'network');
 
   const blockchain = (data?.blockchain ?? {}) as Record<string, unknown>;
   const blocks = typeof blockchain.blocks === 'number' ? blockchain.blocks : null;
@@ -152,8 +151,9 @@ export function NetworkTab() {
       : null;
   const btcPriceSubLines = btcPriceEur ? [{ label: btcPriceEur, value: '' }] : undefined;
 
+  const { refreshTabId } = useRefreshState();
   const isRefreshing =
-    (loading || networkLoading || blocksState.loading) && !!data && getRefreshTabId() === 'network';
+    (loading || networkLoading || blocksState.loading) && !!data && refreshTabId === 'network';
 
   return (
     <LoadingErrorGate loading={loading} error={error} data={data} loadingLabel="network">

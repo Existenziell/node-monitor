@@ -2,7 +2,7 @@
  * Centralized type and interface definitions for the frontend.
  */
 
-import { SVGProps } from "react";
+import type { ReactNode, SVGProps } from "react";
 
 // --- Tab navigation ---
 
@@ -254,32 +254,6 @@ export interface Pool {
   [key: string]: unknown;
 }
 
-// --- Console (ConsoleContext) ---
-
-export type LogType =
-  | 'info'
-  | 'success'
-  | 'warning'
-  | 'error'
-  | 'data-fetch'
-  | 'webserver'
-  | 'block-found';
-
-export interface ConsoleLine {
-  id: number;
-  timestamp: string;
-  message: string;
-  type: LogType;
-}
-
-export interface ConsoleContextValue {
-  lines: ConsoleLine[];
-  log: (message: string, type?: LogType) => void;
-  clear: () => void;
-  connectionStatus: 'connected' | 'disconnected';
-  setConnectionStatus: (status: 'connected' | 'disconnected') => void;
-}
-
 // --- Theme (ThemeContext) ---
 
 export type Theme = 'light' | 'dark';
@@ -292,4 +266,117 @@ export interface ThemeContextValue {
 
 export interface IconProps extends SVGProps<SVGSVGElement> {
   className?: string
+}
+
+// --- Refresh (RefreshContext) ---
+
+export interface RefreshContextValue {
+  refreshTabId: TabId | null;
+  setRefreshTabId: (id: TabId | null) => void;
+}
+
+// --- Table sort (useTableSort) ---
+
+export type SortDir = 'asc' | 'desc';
+
+export type KeyExtractor<T> = (row: T) => number | string | null | undefined;
+
+export interface UseTableSortOptions<T> {
+  data: T[];
+  keyExtractors: Record<string, KeyExtractor<T>>;
+  /** Default sort key (e.g. 'height'). If set, initial sort is applied. */
+  defaultSortKey?: string | null;
+  /** Default direction for defaultSortKey. */
+  defaultSortDir?: SortDir;
+}
+
+export interface UseTableSortResult<T> {
+  sortedData: T[];
+  sortKey: string | null;
+  sortDir: SortDir;
+  setSort: (key: string) => void;
+}
+
+// --- Settings tab ---
+
+/** Baseline values from last load/save for dirty checking. rpcUser is null when masked. */
+export interface SettingsBaseline {
+  authMethod: 'password' | 'cookie';
+  rpcHost: string;
+  rpcPort: string;
+  rpcUser: string | null;
+  cookieFile: string;
+  hasPassword: boolean;
+}
+
+export interface PendingChange {
+  field: string;
+  from?: string;
+  to?: string;
+  sensitive?: boolean;
+}
+
+// --- Node tab ---
+
+export interface GroupedItem {
+  label: string;
+  value: unknown;
+}
+
+// --- Network history chart ---
+
+export interface ChartPoint {
+  time: number;
+  timeLabel: string;
+  blockHeight: number | null;
+  hashrate: number | null;
+  difficulty: number | null;
+}
+
+export interface NetworkHistoryChartProps {
+  networkHistory: NetworkHistoryEntry[];
+}
+
+// --- Component props ---
+
+export interface SortableThProps {
+  label: string;
+  sortKey: string;
+  currentSortKey: string | null;
+  sortDir: SortDir;
+  onSort: (key: string) => void;
+  className?: string;
+}
+
+export interface SectionHeaderProps {
+  children: ReactNode;
+  as?: 'h2' | 'h3';
+  title?: string;
+  className?: string;
+}
+
+export interface LoadingErrorGateProps<T> {
+  loading: boolean;
+  error: Error | null;
+  data: T | null;
+  loadingLabel: string;
+  errorLabel?: string;
+  /** If set, used instead of API_SERVER_HINT (e.g. wallet tab adds "A wallet must be loaded."). */
+  errorHint?: ReactNode;
+  children: ReactNode;
+}
+
+export interface LoadingOverlayProps {
+  show: boolean;
+  message?: string;
+}
+
+export interface SpinnerProps {
+  size?: 'sm' | 'lg';
+  className?: string;
+  'aria-hidden'?: boolean;
+}
+
+export interface LogoProps {
+  className?: string;
 }

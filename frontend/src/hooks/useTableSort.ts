@@ -1,8 +1,7 @@
 import { useMemo, useCallback, useState } from 'react';
+import type { SortDir, UseTableSortOptions, UseTableSortResult } from '@/types';
 
-export type SortDir = 'asc' | 'desc';
-
-export type KeyExtractor<T> = (row: T) => number | string | null | undefined;
+export type { KeyExtractor, SortDir, UseTableSortOptions, UseTableSortResult } from '@/types';
 
 function compare(a: number | string | null | undefined, b: number | string | null | undefined, dir: SortDir): number {
   const empty = (v: number | string | null | undefined) => v === null || v === undefined || v === '';
@@ -19,22 +18,6 @@ function compare(a: number | string | null | undefined, b: number | string | nul
     cmp = String(a).localeCompare(String(b));
   }
   return dir === 'asc' ? cmp : -cmp;
-}
-
-export interface UseTableSortOptions<T> {
-  data: T[];
-  keyExtractors: Record<string, KeyExtractor<T>>;
-  /** Default sort key (e.g. 'height'). If set, initial sort is applied. */
-  defaultSortKey?: string | null;
-  /** Default direction for defaultSortKey. */
-  defaultSortDir?: SortDir;
-}
-
-export interface UseTableSortResult<T> {
-  sortedData: T[];
-  sortKey: string | null;
-  sortDir: SortDir;
-  setSort: (key: string) => void;
 }
 
 /**

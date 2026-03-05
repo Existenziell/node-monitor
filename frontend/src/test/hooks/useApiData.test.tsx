@@ -3,16 +3,9 @@ import { renderHook, act } from '@testing-library/react';
 import { useApi } from '@/contexts/ApiContext';
 import { useApiData } from '@/hooks/useApiData';
 import { ApiProvider } from '@/contexts/ApiContext';
-import { ConsoleProvider } from '@/contexts/ConsoleContext';
 
 function wrapper({ children }: { children: React.ReactNode }) {
-  return (
-    <ConsoleProvider>
-      <ApiProvider>
-        {children}
-      </ApiProvider>
-    </ConsoleProvider>
-  );
+  return <ApiProvider>{children}</ApiProvider>;
 }
 
 function useNodeDataWithApi() {

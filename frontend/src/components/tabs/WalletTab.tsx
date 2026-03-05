@@ -3,8 +3,7 @@ import { useApi } from '@/contexts/ApiContext';
 import type { UtxoEntry, WalletData, WalletTransaction } from '@/types';
 import { API_SERVER_HINT } from '@/constants';
 import { formatTxTime, getErrorMessage, truncateTxid } from '@/utils';
-import { getRefreshTabId } from '@/refreshState';
-import { useClearRefreshOnDone } from '@/hooks/useClearRefreshOnDone';
+import { useRefreshState, useRefreshDone } from '@/contexts/RefreshContext';
 import { useApiData } from '@/hooks/useApiData';
 import { useTabData } from '@/hooks/useTabData';
 import { useTableSort } from '@/hooks/useTableSort';
@@ -17,6 +16,7 @@ import { EyeIcon, EyeSlashIcon } from '@/components/Icons';
 export function WalletTab() {
   const { fetchWallet, callRpc, saveWalletName } = useApi();
   const { data, loading, error, load } = useApiData<WalletData>(fetchWallet);
+  const { refreshTabId } = useRefreshState();
   const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [createName, setCreateName] = useState('');
@@ -26,7 +26,7 @@ export function WalletTab() {
 
   useTabData(load, 'wallet');
 
-  useClearRefreshOnDone(loading, 'wallet');
+  useRefreshDone(loading, 'wallet');
 
   const unspent: UtxoEntry[] = useMemo(
     () => (Array.isArray(data?.unspent) ? data.unspent : []),
@@ -207,7 +207,7 @@ export function WalletTab() {
       })()
     ) : (
     <div className="relative space-y-4">
-      <LoadingOverlay show={loading && !!data && getRefreshTabId() === 'wallet'} />
+      <LoadingOverlay show={loading && !!data && refreshTabId === 'wallet'} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="section-container">
           <SectionHeader>Config</SectionHeader>

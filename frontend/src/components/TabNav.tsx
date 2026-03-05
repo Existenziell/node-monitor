@@ -1,4 +1,4 @@
-import { TABS } from '@/constants';
+import { TABS } from '@/data/tabs';
 import type { TabId, TabNavProps } from '@/types';
 import { RefreshIcon, XIcon } from './Icons';
 

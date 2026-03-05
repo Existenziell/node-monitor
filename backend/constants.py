@@ -6,28 +6,23 @@ Centralized constants for backend
 import json
 from pathlib import Path
 
-# Load shared constants (ports, MAX_CONSOLE_LINES) from shared/constants.json
 _shared_path = Path(__file__).resolve().parent.parent / "shared" / "constants.json"
-if _shared_path.exists():
-    with open(_shared_path, encoding="utf-8") as f:
-        _shared = json.load(f)
-    DASHBOARD_PORT = _shared["DASHBOARD_PORT"]
-    API_SERVER_PORT = _shared["API_SERVER_PORT"]
-    MAX_CONSOLE_LINES = _shared["MAX_CONSOLE_LINES"]
-    DEFAULT_RPC_HOST = _shared.get("DEFAULT_RPC_HOST", "127.0.0.1")
-    DEFAULT_RPC_PORT = _shared.get("DEFAULT_RPC_PORT", 8332)
-    DEFAULT_ZMQ_PORT = _shared.get("DEFAULT_ZMQ_PORT", 28332)
-    BITCOIN_HALVING_INTERVAL = _shared.get("BITCOIN_HALVING_INTERVAL", 210000)
-    BITCOIN_RETARGET_INTERVAL = _shared.get("BITCOIN_RETARGET_INTERVAL", 2016)
-else:
-    DASHBOARD_PORT = 8080
-    API_SERVER_PORT = 8081
-    MAX_CONSOLE_LINES = 100
-    DEFAULT_RPC_HOST = "127.0.0.1"
-    DEFAULT_RPC_PORT = 8332
-    DEFAULT_ZMQ_PORT = 28332
-    BITCOIN_HALVING_INTERVAL = 210000
-    BITCOIN_RETARGET_INTERVAL = 2016
+if not _shared_path.exists():
+    raise FileNotFoundError(f"Shared constants not found: {_shared_path}")
+
+with open(_shared_path, encoding="utf-8") as f:
+    _shared = json.load(f)
+DASHBOARD_PORT = _shared["DASHBOARD_PORT"]
+API_SERVER_PORT = _shared["API_SERVER_PORT"]
+MAX_CONSOLE_LINES = _shared["MAX_CONSOLE_LINES"]
+DEFAULT_RPC_HOST = _shared.get("DEFAULT_RPC_HOST", "127.0.0.1")
+DEFAULT_RPC_PORT = _shared.get("DEFAULT_RPC_PORT", 8332)
+DEFAULT_ZMQ_PORT = _shared.get("DEFAULT_ZMQ_PORT", 28332)
+BITCOIN_HALVING_INTERVAL = _shared.get("BITCOIN_HALVING_INTERVAL", 210000)
+BITCOIN_RETARGET_INTERVAL = _shared.get("BITCOIN_RETARGET_INTERVAL", 2016)
+_mempool_base = _shared.get("MEMPOOL_SPACE_BASE_URL", "https://mempool.space")
+
+MEMPOOL_SPACE_API_URL = f"{_mempool_base}/api"
 
 DEFAULT_ZMQ_ENDPOINT = f"tcp://{DEFAULT_RPC_HOST}:{DEFAULT_ZMQ_PORT}"
 

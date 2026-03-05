@@ -1,11 +1,5 @@
+import type { SectionHeaderProps } from '@/types';
 import { cn } from "@/utils";
-
-type SectionHeaderProps = {
-  children: React.ReactNode;
-  as?: 'h2' | 'h3';
-  title?: string;
-  className?: string;
-};
 
 export function SectionHeader({ children, as: Tag = 'h3', title, className = '' }: SectionHeaderProps) {
   return (

@@ -1,28 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useApi } from '@/contexts/ApiContext';
-import { useConsole } from '@/contexts/ConsoleContext';
 import { useTabFromUrl } from '@/hooks/useTabFromUrl';
 import { DEFAULT_RPC_HOST, DEFAULT_RPC_PORT } from '@/constants';
 import { SectionHeader } from '@/components/SectionHeader';
-import type { ConfigStatus, ConfigSavePayload, ConfigTestResult } from '@/types';
+import type { ConfigStatus, ConfigSavePayload, ConfigTestResult, PendingChange, SettingsBaseline } from '@/types';
 import { getErrorMessage } from '@/utils';
-
-/** Baseline values from last load/save for dirty checking. rpcUser is null when masked. */
-interface SettingsBaseline {
-  authMethod: 'password' | 'cookie';
-  rpcHost: string;
-  rpcPort: string;
-  rpcUser: string | null;
-  cookieFile: string;
-  hasPassword: boolean;
-}
-
-interface PendingChange {
-  field: string;
-  from?: string;
-  to?: string;
-  sensitive?: boolean;
-}
 
 function getPendingChanges(
   baseline: SettingsBaseline | null,
@@ -85,7 +67,6 @@ function getPendingChanges(
 export function SettingsTab() {
   const { activeTab } = useTabFromUrl();
   const { fetchConfigStatus, fetchConfigTest, saveConfig, saveWalletName } = useApi();
-  const { log } = useConsole();
   const [status, setStatus] = useState<ConfigStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -128,7 +109,7 @@ export function SettingsTab() {
         cookieFile: cookie,
         hasPassword: !!(s.config_exists && s.auth_method === 'password'),
       });
-    } catch (e) {
+    } catch {
       const fallback: ConfigStatus = {
         config_exists: false,
         auth_method: null,
@@ -148,11 +129,10 @@ export function SettingsTab() {
         cookieFile: '',
         hasPassword: false,
       });
-      log(`Settings: could not load config status: ${getErrorMessage(e)}`, 'warning');
     } finally {
       setLoading(false);
     }
-  }, [fetchConfigStatus, log]);
+  }, [fetchConfigStatus]);
 
   // Refetch config status when the Settings tab becomes visible so "Default wallet" stays in sync
   // (e.g. after loading a wallet in the Wallet tab).

@@ -1,18 +1,7 @@
-import type { ReactNode } from 'react';
 import { API_SERVER_HINT } from '@/constants';
 import { getErrorMessage } from '@/utils';
 import { Spinner } from '@/components/Spinner';
-
-interface LoadingErrorGateProps<T> {
-  loading: boolean;
-  error: Error | null;
-  data: T | null;
-  loadingLabel: string;
-  errorLabel?: string;
-  /** If set, used instead of API_SERVER_HINT (e.g. wallet tab adds "A wallet must be loaded."). */
-  errorHint?: ReactNode;
-  children: ReactNode;
-}
+import type { LoadingErrorGateProps } from '@/types';
 
 export function LoadingErrorGate<T>({
   loading,

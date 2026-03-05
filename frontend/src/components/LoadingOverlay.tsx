@@ -1,10 +1,6 @@
 import { createPortal } from 'react-dom';
 import { Spinner } from '@/components/Spinner';
-
-interface LoadingOverlayProps {
-  show: boolean;
-  message?: string;
-}
+import type { LoadingOverlayProps } from '@/types';
 
 export function LoadingOverlay({ show, message = 'Refreshing...' }: LoadingOverlayProps) {
   if (!show) return null;

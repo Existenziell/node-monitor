@@ -4,7 +4,10 @@ Uses mocked requests.post to avoid real HTTP.
 """
 from unittest.mock import MagicMock
 
+from constants import DEFAULT_RPC_HOST, DEFAULT_RPC_PORT
 from rpc_service import RPCService, create_rpc_service
+
+DEFAULT_TEST_RPC_URL = f"http://{DEFAULT_RPC_HOST}:{DEFAULT_RPC_PORT}"
 
 
 class TestRPCServicePayload:
@@ -17,7 +20,7 @@ class TestRPCServicePayload:
         mock_requests_post.return_value = mock_response
 
         # No cookie file, no user/pass -> returns error without calling post
-        svc = RPCService("http://127.0.0.1:8332")
+        svc = RPCService(DEFAULT_TEST_RPC_URL)
         result = svc.rpc_call("getblockcount", [])
 
         # Without auth we get error before requests.post
@@ -39,7 +42,7 @@ class TestRPCServicePayload:
         mock_requests_post.return_value = mock_response
 
         svc = RPCService(
-            "http://127.0.0.1:8332",
+            DEFAULT_TEST_RPC_URL,
             rpc_user="user",
             rpc_password="pass",
         )
@@ -55,7 +58,7 @@ class TestRPCServicePayload:
         mock_requests_post.side_effect = requests.exceptions.Timeout()
 
         svc = RPCService(
-            "http://127.0.0.1:8332",
+            DEFAULT_TEST_RPC_URL,
             rpc_user="u",
             rpc_password="p",
         )
@@ -68,7 +71,7 @@ class TestRPCServicePayload:
         mock_requests_post.side_effect = requests.exceptions.ConnectionError()
 
         svc = RPCService(
-            "http://127.0.0.1:8332",
+            DEFAULT_TEST_RPC_URL,
             rpc_user="u",
             rpc_password="p",
         )
@@ -83,7 +86,7 @@ class TestRPCServiceCookieAuth:
     def test_rpc_call_invalid_cookie_format_returns_error(self, tmp_path):
         cookie_file = tmp_path / ".cookie"
         cookie_file.write_text("no-colon-here")
-        svc = RPCService("http://127.0.0.1:8332", cookie_file=str(cookie_file))
+        svc = RPCService(DEFAULT_TEST_RPC_URL, cookie_file=str(cookie_file))
         result = svc.rpc_call("getblockcount", [])
         assert "error" in result
         assert "cookie" in result["error"].lower() or "invalid" in result["error"].lower()
@@ -95,7 +98,7 @@ class TestRPCServiceCookieAuth:
         mock_response.json.return_value = {"result": 1, "error": None}
         mock_requests_post.return_value = mock_response
 
-        svc = RPCService("http://127.0.0.1:8332", cookie_file=str(cookie_file))
+        svc = RPCService(DEFAULT_TEST_RPC_URL, cookie_file=str(cookie_file))
         result = svc.rpc_call("getblockcount", [])
 
         assert mock_requests_post.called
@@ -107,7 +110,7 @@ class TestRPCServiceTimeout:
     """Tests for set_timeout."""
 
     def test_set_timeout(self):
-        svc = RPCService("http://127.0.0.1:8332", rpc_user="u", rpc_password="p")
+        svc = RPCService(DEFAULT_TEST_RPC_URL, rpc_user="u", rpc_password="p")
         assert svc.timeout == 5
         svc.set_timeout(10)
         assert svc.timeout == 10
@@ -121,7 +124,7 @@ class TestRPCServiceConnectionStatus:
         mock_response.json.return_value = {"result": {"chain": "main"}, "error": None}
         mock_requests_post.return_value = mock_response
 
-        svc = RPCService("http://127.0.0.1:8332", rpc_user="u", rpc_password="p")
+        svc = RPCService(DEFAULT_TEST_RPC_URL, rpc_user="u", rpc_password="p")
         assert svc.test_connection() is True
 
     def test_test_connection_false_when_error(self, mock_requests_post):
@@ -129,7 +132,7 @@ class TestRPCServiceConnectionStatus:
         mock_response.json.return_value = {"result": None, "error": "Connection refused"}
         mock_requests_post.return_value = mock_response
 
-        svc = RPCService("http://127.0.0.1:8332", rpc_user="u", rpc_password="p")
+        svc = RPCService(DEFAULT_TEST_RPC_URL, rpc_user="u", rpc_password="p")
         assert svc.test_connection() is False
 
     def test_get_connection_status_connected(self, mock_requests_post):
@@ -137,7 +140,7 @@ class TestRPCServiceConnectionStatus:
         mock_response.json.return_value = {"result": {"blocks": 800000}}
         mock_requests_post.return_value = mock_response
 
-        svc = RPCService("http://127.0.0.1:8332", rpc_user="u", rpc_password="p")
+        svc = RPCService(DEFAULT_TEST_RPC_URL, rpc_user="u", rpc_password="p")
         status = svc.get_connection_status()
         assert status["connected"] is True
         assert status["blockchain_info"] == {"blocks": 800000}
@@ -147,8 +150,8 @@ class TestRPCServiceFactory:
     """Tests for create_rpc_service and test_rpc_connection."""
 
     def test_create_rpc_service(self):
-        svc = create_rpc_service("http://127.0.0.1:8332", "u", "p")
+        svc = create_rpc_service(DEFAULT_TEST_RPC_URL, "u", "p")
         assert isinstance(svc, RPCService)
-        assert svc.rpc_url == "http://127.0.0.1:8332"
+        assert svc.rpc_url == DEFAULT_TEST_RPC_URL
         assert svc.rpc_user == "u"
         assert svc.rpc_password == "p"

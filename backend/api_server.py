@@ -26,6 +26,7 @@ try:
         API_SERVER_PORT,
         DEFAULT_RPC_PORT,
         DEFAULT_ZMQ_ENDPOINT,
+        MEMPOOL_SPACE_API_URL,
         NODE_CACHE_SECONDS,
         WALLET_CACHE_SECONDS,
         BLOCKS_CACHE_SECONDS,
@@ -68,7 +69,6 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
             parsed_path = urlparse(self.path)
             path = parsed_path.path
 
-            # Set CORS headers
             self.send_response(200)
             self.send_header('Content-Type', 'application/json')
             self.send_header('Access-Control-Allow-Origin', '*')
@@ -326,7 +326,6 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
                 self.wfile.write(json.dumps(self._node_cache, indent=2).encode())
                 return
 
-            # Get node data using direct RPC calls
             blockchain_info = self.rpc_service.get_blockchain_info()
             network_info = self.rpc_service.get_network_info()
             mempool_info = self.rpc_service.get_mempool_info()
@@ -340,7 +339,6 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
             host_memory = self._get_host_memory()
             host_architecture = self._get_host_architecture()
 
-            # Check if any RPC call returned a connection error (indicating node is down)
             if self._check_connection_error(blockchain_info, "blockchain info"):
                 return
 
@@ -776,7 +774,7 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
 
     def _cached_fetch_prices(self):
         """Fetch BTC prices from mempool.space, with in-memory cache (60s TTL)."""
-        api = 'https://mempool.space/api'
+        api = MEMPOOL_SPACE_API_URL
         price_cache_seconds = 60
         from datetime import datetime
         now = datetime.now()
@@ -899,9 +897,9 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
             }
             self.wfile.write(json.dumps(error_response).encode())
 
-    def log_message(self, message_format, *args):  # pylint: disable=redefined-builtin,arguments-differ
-        """Override to reduce logging noise"""
-        # Suppress logging
+    def log_message(self, message_format, *args):  # pylint: disable=redefined-builtin,arguments-differ,unused-argument
+        """Override to reduce logging noise."""
+        pass  # pylint: disable=unnecessary-pass
 
 def start_api_server(port=None):
     """Start the API server and the in-process block monitor thread."""

@@ -1,8 +1,7 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTabFromUrl } from '@/hooks/useTabFromUrl';
-import { useConsole } from '@/contexts/ConsoleContext';
 import { useApi } from '@/contexts/ApiContext';
-import { setRefreshTabId } from '@/refreshState';
+import { useRefreshState } from '@/contexts/RefreshContext';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { TabNav } from '@/components/TabNav';
@@ -38,15 +37,10 @@ function TabContent({ tab }: { tab: TabId }) {
 
 export default function App() {
   const { activeTab, setTab } = useTabFromUrl();
-  const { log } = useConsole();
+  const { setRefreshTabId } = useRefreshState();
   const { fetchConfigStatus } = useApi();
   const hasCheckedConfig = useRef(false);
   const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  React.useEffect(() => {
-    log('Chain Monitor initialized', 'success');
-    log('Loading initial data...', 'info');
-  }, [log]);
 
   useEffect(() => {
     if (hasCheckedConfig.current) {
@@ -65,11 +59,10 @@ export default function App() {
   }, [fetchConfigStatus, setTab]);
 
   const handleRefresh = useCallback(() => {
-    log(`Loading ${activeTab} data...`, 'info');
     setRefreshTabId(activeTab);
     setTab(activeTab);
     window.dispatchEvent(new CustomEvent('tab-refresh', { detail: activeTab }));
-  }, [activeTab, setTab, log]);
+  }, [activeTab, setTab, setRefreshTabId]);
 
   return (
     <div className="container max-w-[1400px] mx-auto p-5 min-h-screen flex flex-col">

@@ -1,8 +1,5 @@
+import type { LogoProps } from '@/types';
 import { cn } from '@/utils';
-
-interface LogoProps {
-  className?: string;
-}
 
 export function Logo({ className }: LogoProps) {
   return (
