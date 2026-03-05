@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useApi } from '@/contexts/ApiContext';
 import { useConsole } from '@/contexts/ConsoleContext';
+import { useTabFromUrl } from '@/hooks/useTabFromUrl';
 import { DEFAULT_RPC_HOST, DEFAULT_RPC_PORT } from '@/constants';
 import { SectionHeader } from '@/components/SectionHeader';
 import type { ConfigStatus, ConfigSavePayload, ConfigTestResult } from '@/types';
@@ -82,6 +83,7 @@ function getPendingChanges(
 }
 
 export function SettingsTab() {
+  const { activeTab } = useTabFromUrl();
   const { fetchConfigStatus, fetchConfigTest, saveConfig } = useApi();
   const { log } = useConsole();
   const [status, setStatus] = useState<ConfigStatus | null>(null);
@@ -150,9 +152,13 @@ export function SettingsTab() {
     }
   }, [fetchConfigStatus, log]);
 
+  // Refetch config status when the Settings tab becomes visible so "Default wallet" stays in sync
+  // (e.g. after loading a wallet in the Wallet tab).
   useEffect(() => {
-    loadStatus();
-  }, [loadStatus]);
+    if (activeTab === 'settings') {
+      loadStatus();
+    }
+  }, [activeTab, loadStatus]);
 
   const pendingChanges = useMemo(
     () =>

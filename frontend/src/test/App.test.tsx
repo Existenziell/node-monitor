@@ -30,7 +30,11 @@ describe('App', () => {
       render(<WrappedApp />);
     });
     expect(screen.getByRole('button', { name: /node/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /network/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /blocks/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /wallet/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /console/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /docs/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /settings/i })).toBeInTheDocument();
   });
 });

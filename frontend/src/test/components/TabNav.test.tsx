@@ -12,9 +12,11 @@ describe('TabNav', () => {
     );
     // TabNav renders tabs in both desktop nav and mobile drawer; either set is in the DOM
     expect(screen.getAllByRole('button', { name: /node/i }).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByRole('button', { name: /network/i }).length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByRole('button', { name: /blocks/i }).length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByRole('button', { name: /wallet/i }).length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByRole('button', { name: /console/i }).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByRole('button', { name: /docs/i }).length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByRole('button', { name: /settings/i }).length).toBeGreaterThanOrEqual(1);
     expect(screen.getByRole('button', { name: /toggle navigation/i })).toBeInTheDocument();
     expect(screen.getAllByTitle('Refresh').length).toBeGreaterThanOrEqual(1);

@@ -37,6 +37,18 @@ describe('useTabFromUrl', () => {
     expect(screen.getByTestId('tab')).toHaveTextContent('network');
   });
 
+  it('returns docs when tab=docs in URL', () => {
+    window.history.replaceState({}, '', '/?tab=docs');
+    render(<TestComponent />);
+    expect(screen.getByTestId('tab')).toHaveTextContent('docs');
+  });
+
+  it('returns settings when tab=settings in URL', () => {
+    window.history.replaceState({}, '', '/?tab=settings');
+    render(<TestComponent />);
+    expect(screen.getByTestId('tab')).toHaveTextContent('settings');
+  });
+
   it('falls back to node when tab is invalid', () => {
     window.history.replaceState({}, '', '/?tab=invalid');
     render(<TestComponent />);
