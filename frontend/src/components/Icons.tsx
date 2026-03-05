@@ -186,6 +186,24 @@ export function XIcon({ className, ...props }: IconProps) {
   )
 }
 
+/** Hamburger menu icon (three horizontal bars). Use for mobile nav toggle. */
+export function MenuIcon({ className, ...props }: IconProps) {
+  return (
+    <svg
+      className={cn('w-4 h-4', className)}
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <path d="M4 6h16M4 12h16M4 18h16" />
+    </svg>
+  )
+}
+
 // ============================================================================
 // Navigation / Location
 // ============================================================================
@@ -569,15 +587,14 @@ export function MoonIcon({ className, ...props }: IconProps) {
   return (
     <svg
       className={cn('w-4 h-4', className)}
-      fill="none"
-      stroke="currentColor"
-      viewBox="0 0 24 24"
-      strokeWidth={1.5}
-      strokeLinecap="round"
-      strokeLinejoin="round"
+      fill="currentColor"
+      viewBox="0 0 704 854"
+      preserveAspectRatio="xMidYMid meet"
       {...props}
     >
-      <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+      <g transform="translate(0, 854) scale(0.1, -0.1)">
+        <path d="M2722 8500 c-116 -47 -347 -161 -477 -234 -574 -325 -1091 -800 -1467 -1346 -673 -976 -923 -2201 -688 -3370 154 -766 495 -1457 1009 -2042 869 -989 2124 -1540 3426 -1505 864 24 1619 262 2347 740 76 50 136 92 134 95 -3 2 -67 -17 -143 -43 -302 -102 -636 -176 -955 -212 -194 -22 -711 -24 -903 -5 -1019 105 -1959 549 -2681 1267 -83 83 -191 197 -240 256 -585 686 -943 1515 -1040 2409 -22 203 -25 689 -6 885 90 892 418 1687 990 2394 122 151 473 498 627 620 138 110 152 121 145 121 -3 0 -38 -14 -78 -30z" />
+      </g>
     </svg>
   )
 }

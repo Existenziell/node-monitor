@@ -98,12 +98,18 @@ export function NetworkHistoryChart({ networkHistory }: NetworkHistoryChartProps
           <YAxis
             yAxisId="hashrate"
             orientation="left"
-            tickFormatter={(v) => `${v} TH/s`}
+            tickFormatter={(v) =>
+              Number.isFinite(v)
+                ? `${(Number(v) / 1e6).toLocaleString(undefined, {
+                    maximumFractionDigits: 2,
+                  })} EH/s`
+                : 'N/A'
+            }
             tick={{ fill: 'currentColor', fontSize: 12 }}
             className="text-level-4"
             width={80}
             label={{
-              value: 'Hashrate (TH/s)',
+              value: 'Hashrate (EH/s)',
               angle: -90,
               position: 'left',
               style: { fill: 'currentColor', fontSize: 12 },
@@ -145,7 +151,13 @@ export function NetworkHistoryChart({ networkHistory }: NetworkHistoryChartProps
             formatter={(value, name) => {
               const num = typeof value === 'number' ? value : null;
               if (num === null || num === undefined || !Number.isFinite(num)) return ['N/A', name];
-              if (name === 'Hashrate (TH/s)') return [`${num.toLocaleString()} TH/s`, name];
+              if (name === 'Hashrate (EH/s)')
+                return [
+                  `${(num / 1e6).toLocaleString(undefined, {
+                    maximumFractionDigits: 2,
+                  })} EH/s`,
+                  name,
+                ];
               if (name === 'Difficulty') return [formatDifficulty(num), name];
               return [num.toLocaleString(), name];
             }}
@@ -160,7 +172,7 @@ export function NetworkHistoryChart({ networkHistory }: NetworkHistoryChartProps
             yAxisId="hashrate"
             type="monotone"
             dataKey="hashrate"
-            name="Hashrate (TH/s)"
+            name="Hashrate (EH/s)"
             stroke="oklch(0.55 0.2 250)"
             strokeWidth={2}
             dot={false}

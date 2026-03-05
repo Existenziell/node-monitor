@@ -10,12 +10,14 @@ describe('TabNav', () => {
     render(
       <TabNav activeTab="node" onTabChange={onTabChange} onRefresh={onRefresh} />
     );
-    expect(screen.getByRole('button', { name: /node/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /blocks/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /wallet/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /console/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /settings/i })).toBeInTheDocument();
-    expect(screen.getByTitle('Refresh')).toBeInTheDocument();
+    // TabNav renders tabs in both desktop nav and mobile drawer; either set is in the DOM
+    expect(screen.getAllByRole('button', { name: /node/i }).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByRole('button', { name: /blocks/i }).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByRole('button', { name: /wallet/i }).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByRole('button', { name: /console/i }).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByRole('button', { name: /settings/i }).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByRole('button', { name: /toggle navigation/i })).toBeInTheDocument();
+    expect(screen.getAllByTitle('Refresh').length).toBeGreaterThanOrEqual(1);
   });
 
   it('calls onTabChange when a tab button is clicked', async () => {
@@ -25,7 +27,8 @@ describe('TabNav', () => {
     render(
       <TabNav activeTab="node" onTabChange={onTabChange} onRefresh={onRefresh} />
     );
-    await user.click(screen.getByRole('button', { name: /blocks/i }));
+    const blocksButtons = screen.getAllByRole('button', { name: /blocks/i });
+    await user.click(blocksButtons[0]);
     expect(onTabChange).toHaveBeenCalledWith('blocks');
   });
 
@@ -36,7 +39,8 @@ describe('TabNav', () => {
     render(
       <TabNav activeTab="node" onTabChange={onTabChange} onRefresh={onRefresh} />
     );
-    await user.click(screen.getByTitle('Refresh'));
+    const refreshButtons = screen.getAllByTitle('Refresh');
+    await user.click(refreshButtons[0]);
     expect(onRefresh).toHaveBeenCalledTimes(1);
   });
 });
