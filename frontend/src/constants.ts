@@ -34,3 +34,5 @@ export const DEFAULT_RPC_PORT = '8332';
 /** Bitcoin network constants (match backend conceptually). */
 export const BITCOIN_HALVING_INTERVAL = 210_000;
 export const BITCOIN_RETARGET_INTERVAL = 2016;
+
+export const GITHUB_REPO_URL = 'https://github.com/Existenziell/node-monitor';

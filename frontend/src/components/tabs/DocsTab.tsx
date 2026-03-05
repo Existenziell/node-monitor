@@ -1,4 +1,4 @@
-const GITHUB_README_URL = 'https://github.com/your-org/node-monitor#readme';
+import { GITHUB_REPO_URL } from '@/constants';
 
 export function DocsTab() {
   return (
@@ -45,7 +45,7 @@ export function DocsTab() {
             More information
           </h3>
           <p className="text-sm text-level-5 mb-2">
-            Full setup, Tor, deployment, and testing: <a href={GITHUB_README_URL} className="text-accent underline hover:no-underline" target="_blank" rel="noreferrer noopener">README on GitHub</a>.
+            Full setup, Tor, deployment, and testing: <a href={`${GITHUB_REPO_URL}/blob/main/README.md`} className="text-accent underline hover:no-underline" target="_blank" rel="noreferrer noopener">README on GitHub</a>.
           </p>
           <p className="text-sm text-level-5 mb-1">Related sites:</p>
           <ul className="list-disc list-inside text-sm text-level-5 space-y-1">
