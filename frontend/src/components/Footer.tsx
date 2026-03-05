@@ -18,7 +18,7 @@ export function Footer() {
             href={href}
             target="_blank"
             rel="noopener noreferrer"
-            className="nav-link-muted"
+            className="nav-link-muted text-xs"
           >
             {label}
             <ExternalLinkIcon />

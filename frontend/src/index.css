@@ -148,6 +148,7 @@
 
   .callout-error {
     @apply rounded-lg p-3 text-sm text-semantic-error;
+
     border: 1px solid color-mix(in srgb, var(--color-error) 50%, transparent);
     background-color: color-mix(in srgb, var(--color-error) 12%, transparent);
   }
