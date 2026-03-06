@@ -359,7 +359,7 @@ export function SettingsTab() {
 
             {lastSaved && hasPendingChanges && (
               <div className="rounded-lg border border-level-3 bg-level-2 p-3">
-                <SectionHeader>Pending changes</SectionHeader>
+                <SectionHeader>Pending Changes</SectionHeader>
                 <ul className="text-sm text-level-4 space-y-1 list-disc list-inside">
                   {pendingChanges.map((c, i) => (
                     <li key={i}>
@@ -544,7 +544,7 @@ export function SettingsTab() {
                   </ul>
                   {hasAccountLabelPendingChanges && (
                     <div className="rounded-lg border border-level-3 bg-level-2 p-3 mt-3">
-                      <SectionHeader>Pending changes</SectionHeader>
+                      <SectionHeader>Pending Changes</SectionHeader>
                       <ul className="text-sm text-level-4 space-y-1 list-disc list-inside">
                         {accountLabelPendingChanges.map((c, i) => (
                           <li key={i}>

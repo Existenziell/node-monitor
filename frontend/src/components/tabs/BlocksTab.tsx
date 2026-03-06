@@ -166,7 +166,7 @@ export function BlocksTab() {
         <LoadingOverlay show={loading && (blocks.length > 0 || metadata !== null) && refreshTabId === 'blocks'} />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div className="section-container">
-            <SectionHeader>Current block</SectionHeader>
+            <SectionHeader>Next Block</SectionHeader>
             <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
               <dt className="text-level-4">Next block</dt>
               <dd className="text-level-5 font-medium tabular-nums">
@@ -185,7 +185,7 @@ export function BlocksTab() {
             </dl>
           </div>
           <div className="section-container">
-            <SectionHeader>Pool distribution</SectionHeader>
+            <SectionHeader>Pool Distribution</SectionHeader>
             <PoolDistributionChart distribution={distribution ?? null} poolByIdentifier={poolByIdentifier} />
           </div>
         </div>

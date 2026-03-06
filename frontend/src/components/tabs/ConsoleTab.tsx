@@ -63,7 +63,7 @@ export function ConsoleTab() {
   return (
     <div className="space-y-4">
       <div className="section-container">
-        <SectionHeader>RPC commands</SectionHeader>
+        <SectionHeader>RPC Commands</SectionHeader>
         {Object.entries(RPC_COMMANDS_BY_CATEGORY).map(([category, commands]) => {
           const isCollapsed = collapsed.has(category);
           return (

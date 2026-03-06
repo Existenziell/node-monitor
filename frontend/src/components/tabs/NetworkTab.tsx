@@ -88,9 +88,9 @@ export function NetworkTab() {
   const avgBlockTimeSeconds = blocksData?.avg_block_time_seconds;
   const nextAdjustmentSeconds =
     retargetLeft !== null &&
-    avgBlockTimeSeconds !== null &&
-    avgBlockTimeSeconds !== undefined &&
-    Number.isFinite(avgBlockTimeSeconds)
+      avgBlockTimeSeconds !== null &&
+      avgBlockTimeSeconds !== undefined &&
+      Number.isFinite(avgBlockTimeSeconds)
       ? retargetLeft * avgBlockTimeSeconds
       : null;
   difficultySubLines.push({
@@ -114,93 +114,93 @@ export function NetworkTab() {
 
   return (
     <LoadingErrorGate loading={loading} error={error} data={data} loadingLabel="network">
-    <div className="relative space-y-4">
-      <LoadingOverlay show={isRefreshing} />
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <SummaryCard
-          title="Block height"
-          value={blocks !== null ? blocks.toLocaleString() : 'N/A'}
-          subLines={blockHeightSubLines.length ? blockHeightSubLines : undefined}
-        />
-        <SummaryCard
-          title="Network difficulty"
-          value={difficulty !== null ? formatDifficulty(difficulty) : 'N/A'}
-          subLines={difficultySubLines.length ? difficultySubLines : undefined}
-        />
-        <SummaryCard
-          title="BTC price"
-          value={formatPrice(btcPriceUsd)}
-          subLines={btcPriceSubLines}
-        />
+      <div className="relative space-y-4">
+        <LoadingOverlay show={isRefreshing} />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <SummaryCard
+            title="Block height"
+            value={blocks !== null ? blocks.toLocaleString() : 'N/A'}
+            subLines={blockHeightSubLines.length ? blockHeightSubLines : undefined}
+          />
+          <SummaryCard
+            title="Network difficulty"
+            value={difficulty !== null ? formatDifficulty(difficulty) : 'N/A'}
+            subLines={difficultySubLines.length ? difficultySubLines : undefined}
+          />
+          <SummaryCard
+            title="BTC price"
+            value={formatPrice(btcPriceUsd)}
+            subLines={btcPriceSubLines}
+          />
+          <div className="section-container">
+            <SectionHeader>Fee Estimates</SectionHeader>
+            <dl className="space-y-1 text-sm">
+              <div>
+                <div className="flex justify-between gap-4">
+                  <dt className="text-level-4">High priority</dt>
+                  <dd className="text-level-5">
+                    {feeEstimates?.high_sat_per_vb !== undefined && feeEstimates?.high_sat_per_vb !== null
+                      ? `${feeEstimates.high_sat_per_vb} sat/vB`
+                      : '—'}
+                  </dd>
+                </div>
+                {feeEstimateErrors?.high_sat_per_vb && (
+                  <p className="text-sm text-semantic-warning mt-0.5" role="status">
+                    {feeEstimateErrors.high_sat_per_vb}
+                  </p>
+                )}
+              </div>
+              <div>
+                <div className="flex justify-between gap-4">
+                  <dt className="text-level-4">Medium</dt>
+                  <dd className="text-level-5">
+                    {feeEstimates?.medium_sat_per_vb !== undefined && feeEstimates?.medium_sat_per_vb !== null
+                      ? `${feeEstimates.medium_sat_per_vb} sat/vB`
+                      : '—'}
+                  </dd>
+                </div>
+                {feeEstimateErrors?.medium_sat_per_vb && (
+                  <p className="text-sm text-semantic-warning mt-0.5" role="status">
+                    {feeEstimateErrors.medium_sat_per_vb}
+                  </p>
+                )}
+              </div>
+              <div>
+                <div className="flex justify-between gap-4">
+                  <dt className="text-level-4">Low priority</dt>
+                  <dd className="text-level-5">
+                    {feeEstimates?.low_sat_per_vb !== undefined && feeEstimates?.low_sat_per_vb !== null
+                      ? `${feeEstimates.low_sat_per_vb} sat/vB`
+                      : '—'}
+                  </dd>
+                </div>
+                {feeEstimateErrors?.low_sat_per_vb && (
+                  <p className="text-sm text-semantic-warning mt-0.5" role="status">
+                    {feeEstimateErrors.low_sat_per_vb}
+                  </p>
+                )}
+              </div>
+            </dl>
+          </div>
+        </div>
+        <PeersTable peers={peers} />
         <div className="section-container">
-          <SectionHeader>Fee estimates</SectionHeader>
-          <dl className="space-y-1 text-sm">
-            <div>
-              <div className="flex justify-between gap-4">
-                <dt className="text-level-4">High priority</dt>
-                <dd className="text-level-5">
-                  {feeEstimates?.high_sat_per_vb !== undefined && feeEstimates?.high_sat_per_vb !== null
-                    ? `${feeEstimates.high_sat_per_vb} sat/vB`
-                    : '—'}
-                </dd>
-              </div>
-              {feeEstimateErrors?.high_sat_per_vb && (
-                <p className="text-sm text-semantic-warning mt-0.5" role="status">
-                  {feeEstimateErrors.high_sat_per_vb}
-                </p>
-              )}
-            </div>
-            <div>
-              <div className="flex justify-between gap-4">
-                <dt className="text-level-4">Medium</dt>
-                <dd className="text-level-5">
-                  {feeEstimates?.medium_sat_per_vb !== undefined && feeEstimates?.medium_sat_per_vb !== null
-                    ? `${feeEstimates.medium_sat_per_vb} sat/vB`
-                    : '—'}
-                </dd>
-              </div>
-              {feeEstimateErrors?.medium_sat_per_vb && (
-                <p className="text-sm text-semantic-warning mt-0.5" role="status">
-                  {feeEstimateErrors.medium_sat_per_vb}
-                </p>
-              )}
-            </div>
-            <div>
-              <div className="flex justify-between gap-4">
-                <dt className="text-level-4">Low priority</dt>
-                <dd className="text-level-5">
-                  {feeEstimates?.low_sat_per_vb !== undefined && feeEstimates?.low_sat_per_vb !== null
-                    ? `${feeEstimates.low_sat_per_vb} sat/vB`
-                    : '—'}
-                </dd>
-              </div>
-              {feeEstimateErrors?.low_sat_per_vb && (
-                <p className="text-sm text-semantic-warning mt-0.5" role="status">
-                  {feeEstimateErrors.low_sat_per_vb}
-                </p>
-              )}
-            </div>
-          </dl>
+          <SectionHeader>Network History</SectionHeader>
+          {networkLoading && !networkData ? (
+            <div className="min-h-[240px]" aria-hidden />
+          ) : networkError && !networkData ? (
+            <p className="text-sm text-semantic-error">
+              Error loading network data: {getErrorMessage(networkError)}. Ensure the block monitor is running and network data is being recorded.
+            </p>
+          ) : (networkData?.network_history?.length ?? 0) === 0 ? (
+            <p className="text-sm text-level-4">
+              No network history yet. Data is recorded over time when the block monitor is running.
+            </p>
+          ) : (
+            <NetworkHistoryChart networkHistory={networkData?.network_history ?? []} />
+          )}
         </div>
       </div>
-      <PeersTable peers={peers} />
-      <div className="section-container">
-        <SectionHeader>Network history</SectionHeader>
-        {networkLoading && !networkData ? (
-          <div className="min-h-[240px]" aria-hidden />
-        ) : networkError && !networkData ? (
-          <p className="text-sm text-semantic-error">
-            Error loading network data: {getErrorMessage(networkError)}. Ensure the block monitor is running and network data is being recorded.
-          </p>
-        ) : (networkData?.network_history?.length ?? 0) === 0 ? (
-          <p className="text-sm text-level-4">
-            No network history yet. Data is recorded over time when the block monitor is running.
-          </p>
-        ) : (
-          <NetworkHistoryChart networkHistory={networkData?.network_history ?? []} />
-        )}
-      </div>
-    </div>
     </LoadingErrorGate>
   );
 }
