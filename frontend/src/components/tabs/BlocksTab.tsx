@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
 import { useApi } from '@/contexts/ApiContext';
-import type { BlockRow, DistributionData } from '@/types';
+import type { BlockRow } from '@/types';
 import { formatBytes, formatTimeSince, formatWeight } from '@/utils';
 import { useRefreshState, useRefreshDone } from '@/contexts/RefreshContext';
 import { useApiData } from '@/hooks/useApiData';
@@ -11,149 +10,12 @@ import { LoadingOverlay } from '@/components/LoadingOverlay';
 import { LoadingErrorGate } from '@/components/LoadingErrorGate';
 import { SectionHeader } from '@/components/SectionHeader';
 import { SortableTh } from '@/components/SortableTh';
+import { PoolCell } from '@/components/blocks/PoolCell';
+import { PoolDistributionChart } from '@/components/blocks/PoolDistributionChart';
+import { parseBlockTimeUtc } from '@/utils';
+import { POOL_ICON_SIZE } from '@/constants';
 
 const BLOCKS_PAGE_SIZE = 20;
-
-const PIE_COLORS = [
-  'oklch(0.55 0.2 250)',
-  'oklch(0.65 0.2 85)',
-  'oklch(0.6 0.18 160)',
-  'oklch(0.55 0.22 300)',
-  'oklch(0.7 0.15 200)',
-  'oklch(0.6 0.2 30)',
-  'oklch(0.5 0.2 180)',
-  'oklch(0.65 0.18 280)',
-  'oklch(0.55 0.15 140)',
-  'oklch(0.6 0.2 340)',
-  'oklch(0.5 0.18 220)',
-  'oklch(0.7 0.12 60)',
-];
-
-const POOL_ICON_SIZE = 16;
-
-/** Parse block_time UTC string (YYYY-MM-DD HH:mm:ss) to timestamp ms, or null. */
-function parseBlockTimeUtc(blockTimeStr: string): number | null {
-  if (!blockTimeStr || typeof blockTimeStr !== 'string') return null;
-  const ts = Date.parse(blockTimeStr + 'Z');
-  return Number.isFinite(ts) ? ts : null;
-}
-
-/** Identifier is an "unknown" pool when backend could not match a known pool (e.g. "Unknown Pool (hex...)" or "Solo Miner / Unknown"). */
-function isUnknownPoolIdentifier(identifier: string): boolean {
-  return identifier.startsWith('Unknown Pool (') || identifier === 'Solo Miner / Unknown';
-}
-
-function PoolCell({
-  identifier,
-  poolByIdentifier,
-  iconSize,
-}: {
-  identifier: string | undefined;
-  poolByIdentifier: Map<string, { name: string; icon?: string }>;
-  iconSize: number;
-}) {
-  const pool = identifier
-    ? poolByIdentifier.get(identifier) ?? (isUnknownPoolIdentifier(identifier) ? poolByIdentifier.get('unknown') : undefined)
-    : undefined;
-  const displayName = pool?.name ?? identifier ?? '-';
-  return (
-    <div className="flex items-center gap-1.5 min-h-[20px]">
-      <span
-        className="flex shrink-0 items-center justify-center"
-        style={{ width: iconSize, height: iconSize }}
-        aria-hidden
-      >
-        {pool?.icon ? (
-          <img
-            src={`/icons/pools/${pool.icon}`}
-            alt=""
-            width={iconSize}
-            height={iconSize}
-            className="object-contain"
-            loading="lazy"
-          />
-        ) : null}
-      </span>
-      <span className="truncate">{displayName}</span>
-    </div>
-  );
-}
-
-function PoolDistributionChart({
-  distribution,
-  poolByIdentifier,
-}: {
-  distribution: DistributionData | null;
-  poolByIdentifier: Map<string, { name: string; icon?: string }>;
-}) {
-  const pieData = useMemo(() => {
-    if (!distribution?.by_percentage) return [];
-    const sorted = Object.entries(distribution.by_percentage)
-      .filter(([, pct]) => Number.isFinite(pct) && pct > 0)
-      .map(([identifier, value]) => {
-        const pool = poolByIdentifier.get(identifier) ?? (isUnknownPoolIdentifier(identifier) ? poolByIdentifier.get('unknown') : undefined);
-        return {
-          name: pool?.name ?? identifier,
-          value: Number(value),
-        };
-      })
-      .sort((a, b) => b.value - a.value);
-    const top7 = sorted.slice(0, 7);
-    const rest = sorted.slice(7);
-    const othersValue = rest.reduce((sum, d) => sum + d.value, 0);
-    if (othersValue <= 0) return top7;
-    return [...top7, { name: 'Others', value: othersValue }];
-  }, [distribution, poolByIdentifier]);
-
-  if (pieData.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-[240px] text-level-4 text-sm">
-        No distribution data
-      </div>
-    );
-  }
-
-  return (
-    <div className="w-full h-[240px]" role="img" aria-label="Pool distribution by block share">
-      <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={240}>
-        <PieChart margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
-          <Pie
-            data={pieData}
-            dataKey="value"
-            nameKey="name"
-            cx="50%"
-            cy="50%"
-            innerRadius={0}
-            outerRadius="70%"
-            paddingAngle={0}
-            cornerRadius={0}
-            stroke="none"
-          >
-            {pieData.map((_, index) => (
-              <Cell
-                key={index}
-                fill={PIE_COLORS[index % PIE_COLORS.length]}
-                stroke="none"
-              />
-            ))}
-          </Pie>
-          <Tooltip
-            contentStyle={{
-              backgroundColor: 'var(--tooltip-bg, rgba(255,255,255,0.95))',
-              border: '1px solid var(--tooltip-border, #e5e7eb)',
-              borderRadius: '0.5rem',
-              color: 'var(--tooltip-text, #0f172a)',
-            }}
-            itemStyle={{ color: 'var(--tooltip-text, #0f172a)' }}
-            labelStyle={{ color: 'var(--tooltip-text, #0f172a)' }}
-            formatter={(value: number, name: string) => [`${value.toFixed(1)}%`, name]}
-          />
-          <Legend wrapperStyle={{ fontSize: 12 }} />
-        </PieChart>
-      </ResponsiveContainer>
-    </div>
-  );
-}
 
 type BlocksMetadata = {
   chain_height: number | null;

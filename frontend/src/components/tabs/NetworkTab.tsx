@@ -4,60 +4,15 @@ import type { BlocksData, NodeData, NetworkData, Peer, BtcPrices } from '@/types
 import { useRefreshState, useRefreshDoneMulti } from '@/contexts/RefreshContext';
 import { useApiData } from '@/hooks/useApiData';
 import { useTabData } from '@/hooks/useTabData';
-import { NetworkHistoryChart } from '@/components/NetworkHistoryChart';
-import { PeersTable } from '@/components/PeersTable';
+import { NetworkHistoryChart } from '@/components/network/NetworkHistoryChart';
+import { PeersTable } from '@/components/network/PeersTable';
+import { SummaryCard } from '@/components/network/SummaryCard';
+import { formatPrice } from '@/utils';
 import { LoadingOverlay } from '@/components/LoadingOverlay';
 import { LoadingErrorGate } from '@/components/LoadingErrorGate';
 import { SectionHeader } from '@/components/SectionHeader';
 import { BITCOIN_HALVING_INTERVAL, BITCOIN_RETARGET_INTERVAL } from '@/constants';
 import { formatDifficulty, formatTimeSince, getErrorMessage } from '@/utils';
-
-function SummaryCard({
-  title,
-  value,
-  subLines,
-}: {
-  title: string;
-  value: string;
-  subLines?: { label: string; value: string; progress?: number }[];
-}) {
-  return (
-    <div className="section-container">
-      <SectionHeader>{title}</SectionHeader>
-      <p className="text-2xl font-semibold text-level-5 mb-2">{value}</p>
-      {subLines?.length ? (
-        <div className="space-y-1.5 text-sm">
-          {subLines.map(({ label, value: v, progress }) => (
-            <div key={label}>
-              <div className="flex justify-between gap-2 text-level-4">
-                <span>{label}</span>
-                <span className="text-level-5">{v}</span>
-              </div>
-              {progress !== undefined && (
-                <div className="mt-0.5 h-1 rounded-full bg-level-3 overflow-hidden">
-                  <div
-                    className="h-full bg-accent rounded-full"
-                    style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
-                  />
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-function formatPrice(usd: number | undefined): string {
-  if (usd === undefined || usd === null || !Number.isFinite(usd)) return '—';
-  return new Intl.NumberFormat(undefined, {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(usd);
-}
 
 export function NetworkTab() {
   const { fetchNode, fetchNetwork, fetchPrice, fetchBlocks } = useApi();

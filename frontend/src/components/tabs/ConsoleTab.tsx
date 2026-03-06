@@ -1,57 +1,10 @@
 import { useState, useCallback } from 'react';
 import { useApi } from '@/contexts/ApiContext';
 import { SectionHeader } from '@/components/SectionHeader';
+import { formatResponseForDisplay } from '@/utils';
 import { RPC_COMMANDS_BY_CATEGORY, getCommandDescription, getSampleParams } from '@/data/rpcCommands';
 
 const DEFAULT_COLLAPSED = new Set(['Wallet', 'Util', 'Raw transactions']);
-
-/** Unescape common JSON string sequences so long messages (e.g. RPC help) render readably. */
-function unescapeForDisplay(s: string): string {
-  return s
-    .replace(/\\n/g, '\n')
-    .replace(/\\t/g, '\t')
-    .replace(/\\"/g, '"');
-}
-
-/** Pretty-print a value for the response panel, with readable multi-line strings. */
-function formatResponseForDisplay(value: unknown, indent = 0): string {
-  const pad = '  '.repeat(indent);
-  const padInner = '  '.repeat(indent + 1);
-
-  if (value === null) return 'null';
-  if (typeof value === 'boolean') return value ? 'true' : 'false';
-  if (typeof value === 'number') return String(value);
-
-  if (typeof value === 'string') {
-    const decoded = unescapeForDisplay(value);
-    if (decoded.includes('\n')) {
-      const lines = decoded.split('\n');
-      return '\n' + lines.map((line) => padInner + line).join('\n');
-    }
-    return JSON.stringify(value);
-  }
-
-  if (Array.isArray(value)) {
-    if (value.length === 0) return '[]';
-    const items = value.map((v) => padInner + formatResponseForDisplay(v, indent + 1).trimStart());
-    return '[\n' + items.join(',\n') + '\n' + pad + ']';
-  }
-
-  if (typeof value === 'object') {
-    const entries = Object.entries(value as Record<string, unknown>);
-    if (entries.length === 0) return '{}';
-    const lines = entries.map(([k, v]) => {
-      const formatted = formatResponseForDisplay(v, indent + 1);
-      const key = JSON.stringify(k);
-      const multiLine = typeof v === 'string' && formatted.startsWith('\n');
-      const valuePart = multiLine ? formatted : formatted.trimStart();
-      return padInner + key + ': ' + valuePart;
-    });
-    return '{\n' + lines.join(',\n') + '\n' + pad + '}';
-  }
-
-  return String(value);
-}
 
 export function ConsoleTab() {
   const { callRpc } = useApi();

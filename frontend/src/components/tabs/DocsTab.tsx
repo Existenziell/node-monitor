@@ -6,7 +6,7 @@ import {
   BLOCKCHAIN_EXPLORER_URL,
   BITCOIN_ORG_URL,
 } from '@/data/links';
-import { SectionHeader } from '../SectionHeader';
+import { SectionHeader } from '@/components/SectionHeader';
 
 const README_URL = `${GITHUB_REPO_URL}/blob/main/README.md`;
 

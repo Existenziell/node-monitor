@@ -1,0 +1,38 @@
+import { SectionHeader } from '@/components/SectionHeader';
+
+export function SummaryCard({
+  title,
+  value,
+  subLines,
+}: {
+  title: string;
+  value: string;
+  subLines?: { label: string; value: string; progress?: number }[];
+}) {
+  return (
+    <div className="section-container">
+      <SectionHeader>{title}</SectionHeader>
+      <p className="text-2xl font-semibold text-level-5 mb-2">{value}</p>
+      {subLines?.length ? (
+        <div className="space-y-1.5 text-sm">
+          {subLines.map(({ label, value: v, progress }) => (
+            <div key={label}>
+              <div className="flex justify-between gap-2 text-level-4">
+                <span>{label}</span>
+                <span className="text-level-5">{v}</span>
+              </div>
+              {progress !== undefined && (
+                <div className="mt-0.5 h-1 rounded-full bg-level-3 overflow-hidden">
+                  <div
+                    className="h-full bg-accent rounded-full"
+                    style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
+                  />
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}

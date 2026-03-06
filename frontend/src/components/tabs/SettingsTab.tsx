@@ -4,66 +4,9 @@ import { useActiveTab } from '@/contexts/TabContext';
 import { DEFAULT_RPC_HOST, DEFAULT_RPC_PORT } from '@/constants';
 import { SectionHeader } from '@/components/SectionHeader';
 import { WalletConfig } from '@/components/WalletConfig';
+import { getPendingChanges } from '@/utils';
 import type { ConfigStatus, ConfigSavePayload, ConfigTestResult, PendingChange, SettingsBaseline, WalletAccount } from '@/types';
 import { getErrorMessage } from '@/utils';
-
-function getPendingChanges(
-  baseline: SettingsBaseline | null,
-  current: {
-    authMethod: 'password' | 'cookie';
-    rpcHost: string;
-    rpcPort: string;
-    rpcUser: string;
-    rpcPassword: string;
-    cookieFile: string;
-  }
-): PendingChange[] {
-  if (!baseline) return [];
-  const changes: PendingChange[] = [];
-  const authLabel = (v: 'password' | 'cookie') => (v === 'password' ? 'Username / Password' : 'Cookie file');
-
-  if (baseline.authMethod !== current.authMethod) {
-    changes.push({
-      field: 'Authentication',
-      from: authLabel(baseline.authMethod),
-      to: authLabel(current.authMethod),
-    });
-  }
-  const trim = (s: string) => (s || '').trim();
-  if (trim(baseline.rpcHost) !== trim(current.rpcHost)) {
-    changes.push({ field: 'RPC Host', from: baseline.rpcHost || DEFAULT_RPC_HOST, to: current.rpcHost || DEFAULT_RPC_HOST });
-  }
-  const normPort = (s: string) => String(parseInt(s, 10) || Number(DEFAULT_RPC_PORT));
-  if (normPort(baseline.rpcPort) !== normPort(current.rpcPort)) {
-    changes.push({ field: 'RPC Port', from: baseline.rpcPort, to: current.rpcPort });
-  }
-  const trimHost = (s: string) => (s || '').trim();
-  if (current.authMethod === 'password') {
-    const baseUser = baseline.rpcUser ?? '';
-    if (trimHost(baseUser) !== trimHost(current.rpcUser)) {
-      changes.push({
-        field: 'RPC Username',
-        from: baseline.rpcUser !== null ? baseline.rpcUser : 'Not configured',
-        to: current.rpcUser || 'Not configured',
-      });
-    }
-    if (current.rpcPassword) {
-      changes.push({
-        field: 'RPC Password',
-        to: 'will be updated',
-        sensitive: true,
-      });
-    }
-  }
-  if (current.authMethod === 'cookie' && trimHost(baseline.cookieFile) !== trimHost(current.cookieFile)) {
-    changes.push({
-      field: 'Cookie file path',
-      from: baseline.cookieFile || 'Not set',
-      to: current.cookieFile || 'Not set',
-    });
-  }
-  return changes;
-}
 
 export function SettingsTab() {
   const { activeTab } = useActiveTab();
