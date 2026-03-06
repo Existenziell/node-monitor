@@ -70,7 +70,10 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
           signal: controller.signal,
           cache: 'no-store',
         });
-        if (!res.ok) return;
+        if (!res.ok) {
+          console.debug('[chain-tip] poll not ok', res.status);
+          return;
+        }
         const payload = (await res.json()) as {
           data?: {
             height?: number | null;
@@ -78,22 +81,37 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
           };
         };
         const height = payload?.data?.height;
-        if (!Number.isInteger(height)) return;
+        const previousHeight = lastSeenHeightRef.current;
+        if (!Number.isInteger(height)) {
+          console.debug('[chain-tip] skip no integer height', { height });
+          return;
+        }
         if (!isMounted) return;
         const currentHeight = height as number;
-        const previousHeight = lastSeenHeightRef.current;
         lastSeenHeightRef.current = currentHeight;
-        if (previousHeight === null || currentHeight <= previousHeight) return;
+        if (previousHeight === null || currentHeight <= previousHeight) {
+          console.debug('[chain-tip] poll height', {
+            currentHeight,
+            previousHeight,
+            reason: previousHeight === null ? 'first_run' : 'no_increase',
+          });
+          return;
+        }
         const pool = payload?.data?.mining_pool?.trim();
         const msg = pool
           ? `Block #${currentHeight} found (${pool})`
           : `Block #${currentHeight} found`;
+        console.debug('[chain-tip] new block notification', {
+          currentHeight,
+          previousHeight,
+          message: msg,
+        });
         addNotification({ message: msg, type: 'new_block' });
         (['blocks', 'network', 'node'] as const).forEach((tabId) => {
           window.dispatchEvent(new CustomEvent('tab-refresh', { detail: tabId }));
         });
-      } catch {
-        // ignore polling errors; next interval retries
+      } catch (err) {
+        console.debug('[chain-tip] poll error', err);
       } finally {
         clearTimeout(timeoutId);
       }

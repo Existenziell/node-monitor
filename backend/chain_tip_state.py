@@ -6,8 +6,11 @@ can serve "latest block seen" without expensive RPC/DB work per request.
 """
 
 from datetime import datetime, timezone
+import logging
 import threading
 from typing import Any, Dict, Optional
+
+_log = logging.getLogger(__name__)
 
 _lock = threading.Lock()
 _chain_tip: Dict[str, Any] = {
@@ -26,7 +29,9 @@ def _utc_now_iso() -> str:
 def get_chain_tip() -> Dict[str, Any]:
     """Return a shallow copy of latest chain tip state."""
     with _lock:
-        return dict(_chain_tip)
+        out = dict(_chain_tip)
+    _log.debug("get_chain_tip height=%s", out.get("height"))
+    return out
 
 
 def set_chain_tip(  # pylint: disable=too-many-arguments
@@ -48,3 +53,10 @@ def set_chain_tip(  # pylint: disable=too-many-arguments
             int(transaction_count) if isinstance(transaction_count, int) else None
         )
         _chain_tip["updated_at"] = updated_at
+    if isinstance(height, int):
+        _log.info(
+            "chain_tip updated height=%s hash=%s mining_pool=%s",
+            height,
+            block_hash,
+            mining_pool,
+        )

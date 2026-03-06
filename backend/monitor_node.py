@@ -4,6 +4,7 @@ Bitcoin Blockchain Monitor
 Real-time monitoring of Bitcoin blockchain activity
 """
 
+import logging
 import time
 import json
 import sys
@@ -15,6 +16,8 @@ import sqlite3
 from datetime import datetime, timezone
 from typing import Dict, Any, Optional, List
 import requests
+
+_log = logging.getLogger(__name__)
 
 try:
     import zmq
@@ -156,9 +159,11 @@ class BlockchainMonitor:
             # Set socket timeout for non-blocking operation
             self.zmq_socket.setsockopt(zmq.RCVTIMEO, 1000)  # 1 second timeout
 
+            _log.info("ZMQ connected endpoint=%s subscribed=hashblock", self.zmq_endpoint)
             return True
 
-        except Exception:
+        except Exception as e:
+            _log.warning("ZMQ setup failed endpoint=%s: %s", self.zmq_endpoint, e)
             return False
 
     def display_header(self) -> None:
@@ -198,6 +203,7 @@ class BlockchainMonitor:
                     if topic == b'hashblock':
                         # New block hash received
                         block_hash = data.hex()
+                        _log.info("ZMQ hashblock received hash=%s", block_hash)
                         self._process_new_block_hash_zmq(block_hash)
 
             except zmq.Again:
@@ -223,8 +229,14 @@ class BlockchainMonitor:
             current_height = block.get('height', 0)
 
             if current_height <= self.last_block_height:
+                _log.debug(
+                    "ZMQ block skipped (height not new) current_height=%s last_block_height=%s",
+                    current_height,
+                    self.last_block_height,
+                )
                 return
 
+            _log.info("ZMQ block accepted height=%s hash=%s", current_height, block_hash)
             self.blocks_received += 1
             self._process_new_block(block, current_height)
 
@@ -240,9 +252,12 @@ class BlockchainMonitor:
         current_height = blockchain_info.get('blocks', 0)
 
         if current_height <= self.last_block_height or self.last_block_height <= 0:
+            if self.last_block_height <= 0:
+                _log.debug("polling first run or no change height=%s", current_height)
             self.last_block_height = current_height
             return False
 
+        _log.info("polling new block detected height=%s", current_height)
         return self._process_new_block(blockchain_info, current_height)
 
     def _process_new_block(self, block_or_info, current_height):
@@ -314,6 +329,19 @@ class BlockchainMonitor:
         except (requests.RequestException, KeyError, ValueError):
             error_service.handle_api_error("Block fees calculation", None)
         self._persist_block(block, mining_pool, block_details, time_since_last_block)
+        # Always update in-memory chain tip when we process a new block (so frontend gets notifications even if DB is disabled)
+        try:
+            from chain_tip_state import set_chain_tip
+            block_height = block.get('height', 0)
+            set_chain_tip(
+                height=block_height,
+                block_hash=block.get('hash'),
+                mining_pool=mining_pool,
+                transaction_count=len(block.get('tx', [])),
+            )
+            _log.info("chain tip updated for height=%s", block_height)
+        except Exception as e:
+            _log.debug("set_chain_tip failed: %s", e)
 
     def _get_time_since_last_block(self, current_block_time):
         """Return formatted time since last block (no output)."""
@@ -661,9 +689,15 @@ class BlockchainMonitor:
     def _persist_block(self, block, mining_pool, block_details, time_since_last_block):
         """Persist block to SQLite (block_store)."""
         if not BLOCK_STORE_AVAILABLE:
+            _log.debug("_persist_block skipped BLOCK_STORE_AVAILABLE=False")
             return
         block_height = block.get('height', 0)
         if block_height <= self._last_logged_block_height:
+            _log.debug(
+                "_persist_block skipped duplicate height=%s _last_logged=%s",
+                block_height,
+                self._last_logged_block_height,
+            )
             return
         try:
             block_dict = self._prepare_block_dict(
@@ -684,16 +718,7 @@ class BlockchainMonitor:
                 db_path=self._db_path,
             )
             self._last_logged_block_height = block_height
-            try:
-                from chain_tip_state import set_chain_tip
-                set_chain_tip(
-                    height=block_height,
-                    block_hash=block_dict.get("block_hash"),
-                    mining_pool=block_dict.get("mining_pool"),
-                    transaction_count=block_dict.get("transaction_count"),
-                )
-            except Exception:
-                pass
+            _log.info("block persisted height=%s hash=%s", block_height, block_dict.get("block_hash"))
         except (OSError, IOError, KeyError, ValueError, sqlite3.Error) as e:
             error_service.handle_file_error("block_store", "write", e)
 
