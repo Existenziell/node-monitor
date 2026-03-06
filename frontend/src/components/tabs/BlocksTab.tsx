@@ -96,11 +96,11 @@ function PoolDistributionChart({
         };
       })
       .sort((a, b) => b.value - a.value);
-    const top4 = sorted.slice(0, 4);
-    const rest = sorted.slice(4);
+    const top5 = sorted.slice(0, 5);
+    const rest = sorted.slice(5);
     const othersValue = rest.reduce((sum, d) => sum + d.value, 0);
-    if (othersValue <= 0) return top4;
-    return [...top4, { name: 'Others', value: othersValue }];
+    if (othersValue <= 0) return top5;
+    return [...top5, { name: 'Others', value: othersValue }];
   }, [distribution, poolByIdentifier]);
 
   if (pieData.length === 0) {

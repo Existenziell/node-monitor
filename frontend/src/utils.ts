@@ -50,24 +50,37 @@ export function formatDuration(seconds: number): string {
   return `${hours}h ${remainingMinutes}m`;
 }
 
-/** Human-readable duration (e.g. "3:04 min", "1:30 h", "1:12 d"). */
+function pluralUnit(n: number, singular: string, plural: string): string {
+  return `${n} ${n === 1 ? singular : plural}`;
+}
+
+/** Human-readable duration (e.g. "3 minutes 4 seconds", "11 days 10 hours"). */
 export function formatTimeSince(seconds: number): string {
   if (!Number.isFinite(seconds) || seconds < 0) return '-';
-  if (seconds === 0) return '0 s';
-  if (seconds < 60) return `${Math.round(seconds)} s`;
-  if (seconds < 3600) {
-    const m = Math.floor(seconds / 60);
-    const s = Math.floor(seconds % 60);
-    return `${m}:${String(s).padStart(2, '0')} min`;
+  const totalSeconds = Math.floor(seconds);
+  if (totalSeconds === 0) return '0 seconds';
+
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const secs = totalSeconds % 60;
+
+  if (days > 0) {
+    const parts = [pluralUnit(days, 'day', 'days')];
+    if (hours > 0) parts.push(pluralUnit(hours, 'hour', 'hours'));
+    return parts.join(' ');
   }
-  if (seconds < 86400) {
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    return `${h}:${String(m).padStart(2, '0')} h`;
+  if (hours > 0) {
+    const parts = [pluralUnit(hours, 'hour', 'hours')];
+    if (minutes > 0) parts.push(pluralUnit(minutes, 'minute', 'minutes'));
+    return parts.join(' ');
   }
-  const d = Math.floor(seconds / 86400);
-  const h = Math.floor((seconds % 86400) / 3600);
-  return `${d}:${String(h).padStart(2, '0')} d`;
+  if (minutes > 0) {
+    const parts = [pluralUnit(minutes, 'minute', 'minutes')];
+    if (secs > 0) parts.push(pluralUnit(secs, 'second', 'seconds'));
+    return parts.join(' ');
+  }
+  return pluralUnit(secs, 'second', 'seconds');
 }
 
 export function formatBytes(bytes: number | undefined | null): string {

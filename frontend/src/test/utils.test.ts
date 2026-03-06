@@ -44,33 +44,33 @@ describe('formatTimeSince', () => {
     expect(formatTimeSince(-1)).toBe('-');
   });
 
-  it('returns "0 s" for zero', () => {
-    expect(formatTimeSince(0)).toBe('0 s');
+  it('returns "0 seconds" for zero', () => {
+    expect(formatTimeSince(0)).toBe('0 seconds');
   });
 
   it('formats seconds', () => {
-    expect(formatTimeSince(1)).toBe('1 s');
-    expect(formatTimeSince(45)).toBe('45 s');
+    expect(formatTimeSince(1)).toBe('1 second');
+    expect(formatTimeSince(45)).toBe('45 seconds');
   });
 
-  it('formats minutes as M:SS min', () => {
-    expect(formatTimeSince(60)).toBe('1:00 min');
-    expect(formatTimeSince(184)).toBe('3:04 min');
-    expect(formatTimeSince(309)).toBe('5:09 min');
-    expect(formatTimeSince(522)).toBe('8:42 min');
+  it('formats minutes and seconds', () => {
+    expect(formatTimeSince(60)).toBe('1 minute');
+    expect(formatTimeSince(184)).toBe('3 minutes 4 seconds');
+    expect(formatTimeSince(309)).toBe('5 minutes 9 seconds');
+    expect(formatTimeSince(522)).toBe('8 minutes 42 seconds');
   });
 
-  it('formats hours as H:MM h', () => {
-    expect(formatTimeSince(3600)).toBe('1:00 h');
-    expect(formatTimeSince(3660)).toBe('1:01 h');
-    expect(formatTimeSince(7200)).toBe('2:00 h');
-    expect(formatTimeSince(36000)).toBe('10:00 h');
+  it('formats hours and minutes', () => {
+    expect(formatTimeSince(3600)).toBe('1 hour');
+    expect(formatTimeSince(3660)).toBe('1 hour 1 minute');
+    expect(formatTimeSince(7200)).toBe('2 hours');
+    expect(formatTimeSince(36000)).toBe('10 hours');
   });
 
-  it('formats days as D:HH d', () => {
-    expect(formatTimeSince(86400)).toBe('1:00 d');
-    expect(formatTimeSince(86400 + 12 * 3600)).toBe('1:12 d');
-    expect(formatTimeSince(86400 * 11 + 12 * 3600)).toBe('11:12 d');
+  it('formats days and hours', () => {
+    expect(formatTimeSince(86400)).toBe('1 day');
+    expect(formatTimeSince(86400 + 12 * 3600)).toBe('1 day 12 hours');
+    expect(formatTimeSince(86400 * 11 + 12 * 3600)).toBe('11 days 12 hours');
   });
 });
 
