@@ -13,10 +13,10 @@ export const CHRISTOF_DIGITAL_URL = 'https://christof.digital/';
 
 export const FOOTER_LEFT_LINKS = [
   { href: MEMPOOL_SPACE_BASE_URL, label: 'mempool.space' },
-  { href: BITCOINDEV_INFO_URL, label: 'BitcoinDev' },
+  { href: DASHBOARD_LINK_URL, label: 'Miner Dashboard' },
 ] as const;
 
 export const FOOTER_RIGHT_LINKS = [
-  { href: DASHBOARD_LINK_URL, label: 'Miner Dashboard' },
+  { href: BITCOINDEV_INFO_URL, label: 'BitcoinDev' },
   { href: CHRISTOF_DIGITAL_URL, label: 'christof.digital' },
 ] as const;

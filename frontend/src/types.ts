@@ -45,6 +45,7 @@ export interface ApiContextValue {
   fetchBlocksPage: (params?: { limit?: number; offset?: number }) => Promise<BlocksData>;
   fetchWallet: () => Promise<WalletData>;
   fetchNetwork: () => Promise<NetworkData>;
+  fetchNetworkTab: () => Promise<NetworkTabData>;
   fetchPools: () => Promise<Pool[]>;
   fetchDistribution: () => Promise<DistributionData>;
   fetchPrice: () => Promise<BtcPrices>;
@@ -318,6 +319,14 @@ export interface NetworkData {
   total_records?: number;
   fee_estimates?: FeeEstimates | null;
   fee_estimate_errors?: FeeEstimateErrors | null;
+}
+
+/** Composite payload for the Network tab (one API call). */
+export interface NetworkTabData {
+  node: NodeData;
+  network: NetworkData;
+  price: BtcPrices;
+  blocks: BlocksData;
 }
 
 export interface Pool {

@@ -8,6 +8,7 @@ import { useTabData } from '@/hooks/useTabData';
 import { useTableSort } from '@/hooks/useTableSort';
 import { LoadingOverlay } from '@/components/LoadingOverlay';
 import { LoadingErrorGate } from '@/components/LoadingErrorGate';
+import { Spinner } from '@/components/Spinner';
 import { SectionHeader } from '@/components/SectionHeader';
 import { SortableTh } from '@/components/SortableTh';
 import { PoolCell } from '@/components/blocks/PoolCell';
@@ -26,8 +27,8 @@ type BlocksMetadata = {
 
 export function BlocksTab() {
   const { fetchBlocksPage, fetchPools, fetchDistribution } = useApi();
-  const { data: pools, load: loadPools } = useApiData(fetchPools);
-  const { data: distribution, load: loadDistribution } = useApiData(fetchDistribution);
+  const { data: pools, loading: poolsLoading, load: loadPools } = useApiData(fetchPools);
+  const { data: distribution, loading: distributionLoading, load: loadDistribution } = useApiData(fetchDistribution);
   const { refreshTabId } = useRefreshState();
 
   const [blocks, setBlocks] = useState<BlockRow[]>([]);
@@ -220,7 +221,14 @@ export function BlocksTab() {
           </div>
           <div className="section-container">
             <SectionHeader>Pool Distribution</SectionHeader>
-            <PoolDistributionChart distribution={distribution ?? null} poolByIdentifier={poolByIdentifier} />
+            {distributionLoading && distribution === null ? (
+              <div className="flex items-center justify-center gap-2 h-[240px] text-level-4 text-sm" role="status" aria-live="polite">
+                <Spinner size="sm" aria-hidden={false} className="flex-shrink-0" />
+                <span>Loading distribution…</span>
+              </div>
+            ) : (
+              <PoolDistributionChart distribution={distribution ?? null} poolByIdentifier={poolByIdentifier} />
+            )}
           </div>
         </div>
 
@@ -233,7 +241,14 @@ export function BlocksTab() {
                   <SortableTh label="Height" sortKey="height" currentSortKey={blocksSort.sortKey} sortDir={blocksSort.sortDir} onSort={blocksSort.setSort} className="px-2 py-3 text-level-4" />
                   <SortableTh label="Time" sortKey="time" currentSortKey={blocksSort.sortKey} sortDir={blocksSort.sortDir} onSort={blocksSort.setSort} className="px-2 py-3 text-level-4" />
                   <SortableTh label="Duration" sortKey="duration" currentSortKey={blocksSort.sortKey} sortDir={blocksSort.sortDir} onSort={blocksSort.setSort} className="px-2 py-3 text-level-4" />
-                  <SortableTh label="Pool" sortKey="pool" currentSortKey={blocksSort.sortKey} sortDir={blocksSort.sortDir} onSort={blocksSort.setSort} className="px-2 py-3 text-level-4" />
+                  <SortableTh
+                    label={poolsLoading ? 'Pool (loading…)' : 'Pool'}
+                    sortKey="pool"
+                    currentSortKey={blocksSort.sortKey}
+                    sortDir={blocksSort.sortDir}
+                    onSort={blocksSort.setSort}
+                    className="px-2 py-3 text-level-4"
+                  />
                   <SortableTh label="Tx Count" sortKey="txCount" currentSortKey={blocksSort.sortKey} sortDir={blocksSort.sortDir} onSort={blocksSort.setSort} className="px-2 py-3 text-level-4" />
                   <SortableTh label="Weight" sortKey="weight" currentSortKey={blocksSort.sortKey} sortDir={blocksSort.sortDir} onSort={blocksSort.setSort} className="px-2 py-3 text-level-4" />
                   <SortableTh label="Size" sortKey="size" currentSortKey={blocksSort.sortKey} sortDir={blocksSort.sortDir} onSort={blocksSort.setSort} className="px-2 py-3 text-level-4" />

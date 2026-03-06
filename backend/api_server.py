@@ -140,6 +140,8 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
                 self.handle_health()
             elif path == '/api/price':
                 self.handle_price()
+            elif path == '/api/network-tab':
+                self.handle_network_tab_data()
             elif path == '/api/config/status':
                 self.handle_config_status()
             elif path == '/api/config/test':
@@ -382,21 +384,30 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
         else:
             self.wfile.write(json.dumps({"ok": False, "error": err}).encode())
 
-    def handle_node_data(self):  # pylint: disable=too-many-locals
-        """Handle node monitoring data requests (cached to reduce RPC load)."""
+    def _get_node_data(self):  # pylint: disable=too-many-locals
+        """Return (data_dict, None) on success; (None, error_dict) on failure. Does not write."""
         if self.rpc_service is None:
-            self._send_no_config_response()
-            return
+            return None, {"no_config": True}
         try:
             from datetime import datetime
             now = datetime.now()
             if (self._node_cache is not None and self._node_cache_time is not None and
                     (now - self._node_cache_time).total_seconds() < NODE_CACHE_SECONDS):
-                self.wfile.write(json.dumps(self._node_cache, indent=2).encode())
-                return
+                return self._node_cache["data"], None
 
             blockchain_info = self.rpc_service.get_blockchain_info()
+            if self._is_connection_error(blockchain_info):
+                return None, {
+                    "status": "error",
+                    "message": f"Bitcoin node is not responding during blockchain info: {blockchain_info.get('error')}"
+                }
             network_info = self.rpc_service.get_network_info()
+            if self._is_connection_error(network_info):
+                return None, {
+                    "status": "error",
+                    "message": f"Bitcoin node is not responding during network info: {network_info.get('error')}"
+                }
+
             mempool_info = self.rpc_service.get_mempool_info()
             memory_info = self.rpc_service.get_memory_info()
             index_info = self.rpc_service.get_index_info()
@@ -408,43 +419,41 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
             host_memory = self._get_host_memory()
             host_architecture = self._get_host_architecture()
 
-            if self._check_connection_error(blockchain_info, "blockchain info"):
-                return
-
-            if self._check_connection_error(network_info, "network info"):
-                return
-
             uptime = uptime_info.get('result') if 'result' in uptime_info and uptime_info.get('error') is None else None
             net_totals = net_totals_info.get('result') if 'result' in net_totals_info and net_totals_info.get('error') is None else None
             connection_count = connection_count_info.get('result') if 'result' in connection_count_info and connection_count_info.get('error') is None else None
 
-            response = {
-                "status": "success",
-                "data": {
-                    "blockchain": blockchain_info.get('result') if 'result' in blockchain_info else None,
-                    "network": network_info.get('result') if 'result' in network_info else None,
-                    "mempool": mempool_info.get('result') if 'result' in mempool_info else None,
-                    "memory": memory_info.get('result') if 'result' in memory_info else None,
-                    "host_memory": host_memory,
-                    "host_architecture": host_architecture,
-                    "indexing": index_info.get('result') if 'result' in index_info else None,
-                    "hashrate": hashrate_info.get('result') if 'result' in hashrate_info else None,
-                    "peers": peer_info.get('result') if 'result' in peer_info else [],
-                    "uptime": uptime,
-                    "nettotals": net_totals,
-                    "connection_count": connection_count
-                }
+            data = {
+                "blockchain": blockchain_info.get('result') if 'result' in blockchain_info else None,
+                "network": network_info.get('result') if 'result' in network_info else None,
+                "mempool": mempool_info.get('result') if 'result' in mempool_info else None,
+                "memory": memory_info.get('result') if 'result' in memory_info else None,
+                "host_memory": host_memory,
+                "host_architecture": host_architecture,
+                "indexing": index_info.get('result') if 'result' in index_info else None,
+                "hashrate": hashrate_info.get('result') if 'result' in hashrate_info else None,
+                "peers": peer_info.get('result') if 'result' in peer_info else [],
+                "uptime": uptime,
+                "nettotals": net_totals,
+                "connection_count": connection_count
             }
-            self._node_cache = response
+            self._node_cache = {"status": "success", "data": data}
             self._node_cache_time = now
-            self.wfile.write(json.dumps(response, indent=2).encode())
+            return data, None
 
         except Exception as e:
-            error_response = {
-                "status": "error",
-                "message": f"Failed to get node data: {str(e)}"
-            }
-            self.wfile.write(json.dumps(error_response).encode())
+            return None, {"status": "error", "message": f"Failed to get node data: {str(e)}"}
+
+    def handle_node_data(self):
+        """Handle node monitoring data requests (cached to reduce RPC load)."""
+        data, err = self._get_node_data()
+        if err is not None:
+            if err.get("no_config"):
+                self._send_no_config_response()
+            else:
+                self.wfile.write(json.dumps(err).encode())
+            return
+        self.wfile.write(json.dumps({"status": "success", "data": data}, indent=2).encode())
 
     def _is_no_wallet_error(self, wallet_info):
         """Return True if the response indicates no wallet is loaded (Bitcoin Core -18 or message)."""
@@ -917,14 +926,67 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
         except Exception:
             return None
 
-    def handle_blocks_data(self):  # pylint: disable=too-many-locals
+    def _get_blocks_data(self, limit, offset):  # pylint: disable=too-many-locals
+        """Return blocks data dict for the given limit/offset. Does not write."""
+        from datetime import datetime, timezone
+        now = datetime.now(timezone.utc)
+        db_path = self._get_db_path()
+        prune_blocks_if_over(BLOCKS_DB_MAX_ENTRIES, db_path)
+        total_blocks = get_blocks_count(db_path)
+        use_cache = offset == 0 and limit == BLOCKS_DEFAULT_PAGE_SIZE
+        if use_cache and self._blocks_cache is not None and self._blocks_cache_time is not None:
+            if (now - self._blocks_cache_time).total_seconds() < BLOCKS_CACHE_SECONDS:
+                cached = self._blocks_cache
+                avg_block_time = get_avg_block_time(db_path)
+                if avg_block_time is None:
+                    avg_block_time = self._compute_avg_block_time(cached or [])
+                chain_height = self._get_chain_height()
+                seconds_since = self._get_seconds_since_last_block(cached, now)
+                mining = None
+                if self.rpc_service is not None:
+                    mining_resp = self.rpc_service.get_mining_info()
+                    if mining_resp.get("error") is None and "result" in mining_resp:
+                        mining = mining_resp["result"]
+                return {
+                    "blocks": cached,
+                    "total_blocks": total_blocks,
+                    "cached": True,
+                    "avg_block_time_seconds": avg_block_time,
+                    "chain_height": chain_height,
+                    "seconds_since_last_block": seconds_since,
+                    "mining": mining,
+                }
+        blocks_data = get_recent_blocks(limit, offset, db_path)
+        if not blocks_data and offset == 0 and self.rpc_service is not None:
+            tip_block = self._get_tip_block_from_rpc()
+            if tip_block is not None:
+                blocks_data = [tip_block]
+        if use_cache:
+            self._blocks_cache = blocks_data
+            self._blocks_cache_time = now
+        data = {
+            "blocks": blocks_data,
+            "total_blocks": total_blocks,
+            "cached": False,
+        }
+        if offset == 0:
+            avg_block_time = get_avg_block_time(db_path)
+            if avg_block_time is None:
+                avg_block_time = self._compute_avg_block_time(blocks_data)
+            data["avg_block_time_seconds"] = avg_block_time
+            data["chain_height"] = self._get_chain_height()
+            data["seconds_since_last_block"] = self._get_seconds_since_last_block(blocks_data, now)
+            mining = None
+            if self.rpc_service is not None:
+                mining_resp = self.rpc_service.get_mining_info()
+                if mining_resp.get("error") is None and "result" in mining_resp:
+                    mining = mining_resp["result"]
+            data["mining"] = mining
+        return data
+
+    def handle_blocks_data(self):
         """Handle blocks data requests from SQLite (paginated, with optional cache for first page)."""
         try:
-            from datetime import datetime, timezone
-            now = datetime.now(timezone.utc)
-            db_path = self._get_db_path()
-
-            # Parse limit and offset from query string
             parsed = urlparse(self.path)
             query = parse_qs(parsed.query)
             try:
@@ -937,81 +999,13 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
             except (IndexError, TypeError, ValueError):
                 offset = 0
             offset = max(0, offset)
-
-            # Enforce DB cap on read (no per-write deletes)
-            prune_blocks_if_over(BLOCKS_DB_MAX_ENTRIES, db_path)
-            total_blocks = get_blocks_count(db_path)
-
-            # Use cache only for first page (limit=20, offset=0)
-            use_cache = offset == 0 and limit == BLOCKS_DEFAULT_PAGE_SIZE
-            if use_cache and self._blocks_cache is not None and self._blocks_cache_time is not None:
-                if (now - self._blocks_cache_time).total_seconds() < BLOCKS_CACHE_SECONDS:
-                    cached = self._blocks_cache
-                    avg_block_time = get_avg_block_time(db_path)
-                    if avg_block_time is None:
-                        avg_block_time = self._compute_avg_block_time(cached or [])
-                    chain_height = self._get_chain_height()
-                    seconds_since = self._get_seconds_since_last_block(cached, now)
-                    mining = None
-                    if self.rpc_service is not None:
-                        mining_resp = self.rpc_service.get_mining_info()
-                        if mining_resp.get("error") is None and "result" in mining_resp:
-                            mining = mining_resp["result"]
-                    response = {
-                        "status": "success",
-                        "data": {
-                            "blocks": cached,
-                            "total_blocks": total_blocks,
-                            "cached": True,
-                            "avg_block_time_seconds": avg_block_time,
-                            "chain_height": chain_height,
-                            "seconds_since_last_block": seconds_since,
-                            "mining": mining,
-                        },
-                    }
-                    self.wfile.write(json.dumps(response, indent=2).encode())
-                    return
-
-            blocks_data = get_recent_blocks(limit, offset, db_path)
-            if not blocks_data and offset == 0 and self.rpc_service is not None:
-                tip_block = self._get_tip_block_from_rpc()
-                if tip_block is not None:
-                    blocks_data = [tip_block]
-
-            if use_cache:
-                self._blocks_cache = blocks_data
-                self._blocks_cache_time = now
-
-            data = {
-                "blocks": blocks_data,
-                "total_blocks": total_blocks,
-                "cached": False,
-            }
-            if offset == 0:
-                avg_block_time = get_avg_block_time(db_path)
-                if avg_block_time is None:
-                    avg_block_time = self._compute_avg_block_time(blocks_data)
-                data["avg_block_time_seconds"] = avg_block_time
-                data["chain_height"] = self._get_chain_height()
-                data["seconds_since_last_block"] = self._get_seconds_since_last_block(
-                    blocks_data, now
-                )
-                mining = None
-                if self.rpc_service is not None:
-                    mining_resp = self.rpc_service.get_mining_info()
-                    if mining_resp.get("error") is None and "result" in mining_resp:
-                        mining = mining_resp["result"]
-                data["mining"] = mining
-
-            response = {"status": "success", "data": data}
-            self.wfile.write(json.dumps(response, indent=2).encode())
-
+            data = self._get_blocks_data(limit, offset)
+            self.wfile.write(json.dumps({"status": "success", "data": data}, indent=2).encode())
         except Exception as e:
-            error_response = {
+            self.wfile.write(json.dumps({
                 "status": "error",
                 "message": f"Failed to get blocks data: {str(e)}",
-            }
-            self.wfile.write(json.dumps(error_response).encode())
+            }).encode())
 
     def _get_fee_estimates(self):
         """Return fee estimates in sat/vB for high/medium/low (2, 4, 6 blocks), and optional errors. None if RPC unavailable."""
@@ -1039,32 +1033,31 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
         except Exception:
             return None, None
 
+    def _get_network_data(self):
+        """Return network data dict (network_history, fee_estimates, etc.). Raises on failure."""
+        from constants import DIFFICULTY_JSON_MAX_ENTRIES
+        network_data = get_network_history(DIFFICULTY_JSON_MAX_ENTRIES, self._get_db_path())
+        data = {
+            "network_history": network_data,
+            "total_records": len(network_data)
+        }
+        fee_estimates, fee_estimate_errors = self._get_fee_estimates()
+        if fee_estimates is not None:
+            data["fee_estimates"] = fee_estimates
+        if fee_estimate_errors is not None and any(fee_estimate_errors.get(k) for k in ("high_sat_per_vb", "medium_sat_per_vb", "low_sat_per_vb")):
+            data["fee_estimate_errors"] = fee_estimate_errors
+        return data
+
     def handle_network_data(self):
         """Handle network data requests (hashrate and difficulty history from SQLite, optional fee estimates)."""
         try:
-            from constants import DIFFICULTY_JSON_MAX_ENTRIES
-            network_data = get_network_history(DIFFICULTY_JSON_MAX_ENTRIES, self._get_db_path())
-            data = {
-                "network_history": network_data,
-                "total_records": len(network_data)
-            }
-            fee_estimates, fee_estimate_errors = self._get_fee_estimates()
-            if fee_estimates is not None:
-                data["fee_estimates"] = fee_estimates
-            if fee_estimate_errors is not None and any(fee_estimate_errors.get(k) for k in ("high_sat_per_vb", "medium_sat_per_vb", "low_sat_per_vb")):
-                data["fee_estimate_errors"] = fee_estimate_errors
-            response = {
-                "status": "success",
-                "data": data
-            }
-            self.wfile.write(json.dumps(response, indent=2).encode())
-
+            data = self._get_network_data()
+            self.wfile.write(json.dumps({"status": "success", "data": data}, indent=2).encode())
         except Exception as e:
-            error_response = {
+            self.wfile.write(json.dumps({
                 "status": "error",
                 "message": f"Failed to get network data: {str(e)}"
-            }
-            self.wfile.write(json.dumps(error_response).encode())
+            }).encode())
 
     def handle_distribution_data(self):
         """Handle pool distribution data from SQLite."""
@@ -1131,18 +1124,50 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
             }
             self.wfile.write(json.dumps(error_response).encode())
 
-    def _check_connection_error(self, response_data, operation_name=None):
-        """Helper method to check for connection errors and send appropriate response"""
+    def handle_network_tab_data(self):
+        """Composite endpoint: node + network + price + blocks in one response for the Network tab."""
+        try:
+            node_data, node_err = self._get_node_data()
+            if node_err is not None:
+                if node_err.get("no_config"):
+                    self._send_no_config_response()
+                else:
+                    self.wfile.write(json.dumps(node_err).encode())
+                return
+            network_data = self._get_network_data()
+            price_data = self._cached_fetch_prices()
+            blocks_data = self._get_blocks_data(BLOCKS_DEFAULT_PAGE_SIZE, 0)
+            payload = {
+                "node": node_data,
+                "network": network_data,
+                "price": price_data,
+                "blocks": blocks_data,
+            }
+            self.wfile.write(json.dumps({"status": "success", "data": payload}, indent=2).encode())
+        except Exception as e:
+            self.wfile.write(json.dumps({
+                "status": "error",
+                "message": f"Failed to get network tab data: {str(e)}",
+            }).encode())
+
+    def _is_connection_error(self, response_data):
+        """Return True if the response indicates a connection error (does not write)."""
         if 'error' in response_data and response_data['error']:
             error_msg = str(response_data['error'])
             if 'Connection' in error_msg or 'timed out' in error_msg or 'failed' in error_msg:
-                operation_desc = f" during {operation_name}" if operation_name else ""
-                error_response = {
-                    "status": "error",
-                    "message": f"Bitcoin node is not responding{operation_desc}: {response_data['error']}"
-                }
-                self.wfile.write(json.dumps(error_response).encode())
                 return True
+        return False
+
+    def _check_connection_error(self, response_data, operation_name=None):
+        """Helper method to check for connection errors and send appropriate response"""
+        if self._is_connection_error(response_data):
+            operation_desc = f" during {operation_name}" if operation_name else ""
+            error_response = {
+                "status": "error",
+                "message": f"Bitcoin node is not responding{operation_desc}: {response_data['error']}"
+            }
+            self.wfile.write(json.dumps(error_response).encode())
+            return True
         return False
 
     def _load_pools_data(self):

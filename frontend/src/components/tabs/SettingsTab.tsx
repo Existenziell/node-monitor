@@ -3,6 +3,7 @@ import { useApi } from '@/contexts/ApiContext';
 import { useActiveTab } from '@/contexts/TabContext';
 import { DEFAULT_RPC_HOST, DEFAULT_RPC_PORT } from '@/constants';
 import { SectionHeader } from '@/components/SectionHeader';
+import { Spinner } from '@/components/Spinner';
 import { WalletConfig } from '@/components/WalletConfig';
 import { getPendingChanges } from '@/utils';
 import type { ConfigStatus, ConfigSavePayload, ConfigTestResult, PendingChange, SettingsBaseline, WalletAccount } from '@/types';
@@ -236,7 +237,10 @@ export function SettingsTab() {
 
   if (loading && !status) {
     return (
-      <></>
+      <div className="p-4 text-level-4 flex items-center gap-2" role="status" aria-live="polite">
+        <Spinner size="sm" />
+        <span>Loading settings…</span>
+      </div>
     );
   }
 

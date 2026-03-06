@@ -1,7 +1,6 @@
-import { useCallback } from 'react';
 import { useApi } from '@/contexts/ApiContext';
-import type { BlocksData, NodeData, NetworkData, Peer, BtcPrices } from '@/types';
-import { useRefreshState, useRefreshDoneMulti } from '@/contexts/RefreshContext';
+import type { NetworkTabData, Peer } from '@/types';
+import { useRefreshState, useRefreshDone } from '@/contexts/RefreshContext';
 import { useApiData } from '@/hooks/useApiData';
 import { useTabData } from '@/hooks/useTabData';
 import { NetworkHistoryChart } from '@/components/network/NetworkHistoryChart';
@@ -12,49 +11,25 @@ import { LoadingOverlay } from '@/components/LoadingOverlay';
 import { LoadingErrorGate } from '@/components/LoadingErrorGate';
 import { SectionHeader } from '@/components/SectionHeader';
 import { BITCOIN_HALVING_INTERVAL, BITCOIN_RETARGET_INTERVAL } from '@/constants';
-import { formatDifficulty, formatTimeSince, getErrorMessage } from '@/utils';
+import { formatDifficulty, formatTimeSince } from '@/utils';
 
 export function NetworkTab() {
-  const { fetchNode, fetchNetwork, fetchPrice, fetchBlocks } = useApi();
-  const nodeState = useApiData<NodeData>(fetchNode);
-  const networkState = useApiData<NetworkData>(fetchNetwork);
-  const priceState = useApiData<BtcPrices>(fetchPrice);
-  const blocksState = useApiData<BlocksData>(fetchBlocks);
+  const { fetchNetworkTab } = useApi();
+  const { data, loading, error, load } = useApiData<NetworkTabData>(fetchNetworkTab);
 
-  const loadBoth = useCallback(
-    () =>
-      Promise.all([
-        nodeState.load(),
-        networkState.load(),
-        priceState.load(),
-        blocksState.load(),
-      ]),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- load refs are stable
-    [nodeState.load, networkState.load, priceState.load, blocksState.load]
-  );
-  const hasNetworkData =
-    nodeState.data !== null &&
-    nodeState.data !== undefined &&
-    networkState.data !== null &&
-    networkState.data !== undefined &&
-    priceState.data !== null &&
-    priceState.data !== undefined &&
-    blocksState.data !== null &&
-    blocksState.data !== undefined;
-  useTabData(loadBoth, 'network', hasNetworkData);
+  useTabData(load, 'network', data !== null && data !== undefined);
+  useRefreshDone(loading, 'network');
 
-  const { data, loading, error } = nodeState;
-  const { data: networkData, loading: networkLoading, error: networkError } = networkState;
-  const { data: priceData } = priceState;
-  const blocksData = blocksState.data;
+  const nodeData = data?.node;
+  const networkData = data?.network;
+  const priceData = data?.price;
+  const blocksData = data?.blocks;
 
-  useRefreshDoneMulti([loading, networkLoading, blocksState.loading], 'network');
-
-  const blockchain = (data?.blockchain ?? {}) as Record<string, unknown>;
+  const blockchain = (nodeData?.blockchain ?? {}) as Record<string, unknown>;
   const blocks = typeof blockchain.blocks === 'number' ? blockchain.blocks : null;
   const difficulty = typeof blockchain.difficulty === 'number' ? blockchain.difficulty : null;
-  const peers: Peer[] = data?.peers ?? [];
-  const hashrate = data?.hashrate;
+  const peers: Peer[] = nodeData?.peers ?? [];
+  const hashrate = nodeData?.hashrate;
   const feeEstimates = networkData?.fee_estimates;
   const feeEstimateErrors = networkData?.fee_estimate_errors;
 
@@ -124,8 +99,7 @@ export function NetworkTab() {
   const hashrateSubLinesFinal = hashrateSubLines.length ? hashrateSubLines : undefined;
 
   const { refreshTabId } = useRefreshState();
-  const isRefreshing =
-    (loading || networkLoading || blocksState.loading) && !!data && refreshTabId === 'network';
+  const isRefreshing = loading && !!data && refreshTabId === 'network';
 
   return (
     <LoadingErrorGate loading={loading} error={error} data={data} loadingLabel="network">
@@ -161,13 +135,7 @@ export function NetworkTab() {
         <PeersTable peers={peers} />
         <div className="section-container">
           <SectionHeader>Network History</SectionHeader>
-          {networkLoading && !networkData ? (
-            <div className="min-h-[240px]" aria-hidden />
-          ) : networkError && !networkData ? (
-            <p className="text-sm text-semantic-error">
-              Error loading network data: {getErrorMessage(networkError)}. Ensure the block monitor is running and network data is being recorded.
-            </p>
-          ) : (networkData?.network_history?.length ?? 0) === 0 ? (
+          {(networkData?.network_history?.length ?? 0) === 0 ? (
             <p className="text-sm text-level-4">
               No network history yet. Data is recorded over time when the block monitor is running.
             </p>

@@ -10,6 +10,7 @@ import type {
   DistributionData,
   NodeData,
   NetworkData,
+  NetworkTabData,
   Pool,
   WalletData,
 } from '@/types';
@@ -87,6 +88,11 @@ export function ApiProvider({ children }: { children: React.ReactNode }) {
 
   const fetchPrice = useCallback(async (): Promise<BtcPrices> => {
     const result = await fetchWithRetry<BtcPrices>('/price');
+    return result.data;
+  }, [fetchWithRetry]);
+
+  const fetchNetworkTab = useCallback(async (): Promise<NetworkTabData> => {
+    const result = await fetchWithRetry<NetworkTabData>('/network-tab');
     return result.data;
   }, [fetchWithRetry]);
 
@@ -213,6 +219,7 @@ export function ApiProvider({ children }: { children: React.ReactNode }) {
     fetchBlocksPage,
     fetchWallet,
     fetchNetwork,
+    fetchNetworkTab,
     fetchPools,
     fetchDistribution,
     fetchPrice,
