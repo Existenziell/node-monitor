@@ -952,6 +952,11 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
                         avg_block_time = self._compute_avg_block_time(cached or [])
                     chain_height = self._get_chain_height()
                     seconds_since = self._get_seconds_since_last_block(cached, now)
+                    mining = None
+                    if self.rpc_service is not None:
+                        mining_resp = self.rpc_service.get_mining_info()
+                        if mining_resp.get("error") is None and "result" in mining_resp:
+                            mining = mining_resp["result"]
                     response = {
                         "status": "success",
                         "data": {
@@ -961,6 +966,7 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
                             "avg_block_time_seconds": avg_block_time,
                             "chain_height": chain_height,
                             "seconds_since_last_block": seconds_since,
+                            "mining": mining,
                         },
                     }
                     self.wfile.write(json.dumps(response, indent=2).encode())
@@ -990,6 +996,12 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
                 data["seconds_since_last_block"] = self._get_seconds_since_last_block(
                     blocks_data, now
                 )
+                mining = None
+                if self.rpc_service is not None:
+                    mining_resp = self.rpc_service.get_mining_info()
+                    if mining_resp.get("error") is None and "result" in mining_resp:
+                        mining = mining_resp["result"]
+                data["mining"] = mining
 
             response = {"status": "success", "data": data}
             self.wfile.write(json.dumps(response, indent=2).encode())

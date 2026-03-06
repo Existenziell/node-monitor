@@ -171,6 +171,18 @@ export interface BlockRow {
   [key: string]: unknown;
 }
 
+/** Bitcoin Core getmininginfo result (subset we use). */
+export interface MiningInfo {
+  blocks?: number;
+  difficulty?: number;
+  networkhashps?: number;
+  pooledtx?: number;
+  chain?: string;
+  warnings?: string;
+  currentblockweight?: number;
+  currentblocktx?: number;
+}
+
 export interface BlocksData {
   blocks: BlockRow[];
   total_blocks?: number;
@@ -178,6 +190,7 @@ export interface BlocksData {
   avg_block_time_seconds?: number | null;
   chain_height?: number | null;
   seconds_since_last_block?: number | null;
+  mining?: MiningInfo | null;
 }
 
 /** Bitcoin Core listunspent response item */

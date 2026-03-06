@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useApi } from '@/contexts/ApiContext';
-import type { BlockRow } from '@/types';
-import { formatBytes, formatTimeSince, formatWeight } from '@/utils';
+import type { BlockRow, MiningInfo } from '@/types';
+import { formatBytes, formatDifficulty, formatTimeSince, formatWeight } from '@/utils';
 import { useRefreshState, useRefreshDone } from '@/contexts/RefreshContext';
 import { useApiData } from '@/hooks/useApiData';
 import { useTabData } from '@/hooks/useTabData';
@@ -21,6 +21,7 @@ type BlocksMetadata = {
   chain_height: number | null;
   seconds_since_last_block: number | null;
   avg_block_time_seconds: number | null;
+  mining: MiningInfo | null;
 };
 
 export function BlocksTab() {
@@ -49,6 +50,7 @@ export function BlocksTab() {
         chain_height: data.chain_height ?? null,
         seconds_since_last_block: data.seconds_since_last_block ?? null,
         avg_block_time_seconds: data.avg_block_time_seconds ?? null,
+        mining: data.mining ?? null,
       });
     } catch (e) {
       setError(e instanceof Error ? e : new Error(String(e)));
@@ -168,12 +170,10 @@ export function BlocksTab() {
           <div className="section-container">
             <SectionHeader>Next Block</SectionHeader>
             <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-              <dt className="text-level-4">Next block</dt>
+              <dt className="text-level-4">Block height</dt>
               <dd className="text-level-5 font-medium tabular-nums">
-                {nextBlockHeight !== null ? `#${nextBlockHeight.toLocaleString()}` : '-'}
+                {nextBlockHeight !== null ? `${nextBlockHeight.toLocaleString()}` : '-'}
               </dd>
-              <dt className="text-level-4">Status</dt>
-              <dd className="text-level-5">Not yet found</dd>
               <dt className="text-level-4">Time since last block</dt>
               <dd className="text-level-5 tabular-nums">{timeSinceLastFormatted}</dd>
               <dt className="text-level-4">Average block time</dt>
@@ -182,6 +182,40 @@ export function BlocksTab() {
                   ? formatTimeSince(Math.floor(avgBlockTimeSeconds))
                   : '-'}
               </dd>
+              {metadata?.mining !== null && metadata?.mining !== undefined && (
+                <>
+                  <dt className="text-level-4">Difficulty</dt>
+                  <dd className="text-level-5 tabular-nums">
+                    {metadata.mining.difficulty !== null && metadata.mining.difficulty !== undefined && Number.isFinite(metadata.mining.difficulty)
+                      ? formatDifficulty(metadata.mining.difficulty)
+                      : '-'}
+                  </dd>
+                  <dt className="text-level-4">Mempool (txs)</dt>
+                  <dd className="text-level-5 tabular-nums">
+                    {metadata.mining.pooledtx !== null && metadata.mining.pooledtx !== undefined && Number.isFinite(metadata.mining.pooledtx)
+                      ? metadata.mining.pooledtx.toLocaleString()
+                      : '-'}
+                  </dd>
+                  <dt className="text-level-4">Current block weight</dt>
+                  <dd className="text-level-5 tabular-nums">
+                    {metadata.mining.currentblockweight !== null && metadata.mining.currentblockweight !== undefined && Number.isFinite(metadata.mining.currentblockweight)
+                      ? formatWeight(metadata.mining.currentblockweight)
+                      : '-'}
+                  </dd>
+                  <dt className="text-level-4">Current block tx</dt>
+                  <dd className="text-level-5 tabular-nums">
+                    {metadata.mining.currentblocktx !== null && metadata.mining.currentblocktx !== undefined && Number.isFinite(metadata.mining.currentblocktx)
+                      ? metadata.mining.currentblocktx.toLocaleString()
+                      : '-'}
+                  </dd>
+                  <dt className="text-level-4">Chain</dt>
+                  <dd className="text-level-5 tabular-nums">
+                    {metadata.mining.chain !== null && metadata.mining.chain !== undefined && String(metadata.mining.chain).trim() !== ''
+                      ? String(metadata.mining.chain)
+                      : '-'}
+                  </dd>
+                </>
+              )}
             </dl>
           </div>
           <div className="section-container">

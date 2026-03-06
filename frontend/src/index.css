@@ -2,6 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
+@keyframes notification-glow {
+  0%, 100% { box-shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.15), 0 0 0 1px var(--level-3), 0 0 12px -2px var(--accent); }
+  50% { box-shadow: 0 8px 28px -4px rgba(0, 0, 0, 0.2), 0 0 0 1px var(--level-3), 0 0 20px 0 var(--accent); }
+}
+
 /* Light theme (slate) */
 :root {
   --level-1: #f8fafc;

@@ -54,6 +54,7 @@ export function NetworkTab() {
   const blocks = typeof blockchain.blocks === 'number' ? blockchain.blocks : null;
   const difficulty = typeof blockchain.difficulty === 'number' ? blockchain.difficulty : null;
   const peers: Peer[] = data?.peers ?? [];
+  const hashrate = data?.hashrate;
   const feeEstimates = networkData?.fee_estimates;
   const feeEstimateErrors = networkData?.fee_estimate_errors;
 
@@ -106,7 +107,21 @@ export function NetworkTab() {
     priceData?.EUR !== undefined && priceData?.EUR !== null && Number.isFinite(priceData.EUR)
       ? `EUR ${Number(priceData.EUR).toLocaleString(undefined, { maximumFractionDigits: 0 })}`
       : null;
-  const btcPriceSubLines = btcPriceEur ? [{ label: btcPriceEur, value: '' }] : undefined;
+  const btcPriceSubLines =
+    btcPriceEur !== null && btcPriceEur !== undefined ? [{ label: 'Price in EUR', value: btcPriceEur }] : undefined;
+
+  const feeLabels = ['High priority', 'Medium', 'Low priority'] as const;
+  const feeKeys = ['high_sat_per_vb', 'medium_sat_per_vb', 'low_sat_per_vb'] as const;
+  const hashrateSubLines: { label: string; value: string }[] = [];
+  feeLabels.forEach((label, i) => {
+    const key = feeKeys[i];
+    const sat = feeEstimates?.[key];
+    const err = feeEstimateErrors?.[key];
+    const value =
+      sat !== undefined && sat !== null ? `${sat} sat/vB` : err ? `— ${err}` : '—';
+    hashrateSubLines.push({ label, value });
+  });
+  const hashrateSubLinesFinal = hashrateSubLines.length ? hashrateSubLines : undefined;
 
   const { refreshTabId } = useRefreshState();
   const isRefreshing =
@@ -132,56 +147,16 @@ export function NetworkTab() {
             value={formatPrice(btcPriceUsd)}
             subLines={btcPriceSubLines}
           />
-          <div className="section-container">
-            <SectionHeader>Fee Estimates</SectionHeader>
-            <dl className="space-y-1 text-sm">
-              <div>
-                <div className="flex justify-between gap-4">
-                  <dt className="text-level-4">High priority</dt>
-                  <dd className="text-level-5">
-                    {feeEstimates?.high_sat_per_vb !== undefined && feeEstimates?.high_sat_per_vb !== null
-                      ? `${feeEstimates.high_sat_per_vb} sat/vB`
-                      : '—'}
-                  </dd>
-                </div>
-                {feeEstimateErrors?.high_sat_per_vb && (
-                  <p className="text-sm text-semantic-warning mt-0.5" role="status">
-                    {feeEstimateErrors.high_sat_per_vb}
-                  </p>
-                )}
-              </div>
-              <div>
-                <div className="flex justify-between gap-4">
-                  <dt className="text-level-4">Medium</dt>
-                  <dd className="text-level-5">
-                    {feeEstimates?.medium_sat_per_vb !== undefined && feeEstimates?.medium_sat_per_vb !== null
-                      ? `${feeEstimates.medium_sat_per_vb} sat/vB`
-                      : '—'}
-                  </dd>
-                </div>
-                {feeEstimateErrors?.medium_sat_per_vb && (
-                  <p className="text-sm text-semantic-warning mt-0.5" role="status">
-                    {feeEstimateErrors.medium_sat_per_vb}
-                  </p>
-                )}
-              </div>
-              <div>
-                <div className="flex justify-between gap-4">
-                  <dt className="text-level-4">Low priority</dt>
-                  <dd className="text-level-5">
-                    {feeEstimates?.low_sat_per_vb !== undefined && feeEstimates?.low_sat_per_vb !== null
-                      ? `${feeEstimates.low_sat_per_vb} sat/vB`
-                      : '—'}
-                  </dd>
-                </div>
-                {feeEstimateErrors?.low_sat_per_vb && (
-                  <p className="text-sm text-semantic-warning mt-0.5" role="status">
-                    {feeEstimateErrors.low_sat_per_vb}
-                  </p>
-                )}
-              </div>
-            </dl>
-          </div>
+          <SummaryCard
+            title="Network hashrate"
+            value={
+              hashrate !== null && hashrate !== undefined && Number.isFinite(hashrate)
+                ? `${(hashrate / 1e18).toFixed(2)} EH/s`
+                : 'N/A'
+            }
+            subLines={hashrateSubLinesFinal}
+            compactSubLines
+          />
         </div>
         <PeersTable peers={peers} />
         <div className="section-container">

@@ -16,16 +16,17 @@ function NotificationItem({ item }: { item: NotificationItem }) {
   return (
     <div
       className={`
-        pointer-events-auto rounded-lg border border-level-3 border-l-4 border-l-accent px-4 py-3 shadow-lg
+        pointer-events-auto rounded-xl border border-level-3 border-l-[6px] border-l-accent px-5 py-4 shadow-lg
         bg-level-2 text-level-5
         transform transition-all ease-out
         ${item.exiting ? '-translate-y-full opacity-0' : visible ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'}
+        ${!item.exiting && visible ? 'animate-[notification-glow_2.5s_ease-in-out_infinite]' : ''}
       `}
       style={{
         transitionDuration: item.exiting ? `${SLIDEOUT_MS}ms` : '300ms',
       }}
     >
-      <span className="text-sm font-medium">{item.message}</span>
+      <span className="text-base font-semibold">{item.message}</span>
     </div>
   );
 }

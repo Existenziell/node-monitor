@@ -4,17 +4,20 @@ export function SummaryCard({
   title,
   value,
   subLines,
+  compactSubLines,
 }: {
   title: string;
   value: string;
   subLines?: { label: string; value: string; progress?: number }[];
+  /** Tighter vertical spacing between sublines (e.g. for fee estimates). */
+  compactSubLines?: boolean;
 }) {
   return (
     <div className="section-container">
       <SectionHeader>{title}</SectionHeader>
       <p className="text-2xl font-semibold text-level-5 mb-2">{value}</p>
       {subLines?.length ? (
-        <div className="space-y-1.5 text-sm">
+        <div className={compactSubLines ? 'space-y-0.5 text-sm' : 'space-y-1.5 text-sm'}>
           {subLines.map(({ label, value: v, progress }) => (
             <div key={label}>
               <div className="flex justify-between gap-2 text-level-4">

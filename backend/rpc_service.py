@@ -217,6 +217,10 @@ class RPCService:
         """Get current difficulty."""
         return self.rpc_call("getdifficulty")
 
+    def get_mining_info(self) -> Dict[str, Any]:
+        """Get mining-related information (difficulty, networkhashps, pooledtx, etc.)."""
+        return self.rpc_call("getmininginfo")
+
     # System Information Methods
     def get_memory_info(self) -> Dict[str, Any]:
         """Get memory usage information."""
