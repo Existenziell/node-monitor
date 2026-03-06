@@ -16,8 +16,8 @@ function NotificationItem({ item }: { item: NotificationItem }) {
   return (
     <div
       className={`
-        pointer-events-auto rounded-lg border px-4 py-3 shadow-lg
-        bg-level-2 border-level-3 text-level-5
+        pointer-events-auto rounded-lg border border-level-3 border-l-4 border-l-accent px-4 py-3 shadow-lg
+        bg-level-2 text-level-5
         transform transition-all ease-out
         ${item.exiting ? '-translate-y-full opacity-0' : visible ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'}
       `}
