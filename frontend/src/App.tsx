@@ -4,7 +4,6 @@ import { useApi } from '@/contexts/ApiContext';
 import { useRefreshState } from '@/contexts/RefreshContext';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
-import { NotificationContainer } from '@/components/Notification';
 import { TabNav } from '@/components/TabNav';
 import { TABS } from '@/data/tabs';
 import { NodeTab } from '@/components/tabs/NodeTab';
@@ -68,7 +67,6 @@ export default function App() {
 
   return (
     <div className="container max-w-[1400px] mx-auto p-5 min-h-screen flex flex-col">
-      <NotificationContainer />
       <Header
         activeTab={activeTab}
         onRefresh={handleRefresh}

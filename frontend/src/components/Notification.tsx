@@ -35,7 +35,7 @@ export function NotificationContainer() {
 
   return (
     <div
-      className="fixed left-0 right-0 top-0 z-50 flex flex-col items-center gap-2 p-3 pointer-events-none"
+      className="fixed left-0 right-0 top-0 z-[100] flex flex-col items-center gap-2 p-3 pointer-events-none"
       aria-live="polite"
     >
       {notifications.map((n) => (

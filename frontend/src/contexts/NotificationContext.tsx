@@ -102,12 +102,9 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     const pollId = setInterval(() => {
       pollChainTip().catch(() => {});
     }, CHAIN_TIP_POLL_MS);
-    const timeouts = timeoutsRef.current;
     return () => {
       isMounted = false;
       clearInterval(pollId);
-      timeouts.forEach((t) => clearTimeout(t));
-      timeouts.clear();
     };
   }, [addNotification]);
 

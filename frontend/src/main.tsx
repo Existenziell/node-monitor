@@ -6,6 +6,7 @@ import { TabProvider } from '@/contexts/TabContext';
 import { ApiProvider } from '@/contexts/ApiContext';
 import { RefreshProvider } from '@/contexts/RefreshContext';
 import { NotificationProvider } from '@/contexts/NotificationContext';
+import { NotificationContainer } from '@/components/Notification';
 import '@/index.css';
 
 const rootEl = document.getElementById('root');
@@ -19,7 +20,10 @@ ReactDOM.createRoot(rootEl).render(
         <ApiProvider>
           <RefreshProvider>
             <NotificationProvider>
-              <App />
+              <>
+                <NotificationContainer />
+                <App />
+              </>
             </NotificationProvider>
           </RefreshProvider>
         </ApiProvider>
