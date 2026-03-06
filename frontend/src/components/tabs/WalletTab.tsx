@@ -24,7 +24,7 @@ export function WalletTab() {
   const [selectedWallet, setSelectedWallet] = useState('');
   const [balanceVisible, setBalanceVisible] = useState(true);
 
-  useTabData(load, 'wallet');
+  useTabData(load, 'wallet', data !== null && data !== undefined);
 
   useRefreshDone(loading, 'wallet');
 

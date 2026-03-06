@@ -84,7 +84,16 @@ export function NetworkTab() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- load refs are stable
     [nodeState.load, networkState.load, priceState.load, blocksState.load]
   );
-  useTabData(loadBoth, 'network');
+  const hasNetworkData =
+    nodeState.data !== null &&
+    nodeState.data !== undefined &&
+    networkState.data !== null &&
+    networkState.data !== undefined &&
+    priceState.data !== null &&
+    priceState.data !== undefined &&
+    blocksState.data !== null &&
+    blocksState.data !== undefined;
+  useTabData(loadBoth, 'network', hasNetworkData);
 
   const { data, loading, error } = nodeState;
   const { data: networkData, loading: networkLoading, error: networkError } = networkState;

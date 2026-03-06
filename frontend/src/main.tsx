@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from '@/App';
 import { ThemeProvider } from '@/contexts/ThemeContext';
+import { TabProvider } from '@/contexts/TabContext';
 import { ApiProvider } from '@/contexts/ApiContext';
 import { RefreshProvider } from '@/contexts/RefreshContext';
 import { NotificationProvider } from '@/contexts/NotificationContext';
@@ -14,13 +15,15 @@ if (!rootEl) {
 ReactDOM.createRoot(rootEl).render(
   <React.StrictMode>
     <ThemeProvider>
-      <ApiProvider>
-        <RefreshProvider>
-          <NotificationProvider>
-            <App />
-          </NotificationProvider>
-        </RefreshProvider>
-      </ApiProvider>
+      <TabProvider>
+        <ApiProvider>
+          <RefreshProvider>
+            <NotificationProvider>
+              <App />
+            </NotificationProvider>
+          </RefreshProvider>
+        </ApiProvider>
+      </TabProvider>
     </ThemeProvider>
   </React.StrictMode>
 );

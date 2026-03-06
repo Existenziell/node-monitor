@@ -11,8 +11,13 @@ export function useTabFromUrl() {
   const [activeTab, setActiveTabState] = useState<TabId>(getTabFromUrl);
 
   useEffect(() => {
-    const tab = getTabFromUrl();
-    setActiveTabState(tab);
+    setActiveTabState(getTabFromUrl());
+  }, []);
+
+  useEffect(() => {
+    const handlePopState = () => setActiveTabState(getTabFromUrl());
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
   const setTab = useCallback((tab: TabId) => {

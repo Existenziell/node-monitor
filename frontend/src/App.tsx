@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useTabFromUrl } from '@/hooks/useTabFromUrl';
+import { useActiveTab } from '@/contexts/TabContext';
 import { useApi } from '@/contexts/ApiContext';
 import { useRefreshState } from '@/contexts/RefreshContext';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { NotificationContainer } from '@/components/Notification';
 import { TabNav } from '@/components/TabNav';
+import { TABS } from '@/data/tabs';
 import { NodeTab } from '@/components/tabs/NodeTab';
 import { NetworkTab } from '@/components/tabs/NetworkTab';
 import { BlocksTab } from '@/components/tabs/BlocksTab';
@@ -37,7 +38,7 @@ function TabContent({ tab }: { tab: TabId }) {
 }
 
 export default function App() {
-  const { activeTab, setTab } = useTabFromUrl();
+  const { activeTab, setTab } = useActiveTab();
   const { setRefreshTabId } = useRefreshState();
   const { fetchConfigStatus } = useApi();
   const hasCheckedConfig = useRef(false);
@@ -82,7 +83,15 @@ export default function App() {
         onCloseMobileMenu={() => setMobileMenuOpen(false)}
       />
       <section className="min-h-[200px] flex-1">
-        <TabContent tab={activeTab} />
+        {TABS.map(({ id }) => (
+          <div
+            key={id}
+            hidden={activeTab !== id}
+            aria-hidden={activeTab !== id}
+          >
+            <TabContent tab={id} />
+          </div>
+        ))}
       </section>
       <Footer />
     </div>

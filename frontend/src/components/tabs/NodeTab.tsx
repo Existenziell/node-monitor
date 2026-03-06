@@ -110,9 +110,8 @@ export function NodeTab() {
   const { fetchNode } = useApi();
   const nodeState = useApiData<NodeData>(fetchNode);
 
-  useTabData(nodeState.load, 'node');
-
   const { data, loading, error } = nodeState;
+  useTabData(nodeState.load, 'node', data !== null && data !== undefined);
 
   useRefreshDone(loading, 'node');
 

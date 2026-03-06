@@ -25,10 +25,12 @@ const NotificationContext = createContext<NotificationContextValue | null>(null)
 
 const DISPLAY_MS = 5000;
 const SLIDEOUT_MS = 350;
+const CHAIN_TIP_POLL_MS = 5000;
 
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const timeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const lastSeenHeightRef = useRef<number | null>(null);
 
   const dismissNotification = useCallback((id: string) => {
     setNotifications((prev) =>
@@ -58,35 +60,49 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   );
 
   useEffect(() => {
-    if (typeof EventSource === 'undefined') {
-      return;
-    }
-    const url = `${API_BASE_URL.replace(/\/$/, '')}/events`;
-    const es = new EventSource(url);
-    es.onmessage = (event) => {
+    let isMounted = true;
+    const chainTipUrl = `${API_BASE_URL.replace(/\/$/, '')}/chain-tip`;
+    const pollChainTip = async () => {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 4000);
       try {
-        const data = JSON.parse(event.data) as {
-          type?: string;
-          height?: number;
-          mining_pool?: string;
+        const res = await fetch(chainTipUrl, {
+          signal: controller.signal,
+          cache: 'no-store',
+        });
+        if (!res.ok) return;
+        const payload = (await res.json()) as {
+          data?: {
+            height?: number | null;
+            mining_pool?: string | null;
+          };
         };
-        if (data.type === 'new_block') {
-          const pool = data.mining_pool?.trim();
-          const msg = pool
-            ? `Block #${data.height ?? '?'} found (${pool})`
-            : `Block #${data.height ?? '?'} found`;
-          addNotification({ message: msg, type: 'new_block' });
-        }
+        const height = payload?.data?.height;
+        if (!Number.isInteger(height)) return;
+        if (!isMounted) return;
+        const currentHeight = height as number;
+        const previousHeight = lastSeenHeightRef.current;
+        lastSeenHeightRef.current = currentHeight;
+        if (previousHeight === null || currentHeight <= previousHeight) return;
+        const pool = payload?.data?.mining_pool?.trim();
+        const msg = pool
+          ? `Block #${currentHeight} found (${pool})`
+          : `Block #${currentHeight} found`;
+        addNotification({ message: msg, type: 'new_block' });
       } catch {
-        // ignore parse errors
+        // ignore polling errors; next interval retries
+      } finally {
+        clearTimeout(timeoutId);
       }
     };
-    es.onerror = () => {
-      es.close();
-    };
+    pollChainTip().catch(() => {});
+    const pollId = setInterval(() => {
+      pollChainTip().catch(() => {});
+    }, CHAIN_TIP_POLL_MS);
     const timeouts = timeoutsRef.current;
     return () => {
-      es.close();
+      isMounted = false;
+      clearInterval(pollId);
       timeouts.forEach((t) => clearTimeout(t));
       timeouts.clear();
     };

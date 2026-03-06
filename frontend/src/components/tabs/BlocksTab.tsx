@@ -161,7 +161,7 @@ export function BlocksTab() {
   const { data: distribution, load: loadDistribution } = useApiData(fetchDistribution);
   const { refreshTabId } = useRefreshState();
 
-  useTabData(load, 'blocks');
+  useTabData(load, 'blocks', data !== null && data !== undefined);
 
   useRefreshDone(loading, 'blocks');
 

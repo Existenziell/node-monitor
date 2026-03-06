@@ -1,14 +1,24 @@
 import { useEffect } from 'react';
+import { useActiveTab } from '@/contexts/TabContext';
 import type { TabId } from '@/types';
 
 /**
- * Runs load on mount and when a tab-refresh event fires with detail matching tabId.
- * Pass a stable load callback (e.g. from useApiData, or useCallback wrapping multiple loads).
+ * Runs load when this tab is active and (we don't have data yet or a tab-refresh event
+ * targets this tab). Pass hasData so we skip loading when switching back to a tab that
+ * already has data (keeps tab panels mounted elsewhere).
  */
-export function useTabData(load: () => Promise<unknown>, tabId: TabId) {
+export function useTabData(
+  load: () => Promise<unknown>,
+  tabId: TabId,
+  hasData: boolean
+) {
+  const { activeTab } = useActiveTab();
+
   useEffect(() => {
+    if (activeTab !== tabId) return;
+    if (hasData) return;
     load().catch(() => {});
-  }, [load]);
+  }, [activeTab, tabId, hasData, load]);
 
   useEffect(() => {
     const handler = (e: Event) => {

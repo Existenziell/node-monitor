@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { render, screen, act } from '@testing-library/react';
 import App from '@/App';
 import { ThemeProvider } from '@/contexts/ThemeContext';
+import { TabProvider } from '@/contexts/TabContext';
 import { ApiProvider } from '@/contexts/ApiContext';
 import { RefreshProvider } from '@/contexts/RefreshContext';
 import { NotificationProvider } from '@/contexts/NotificationContext';
@@ -9,13 +10,15 @@ import { NotificationProvider } from '@/contexts/NotificationContext';
 function WrappedApp() {
   return (
     <ThemeProvider>
-      <ApiProvider>
-        <RefreshProvider>
-          <NotificationProvider>
-            <App />
-          </NotificationProvider>
-        </RefreshProvider>
-      </ApiProvider>
+      <TabProvider>
+        <ApiProvider>
+          <RefreshProvider>
+            <NotificationProvider>
+              <App />
+            </NotificationProvider>
+          </RefreshProvider>
+        </ApiProvider>
+      </TabProvider>
     </ThemeProvider>
   );
 }

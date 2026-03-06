@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useApi } from '@/contexts/ApiContext';
-import { useTabFromUrl } from '@/hooks/useTabFromUrl';
+import { useActiveTab } from '@/contexts/TabContext';
 import { DEFAULT_RPC_HOST, DEFAULT_RPC_PORT } from '@/constants';
 import { SectionHeader } from '@/components/SectionHeader';
 import type { ConfigStatus, ConfigSavePayload, ConfigTestResult, PendingChange, SettingsBaseline } from '@/types';
@@ -65,7 +65,7 @@ function getPendingChanges(
 }
 
 export function SettingsTab() {
-  const { activeTab } = useTabFromUrl();
+  const { activeTab } = useActiveTab();
   const { fetchConfigStatus, fetchConfigTest, saveConfig, saveWalletName } = useApi();
   const [status, setStatus] = useState<ConfigStatus | null>(null);
   const [loading, setLoading] = useState(true);

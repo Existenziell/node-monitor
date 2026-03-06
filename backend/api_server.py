@@ -38,7 +38,7 @@ try:
         get_network_history,
         get_distribution,
     )
-    from event_broadcaster import subscribe as events_subscribe, unsubscribe as events_unsubscribe  # pyright: ignore[reportMissingImports]
+    from chain_tip_state import get_chain_tip, set_chain_tip  # pyright: ignore[reportMissingImports]
 
 except Exception as e:
     print(f"Import error: {e}")
@@ -70,10 +70,6 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
             parsed_path = urlparse(self.path)
             path = parsed_path.path
 
-            if path == '/api/events':
-                self.handle_events_sse()
-                return
-
             self.send_response(200)
             self.send_header('Content-Type', 'application/json')
             self.send_header('Access-Control-Allow-Origin', '*')
@@ -87,6 +83,8 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
                 self.handle_wallet_data()
             elif path == '/api/blocks':
                 self.handle_blocks_data()
+            elif path == '/api/chain-tip':
+                self.handle_chain_tip()
             elif path == '/api/network':
                 self.handle_network_data()
             elif path == '/api/distribution':
@@ -116,29 +114,12 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
         except Exception as e:
             self.send_error(500, f"Internal Server Error: {str(e)}")
 
-    def handle_events_sse(self):
-        """Stream server-sent events (e.g. new_block) to the client."""
-        import queue as queue_module
-        event_queue = events_subscribe()
-        try:
-            self.send_response(200)
-            self.send_header('Content-Type', 'text/event-stream')
-            self.send_header('Cache-Control', 'no-cache')
-            self.send_header('Connection', 'keep-alive')
-            self.send_header('Access-Control-Allow-Origin', '*')
-            self.end_headers()
-            while True:
-                try:
-                    event = event_queue.get(timeout=15)
-                    self.wfile.write(f"data: {json.dumps(event)}\n\n".encode('utf-8'))
-                    self.wfile.flush()
-                except queue_module.Empty:
-                    self.wfile.write(b": keepalive\n\n")
-                    self.wfile.flush()
-        except (BrokenPipeError, ConnectionResetError, OSError):
-            pass
-        finally:
-            events_unsubscribe(event_queue)
+    def handle_chain_tip(self):
+        """Return latest chain tip seen by in-process monitor."""
+        self.wfile.write(json.dumps({
+            "status": "success",
+            "data": get_chain_tip(),
+        }).encode())
 
     def _send_cors_headers(self):
         """Send CORS headers for cross-origin requests."""
@@ -942,6 +923,16 @@ def start_api_server(port=None):
     db_path = os.path.join(data_dir, "node_monitor.db")
     os.makedirs(data_dir, exist_ok=True)
     init_schema(db_path)
+    recent_blocks = get_recent_blocks(1, db_path)
+    if recent_blocks:
+        tip = recent_blocks[0]
+        set_chain_tip(
+            height=tip.get("block_height"),
+            block_hash=tip.get("block_hash"),
+            mining_pool=tip.get("mining_pool"),
+            transaction_count=tip.get("transaction_count"),
+            updated_at=tip.get("timestamp"),
+        )
 
     # Block monitor uses this API for pool signatures (data/pools.json) when running in-process
     if "POOLS_API_URL" not in os.environ:

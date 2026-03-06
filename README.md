@@ -112,16 +112,15 @@ Type `.quit` to exit.
 
 ---
 
-### SSE (Server-Sent Events)
+### Real-time block notifications (polling)
 
-The API exposes a **Server-Sent Events** stream at **`GET /api/events`** so the dashboard can show real-time notifications (e.g. when a new block is found via ZMQ).
+The API exposes a lightweight endpoint at **`GET /api/chain-tip`** so the dashboard can show new-block notifications without a long-lived stream.
 
-- **Endpoint:** `GET /api/events`
-- **Response:** `Content-Type: text/event-stream`; each event is a JSON line after `data: ` (e.g. `data: {"type":"new_block","height":123,"hash":"...","mining_pool":"..."}\n\n`).
-- **Keepalive:** If no event is sent for 15 seconds, the server sends a comment line (`: keepalive\n\n`) to keep the connection open.
-- **Usage:** The frontend opens a single `EventSource` to this URL when the app loads and displays a short-lived notification (slide-in from top, 5 seconds, then slide-out) for each `new_block` event.
+- **Endpoint:** `GET /api/chain-tip`
+- **Response:** JSON payload with latest observed tip (e.g. `height`, `hash`, `mining_pool`, `transaction_count`, `updated_at`).
+- **Usage:** The frontend polls this endpoint every 5 seconds and shows a short-lived notification (slide-in from top, 5 seconds, then slide-out) when `height` increases.
 
-When the block monitor runs inside the API process, it broadcasts a `new_block` event after each block is persisted to SQLite, so the dashboard updates immediately when ZMQ delivers a block hash.
+When the block monitor runs inside the API process, it updates this chain-tip state as soon as a new block is persisted to SQLite, so notifications remain near real-time while keeping API impact low.
 
 ---
 
