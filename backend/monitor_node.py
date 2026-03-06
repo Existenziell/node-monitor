@@ -231,11 +231,6 @@ class BlockchainMonitor:
             current_height = block.get('height', 0)
 
             if current_height <= self.last_block_height:
-                _log.debug(
-                    "ZMQ block skipped (height not new) current_height=%s last_block_height=%s",
-                    current_height,
-                    self.last_block_height,
-                )
                 return
 
             _log.info("ZMQ block accepted height=%s hash=%s", current_height, block_hash)
@@ -254,8 +249,6 @@ class BlockchainMonitor:
         current_height = blockchain_info.get('blocks', 0)
 
         if current_height <= self.last_block_height or self.last_block_height <= 0:
-            if self.last_block_height <= 0:
-                _log.debug("polling first run or no change height=%s", current_height)
             self.last_block_height = current_height
             return False
 
@@ -341,9 +334,8 @@ class BlockchainMonitor:
                 mining_pool=mining_pool,
                 transaction_count=len(block.get('tx', [])),
             )
-            _log.info("chain tip updated for height=%s", block_height)
-        except Exception as e:
-            _log.debug("set_chain_tip failed: %s", e)
+        except Exception:
+            pass
 
     def _get_time_since_last_block(self, current_block_time):
         """Return formatted time since last block (no output)."""
@@ -691,15 +683,9 @@ class BlockchainMonitor:
     def _persist_block(self, block, mining_pool, block_details, time_since_last_block):
         """Persist block to SQLite (block_store)."""
         if not BLOCK_STORE_AVAILABLE:
-            _log.debug("_persist_block skipped BLOCK_STORE_AVAILABLE=False")
             return
         block_height = block.get('height', 0)
         if block_height <= self._last_logged_block_height:
-            _log.debug(
-                "_persist_block skipped duplicate height=%s _last_logged=%s",
-                block_height,
-                self._last_logged_block_height,
-            )
             return
         try:
             block_dict = self._prepare_block_dict(

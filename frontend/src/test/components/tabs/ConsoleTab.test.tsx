@@ -46,8 +46,10 @@ describe('ConsoleTab', () => {
     const user = userEvent.setup();
     render(<WrappedConsoleTab />);
     const methodInput = screen.getByLabelText(/Method/i);
-    await user.clear(methodInput);
-    await user.click(screen.getByRole('button', { name: /Execute/i }));
+    await act(async () => {
+      await user.clear(methodInput);
+      await user.click(screen.getByRole('button', { name: /Execute/i }));
+    });
     expect(screen.getByText(/Method is required/i)).toBeInTheDocument();
     expect(fetch).not.toHaveBeenCalled();
   });

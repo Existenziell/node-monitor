@@ -6,13 +6,11 @@ Runs the block monitor inside this process (SQLite for blocks/network/distributi
 """
 
 import json
-import logging
 import sys
 import os
 import threading
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
-_log = logging.getLogger(__name__)
 from urllib.parse import urlparse, parse_qs
 from urllib.request import urlopen
 from urllib.error import URLError, HTTPError
@@ -125,7 +123,6 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
     def handle_chain_tip(self):
         """Return latest chain tip seen by in-process monitor."""
         data = get_chain_tip()
-        _log.debug("chain-tip requested height=%s", data.get("height"))
         self.wfile.write(json.dumps({
             "status": "success",
             "data": data,

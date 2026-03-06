@@ -125,7 +125,7 @@ export function NetworkHistoryChart({ networkHistory }: NetworkHistoryChartProps
               color: 'var(--tooltip-text, #0f172a)',
             }}
             itemStyle={{ color: 'var(--tooltip-text, #0f172a)' }}
-            labelStyle={{ color: 'var(--tooltip-text, #0f172a)' }}
+            labelStyle={{ color: 'var(--tooltip-text, #0f172a)', whiteSpace: 'pre-line' }}
             labelFormatter={(label: string | number, payload) => {
               const ts =
                 typeof label === 'number'
@@ -152,7 +152,6 @@ export function NetworkHistoryChart({ networkHistory }: NetworkHistoryChartProps
               if (name === 'Difficulty') return [formatDifficulty(num), name];
               return [num.toLocaleString(), name];
             }}
-            labelStyle={{ color: 'inherit', whiteSpace: 'pre-line' }}
           />
           <Legend
             wrapperStyle={{ fontSize: 12 }}

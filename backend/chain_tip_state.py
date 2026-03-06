@@ -30,7 +30,6 @@ def get_chain_tip() -> Dict[str, Any]:
     """Return a shallow copy of latest chain tip state."""
     with _lock:
         out = dict(_chain_tip)
-    _log.debug("get_chain_tip height=%s", out.get("height"))
     return out
 
 
