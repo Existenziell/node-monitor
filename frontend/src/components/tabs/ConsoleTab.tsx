@@ -153,7 +153,7 @@ export function ConsoleTab() {
       </div>
 
       <div className="flex gap-4 flex-col lg:flex-row">
-        <div className="flex-1 min-w-0 section-container">
+        <div className="flex-[1] min-w-0 section-container">
           <SectionHeader>RPC Console</SectionHeader>
           <div className="space-y-3">
             <div className="flex flex-wrap gap-4 items-start">
@@ -161,7 +161,7 @@ export function ConsoleTab() {
                 <label htmlFor="rpc-method" className="form-label-muted">
                   Method
                 </label>
-                <div className="flex flex-col md:flex-row gap-4 items-start md:items-center w-full border border-level-3 rounded-md p-2">
+                <div className="flex flex-col gap-1.5 w-full border border-level-3 rounded-md p-2">
                   <input
                     id="rpc-method"
                     type="text"
@@ -173,10 +173,10 @@ export function ConsoleTab() {
                         handleExecute();
                       }
                     }}
-                    className="form-input form-input-mono max-w-[220px]"
+                    className="form-input form-input-mono min-w-[22ch] w-full max-w-md"
                     placeholder="getblockcount"
                   />
-                  <p className="text-level-5 flex-shrink-0">
+                  <p className="text-level-5 text-sm">
                     {getCommandDescription(method) || '—'}
                   </p>
                 </div>
@@ -207,7 +207,7 @@ export function ConsoleTab() {
           </div>
         </div>
 
-        <div className="flex-1 min-w-0 section-container">
+        <div className="flex-[2] min-w-0 section-container">
           <SectionHeader>Response</SectionHeader>
           <div className="p-3 font-mono text-sm overflow-x-auto flex-1 min-h-[120px]">
             {error !== null ? (

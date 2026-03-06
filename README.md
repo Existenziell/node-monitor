@@ -112,6 +112,19 @@ Type `.quit` to exit.
 
 ---
 
+### SSE (Server-Sent Events)
+
+The API exposes a **Server-Sent Events** stream at **`GET /api/events`** so the dashboard can show real-time notifications (e.g. when a new block is found via ZMQ).
+
+- **Endpoint:** `GET /api/events`
+- **Response:** `Content-Type: text/event-stream`; each event is a JSON line after `data: ` (e.g. `data: {"type":"new_block","height":123,"hash":"...","mining_pool":"..."}\n\n`).
+- **Keepalive:** If no event is sent for 15 seconds, the server sends a comment line (`: keepalive\n\n`) to keep the connection open.
+- **Usage:** The frontend opens a single `EventSource` to this URL when the app loads and displays a short-lived notification (slide-in from top, 5 seconds, then slide-out) for each `new_block` event.
+
+When the block monitor runs inside the API process, it broadcasts a `new_block` event after each block is persisted to SQLite, so the dashboard updates immediately when ZMQ delivers a block hash.
+
+---
+
 ### How to enable Tor
 
 Enabling Tor lets your **Bitcoin node** connect to the network over Tor (and optionally accept incoming connections from other Tor nodes). node-monitor does not run Tor itself; it only talks to your node via RPC (and ZMQ) on the host you configured.

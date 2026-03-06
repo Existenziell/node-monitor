@@ -684,6 +684,17 @@ class BlockchainMonitor:
                 db_path=self._db_path,
             )
             self._last_logged_block_height = block_height
+            try:
+                from event_broadcaster import broadcast
+                broadcast({
+                    "type": "new_block",
+                    "height": block_height,
+                    "hash": block_dict.get("block_hash", ""),
+                    "mining_pool": block_dict.get("mining_pool", ""),
+                    "transaction_count": block_dict.get("transaction_count", 0),
+                })
+            except Exception:
+                pass
         except (OSError, IOError, KeyError, ValueError, sqlite3.Error) as e:
             error_service.handle_file_error("block_store", "write", e)
 

@@ -286,7 +286,20 @@ export function BlocksTab() {
               {blocksSort.sortedData.map((block) => (
                 <tr
                   key={block.block_height}
-                  className="table-row-hover"
+                  className="table-row-hover cursor-pointer"
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => {
+                    if (block.block_hash) {
+                      window.open(`https://mempool.space/block/${block.block_hash}`, '_blank', 'noopener,noreferrer');
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if ((e.key === 'Enter' || e.key === ' ') && block.block_hash) {
+                      e.preventDefault();
+                      window.open(`https://mempool.space/block/${block.block_hash}`, '_blank', 'noopener,noreferrer');
+                    }
+                  }}
                 >
                   <td className="p-2 text-level-5">{block.block_height}</td>
                   <td className="p-2 text-level-5">{block.block_time ?? '-'}</td>

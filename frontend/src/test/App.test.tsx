@@ -4,13 +4,16 @@ import App from '@/App';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { ApiProvider } from '@/contexts/ApiContext';
 import { RefreshProvider } from '@/contexts/RefreshContext';
+import { NotificationProvider } from '@/contexts/NotificationContext';
 
 function WrappedApp() {
   return (
     <ThemeProvider>
       <ApiProvider>
         <RefreshProvider>
-          <App />
+          <NotificationProvider>
+            <App />
+          </NotificationProvider>
         </RefreshProvider>
       </ApiProvider>
     </ThemeProvider>

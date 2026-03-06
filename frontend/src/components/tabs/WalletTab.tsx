@@ -412,7 +412,20 @@ export function WalletTab() {
                 transactionsSort.sortedData.map((tx, i) => (
                   <tr
                     key={`${tx.txid ?? ''}-${tx.vout ?? ''}-${i}`}
-                    className="table-row-hover"
+                    className="table-row-hover cursor-pointer"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => {
+                      if (tx.txid) {
+                        window.open(`https://mempool.space/tx/${tx.txid}`, '_blank', 'noopener,noreferrer');
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if ((e.key === 'Enter' || e.key === ' ') && tx.txid) {
+                        e.preventDefault();
+                        window.open(`https://mempool.space/tx/${tx.txid}`, '_blank', 'noopener,noreferrer');
+                      }
+                    }}
                   >
                     <td className="p-2 text-level-5 font-mono" title={tx.txid ?? ''}>
                       {truncateTxid(tx.txid)}

@@ -38,6 +38,7 @@ try:
         get_network_history,
         get_distribution,
     )
+    from event_broadcaster import subscribe as events_subscribe, unsubscribe as events_unsubscribe  # pyright: ignore[reportMissingImports]
 
 except Exception as e:
     print(f"Import error: {e}")
@@ -68,6 +69,10 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
         try:
             parsed_path = urlparse(self.path)
             path = parsed_path.path
+
+            if path == '/api/events':
+                self.handle_events_sse()
+                return
 
             self.send_response(200)
             self.send_header('Content-Type', 'application/json')
@@ -107,6 +112,30 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
 
         except Exception as e:
             self.send_error(500, f"Internal Server Error: {str(e)}")
+
+    def handle_events_sse(self):
+        """Stream server-sent events (e.g. new_block) to the client."""
+        import queue as queue_module
+        event_queue = events_subscribe()
+        try:
+            self.send_response(200)
+            self.send_header('Content-Type', 'text/event-stream')
+            self.send_header('Cache-Control', 'no-cache')
+            self.send_header('Connection', 'keep-alive')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            while True:
+                try:
+                    event = event_queue.get(timeout=15)
+                    self.wfile.write(f"data: {json.dumps(event)}\n\n".encode('utf-8'))
+                    self.wfile.flush()
+                except queue_module.Empty:
+                    self.wfile.write(b": keepalive\n\n")
+                    self.wfile.flush()
+        except (BrokenPipeError, ConnectionResetError, OSError):
+            pass
+        finally:
+            events_unsubscribe(event_queue)
 
     def _send_cors_headers(self):
         """Send CORS headers for cross-origin requests."""
