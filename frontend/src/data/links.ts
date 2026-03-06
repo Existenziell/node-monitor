@@ -17,6 +17,6 @@ export const FOOTER_LEFT_LINKS = [
 ] as const;
 
 export const FOOTER_RIGHT_LINKS = [
-  { href: DASHBOARD_LINK_URL, label: 'Dashboard' },
+  { href: DASHBOARD_LINK_URL, label: 'Miner Dashboard' },
   { href: CHRISTOF_DIGITAL_URL, label: 'christof.digital' },
 ] as const;
