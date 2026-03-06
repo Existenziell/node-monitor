@@ -122,6 +122,7 @@ export function NetworkHistoryChart({ networkHistory }: NetworkHistoryChartProps
               backgroundColor: 'var(--tooltip-bg, rgba(255,255,255,0.95))',
               border: '1px solid var(--tooltip-border, #e5e7eb)',
               borderRadius: '0.5rem',
+              color: 'var(--tooltip-text, #0f172a)',
             }}
             labelFormatter={(label: string | number, payload) => {
               const ts =
