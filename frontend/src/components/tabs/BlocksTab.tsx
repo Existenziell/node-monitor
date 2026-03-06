@@ -125,7 +125,7 @@ function PoolDistributionChart({
             cy="50%"
             innerRadius={0}
             outerRadius="70%"
-            paddingAngle={1}
+            paddingAngle={0}
             cornerRadius={0}
             stroke="none"
           >
@@ -210,11 +210,11 @@ export function BlocksTab() {
   useRefreshDone(loading, 'blocks');
 
   useEffect(() => {
-    loadPools().catch(() => {});
+    loadPools().catch(() => { });
   }, [loadPools]);
 
   useEffect(() => {
-    loadDistribution().catch(() => {});
+    loadDistribution().catch(() => { });
   }, [loadDistribution]);
 
   useEffect(() => {
@@ -298,12 +298,12 @@ export function BlocksTab() {
 
   return (
     <LoadingErrorGate loading={loading} error={error} data={gateData} loadingLabel="blocks">
-    <div className="relative space-y-4">
-      <LoadingOverlay show={loading && (blocks.length > 0 || metadata !== null) && refreshTabId === 'blocks'} />
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="section-container">
-          <SectionHeader>Current block</SectionHeader>
-          <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+      <div className="relative space-y-4">
+        <LoadingOverlay show={loading && (blocks.length > 0 || metadata !== null) && refreshTabId === 'blocks'} />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="section-container">
+            <SectionHeader>Current block</SectionHeader>
+            <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
               <dt className="text-level-4">Next block</dt>
               <dd className="text-level-5 font-medium tabular-nums">
                 {nextBlockHeight !== null ? `#${nextBlockHeight.toLocaleString()}` : '-'}
@@ -318,81 +318,81 @@ export function BlocksTab() {
                   ? formatTimeSince(Math.floor(avgBlockTimeSeconds))
                   : '-'}
               </dd>
-          </dl>
+            </dl>
+          </div>
+          <div className="section-container">
+            <SectionHeader>Pool distribution</SectionHeader>
+            <PoolDistributionChart distribution={distribution ?? null} poolByIdentifier={poolByIdentifier} />
+          </div>
         </div>
-        <div className="section-container">
-          <SectionHeader>Pool distribution</SectionHeader>
-          <PoolDistributionChart distribution={distribution ?? null} poolByIdentifier={poolByIdentifier} />
-        </div>
-      </div>
 
-      <div className="section-container">
-        <SectionHeader>Previous Blocks</SectionHeader>
-        <div className="overflow-x-auto max-h-[60vh]">
-          <table className="sortable-table w-full text-sm">
-            <thead className="sticky top-0 bg-level-2 text-left">
-              <tr>
-                <SortableTh label="Height" sortKey="height" currentSortKey={blocksSort.sortKey} sortDir={blocksSort.sortDir} onSort={blocksSort.setSort} className="px-2 py-3 text-level-4" />
-                <SortableTh label="Time" sortKey="time" currentSortKey={blocksSort.sortKey} sortDir={blocksSort.sortDir} onSort={blocksSort.setSort} className="px-2 py-3 text-level-4" />
-                <SortableTh label="Duration" sortKey="duration" currentSortKey={blocksSort.sortKey} sortDir={blocksSort.sortDir} onSort={blocksSort.setSort} className="px-2 py-3 text-level-4" />
-                <SortableTh label="Pool" sortKey="pool" currentSortKey={blocksSort.sortKey} sortDir={blocksSort.sortDir} onSort={blocksSort.setSort} className="px-2 py-3 text-level-4" />
-                <SortableTh label="Tx Count" sortKey="txCount" currentSortKey={blocksSort.sortKey} sortDir={blocksSort.sortDir} onSort={blocksSort.setSort} className="px-2 py-3 text-level-4" />
-                <SortableTh label="Weight" sortKey="weight" currentSortKey={blocksSort.sortKey} sortDir={blocksSort.sortDir} onSort={blocksSort.setSort} className="px-2 py-3 text-level-4" />
-                <SortableTh label="Size" sortKey="size" currentSortKey={blocksSort.sortKey} sortDir={blocksSort.sortDir} onSort={blocksSort.setSort} className="px-2 py-3 text-level-4" />
-                <SortableTh label="Reward" sortKey="reward" currentSortKey={blocksSort.sortKey} sortDir={blocksSort.sortDir} onSort={blocksSort.setSort} className="px-2 py-3 text-level-4" />
-                <SortableTh label="Fees" sortKey="fees" currentSortKey={blocksSort.sortKey} sortDir={blocksSort.sortDir} onSort={blocksSort.setSort} className="px-2 py-3 text-level-4" />
-                <SortableTh label="Fees (USD)" sortKey="feesUsd" currentSortKey={blocksSort.sortKey} sortDir={blocksSort.sortDir} onSort={blocksSort.setSort} className="px-2 py-3 text-level-4" />
-              </tr>
-            </thead>
-            <tbody>
-              {blocksSort.sortedData.map((block) => (
-                <tr
-                  key={block.block_height}
-                  className="table-row-hover cursor-pointer"
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => {
-                    if (block.block_hash) {
-                      window.open(`https://mempool.space/block/${block.block_hash}`, '_blank', 'noopener,noreferrer');
-                    }
-                  }}
-                  onKeyDown={(e) => {
-                    if ((e.key === 'Enter' || e.key === ' ') && block.block_hash) {
-                      e.preventDefault();
-                      window.open(`https://mempool.space/block/${block.block_hash}`, '_blank', 'noopener,noreferrer');
-                    }
-                  }}
-                >
-                  <td className="p-2 text-level-5">{block.block_height}</td>
-                  <td className="p-2 text-level-5">{block.block_time ?? '-'}</td>
-                  <td className="p-2 text-level-5 tabular-nums">{(block.time_since_last_block ?? '').trim() || '-'}</td>
-                  <td className="p-2 max-w-[160px] text-level-5">
-                    <PoolCell
-                      identifier={block.mining_pool}
-                      poolByIdentifier={poolByIdentifier}
-                      iconSize={POOL_ICON_SIZE}
-                    />
-                  </td>
-                  <td className="p-2 text-level-5">{block.transaction_count ?? '-'}</td>
-                  <td className="p-2 text-level-5 tabular-nums">{formatWeight(block.block_weight as number | undefined)}</td>
-                  <td className="p-2 text-level-5 tabular-nums">{formatBytes(block.block_size as number | undefined)}</td>
-                  <td className="p-2 text-level-5 tabular-nums">{block.block_reward !== null && block.block_reward !== undefined ? Number(block.block_reward).toFixed(4) : '-'}</td>
-                  <td className="p-2 text-level-5 tabular-nums">{block.total_fees !== null && block.total_fees !== undefined ? Number(block.total_fees).toFixed(4) : '-'}</td>
-                  <td className="p-2 text-level-5 tabular-nums">{block.total_fees_usd !== null && block.total_fees_usd !== undefined ? Number(block.total_fees_usd).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}</td>
+        <div className="section-container">
+          <SectionHeader>Previous Blocks</SectionHeader>
+          <div className="overflow-x-auto max-h-[60vh]">
+            <table className="sortable-table w-full text-sm">
+              <thead className="sticky top-0 bg-level-2 text-left">
+                <tr>
+                  <SortableTh label="Height" sortKey="height" currentSortKey={blocksSort.sortKey} sortDir={blocksSort.sortDir} onSort={blocksSort.setSort} className="px-2 py-3 text-level-4" />
+                  <SortableTh label="Time" sortKey="time" currentSortKey={blocksSort.sortKey} sortDir={blocksSort.sortDir} onSort={blocksSort.setSort} className="px-2 py-3 text-level-4" />
+                  <SortableTh label="Duration" sortKey="duration" currentSortKey={blocksSort.sortKey} sortDir={blocksSort.sortDir} onSort={blocksSort.setSort} className="px-2 py-3 text-level-4" />
+                  <SortableTh label="Pool" sortKey="pool" currentSortKey={blocksSort.sortKey} sortDir={blocksSort.sortDir} onSort={blocksSort.setSort} className="px-2 py-3 text-level-4" />
+                  <SortableTh label="Tx Count" sortKey="txCount" currentSortKey={blocksSort.sortKey} sortDir={blocksSort.sortDir} onSort={blocksSort.setSort} className="px-2 py-3 text-level-4" />
+                  <SortableTh label="Weight" sortKey="weight" currentSortKey={blocksSort.sortKey} sortDir={blocksSort.sortDir} onSort={blocksSort.setSort} className="px-2 py-3 text-level-4" />
+                  <SortableTh label="Size" sortKey="size" currentSortKey={blocksSort.sortKey} sortDir={blocksSort.sortDir} onSort={blocksSort.setSort} className="px-2 py-3 text-level-4" />
+                  <SortableTh label="Reward" sortKey="reward" currentSortKey={blocksSort.sortKey} sortDir={blocksSort.sortDir} onSort={blocksSort.setSort} className="px-2 py-3 text-level-4" />
+                  <SortableTh label="Fees" sortKey="fees" currentSortKey={blocksSort.sortKey} sortDir={blocksSort.sortDir} onSort={blocksSort.setSort} className="px-2 py-3 text-level-4" />
+                  <SortableTh label="Fees (USD)" sortKey="feesUsd" currentSortKey={blocksSort.sortKey} sortDir={blocksSort.sortDir} onSort={blocksSort.setSort} className="px-2 py-3 text-level-4" />
                 </tr>
-              ))}
-              {blocks.length < totalBlocks && (
-                <tr ref={loadMoreSentinelRef}>
-                  <td colSpan={10} className="p-2 text-center text-level-4 text-sm">
-                    {loadingMore ? 'Loading more…' : ''}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {blocksSort.sortedData.map((block) => (
+                  <tr
+                    key={block.block_height}
+                    className="table-row-hover cursor-pointer"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => {
+                      if (block.block_hash) {
+                        window.open(`https://mempool.space/block/${block.block_hash}`, '_blank', 'noopener,noreferrer');
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if ((e.key === 'Enter' || e.key === ' ') && block.block_hash) {
+                        e.preventDefault();
+                        window.open(`https://mempool.space/block/${block.block_hash}`, '_blank', 'noopener,noreferrer');
+                      }
+                    }}
+                  >
+                    <td className="p-2 text-level-5">{block.block_height}</td>
+                    <td className="p-2 text-level-5">{block.block_time ?? '-'}</td>
+                    <td className="p-2 text-level-5 tabular-nums">{(block.time_since_last_block ?? '').trim() || '-'}</td>
+                    <td className="p-2 max-w-[160px] text-level-5">
+                      <PoolCell
+                        identifier={block.mining_pool}
+                        poolByIdentifier={poolByIdentifier}
+                        iconSize={POOL_ICON_SIZE}
+                      />
+                    </td>
+                    <td className="p-2 text-level-5">{block.transaction_count ?? '-'}</td>
+                    <td className="p-2 text-level-5 tabular-nums">{formatWeight(block.block_weight as number | undefined)}</td>
+                    <td className="p-2 text-level-5 tabular-nums">{formatBytes(block.block_size as number | undefined)}</td>
+                    <td className="p-2 text-level-5 tabular-nums">{block.block_reward !== null && block.block_reward !== undefined ? Number(block.block_reward).toFixed(4) : '-'}</td>
+                    <td className="p-2 text-level-5 tabular-nums">{block.total_fees !== null && block.total_fees !== undefined ? Number(block.total_fees).toFixed(4) : '-'}</td>
+                    <td className="p-2 text-level-5 tabular-nums">{block.total_fees_usd !== null && block.total_fees_usd !== undefined ? Number(block.total_fees_usd).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}</td>
+                  </tr>
+                ))}
+                {blocks.length < totalBlocks && (
+                  <tr ref={loadMoreSentinelRef}>
+                    <td colSpan={10} className="p-2 text-center text-level-4 text-sm">
+                      {loadingMore ? 'Loading more…' : ''}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
-    </div>
     </LoadingErrorGate>
   );
 }
