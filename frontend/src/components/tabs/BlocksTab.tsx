@@ -144,6 +144,8 @@ function PoolDistributionChart({
               borderRadius: '0.5rem',
               color: 'var(--tooltip-text, #0f172a)',
             }}
+            itemStyle={{ color: 'var(--tooltip-text, #0f172a)' }}
+            labelStyle={{ color: 'var(--tooltip-text, #0f172a)' }}
             formatter={(value: number, name: string) => [`${value.toFixed(1)}%`, name]}
           />
           <Legend wrapperStyle={{ fontSize: 12 }} />

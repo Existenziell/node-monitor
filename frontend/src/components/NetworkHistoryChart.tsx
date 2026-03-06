@@ -124,6 +124,8 @@ export function NetworkHistoryChart({ networkHistory }: NetworkHistoryChartProps
               borderRadius: '0.5rem',
               color: 'var(--tooltip-text, #0f172a)',
             }}
+            itemStyle={{ color: 'var(--tooltip-text, #0f172a)' }}
+            labelStyle={{ color: 'var(--tooltip-text, #0f172a)' }}
             labelFormatter={(label: string | number, payload) => {
               const ts =
                 typeof label === 'number'
