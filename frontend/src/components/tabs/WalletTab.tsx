@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useApi } from '@/contexts/ApiContext';
 import type { UtxoEntry, WalletData, WalletTransaction } from '@/types';
 import { API_SERVER_HINT } from '@/constants';
@@ -37,6 +37,15 @@ export function WalletTab() {
   );
   const hasMultipleAccounts = accounts.length > 1;
 
+  /** Resolve account index to display label (custom label or "Account N"). */
+  const accountDisplayName = useCallback(
+    (accountIndex: number | null | undefined): string => {
+      if (accountIndex === null || accountIndex === undefined) return '-';
+      const a = accounts.find((x) => x.index === accountIndex);
+      return a ? ((a.label && a.label.trim()) ? a.label : `Account ${a.index}`) : `Account ${accountIndex}`;
+    },
+    [accounts]
+  );
 
   const unspentRaw: UtxoEntry[] = useMemo(
     () => (Array.isArray(data?.unspent) ? data.unspent : []),
@@ -428,7 +437,7 @@ export function WalletTab() {
                     <td className="p-2 text-level-5">{utxo.spendable === true ? 'Yes' : utxo.spendable === false ? 'No' : '-'}</td>
                     <td className="p-2 text-level-5">{utxo.safe === true ? 'Yes' : utxo.safe === false ? 'No' : '-'}</td>
                     {hasMultipleAccounts && selectedAccount === 'all' && (
-                      <td className="p-2 text-level-5">{utxo.accountIndex !== null && utxo.accountIndex !== undefined ? utxo.accountIndex : '-'}</td>
+                      <td className="p-2 text-level-5">{accountDisplayName(utxo.accountIndex)}</td>
                     )}
                   </tr>
                 ))
@@ -496,7 +505,7 @@ export function WalletTab() {
                     <td className="p-2 text-level-5">{tx.confirmations ?? '-'}</td>
                     <td className="p-2 text-level-5">{formatTxTime(tx)}</td>
                     {hasMultipleAccounts && selectedAccount === 'all' && (
-                      <td className="p-2 text-level-5">{tx.accountIndex !== null && tx.accountIndex !== undefined ? tx.accountIndex : '-'}</td>
+                      <td className="p-2 text-level-5">{accountDisplayName(tx.accountIndex)}</td>
                     )}
                   </tr>
                 ))
