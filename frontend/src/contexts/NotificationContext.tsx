@@ -65,11 +65,14 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     const pollChainTip = async () => {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 4000);
+      const isNode =
+        typeof process !== 'undefined' && process.versions?.node != null;
+      const init: RequestInit = { cache: 'no-store' };
+      if (!isNode) {
+        init.signal = controller.signal;
+      }
       try {
-        const res = await fetch(chainTipUrl, {
-          signal: controller.signal,
-          cache: 'no-store',
-        });
+        const res = await fetch(chainTipUrl, init);
         if (!res.ok) {
           console.debug('[chain-tip] poll not ok', res.status);
           return;
