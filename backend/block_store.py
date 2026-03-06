@@ -65,6 +65,12 @@ def init_schema(db_path: Optional[str] = None) -> None:
                     created_at TEXT NOT NULL
                 );
                 CREATE INDEX IF NOT EXISTS idx_network_created ON network_history(created_at DESC);
+
+                CREATE TABLE IF NOT EXISTS block_stats (
+                    id INTEGER PRIMARY KEY CHECK (id = 1),
+                    avg_block_time_seconds REAL,
+                    updated_at TEXT NOT NULL
+                );
             """)
             conn.commit()
         finally:
@@ -295,6 +301,76 @@ def get_distribution(db_path: Optional[str] = None) -> Dict[str, Any]:
         "by_pool": by_pool,
         "by_percentage": by_percentage,
     }
+
+
+def _compute_avg_block_time_from_times(block_times: List[str]) -> Optional[float]:
+    """Compute average block time in seconds from block_time UTC strings (%Y-%m-%d %H:%M:%S)."""
+    times = []
+    for ts in block_times:
+        if not ts or not isinstance(ts, str):
+            continue
+        try:
+            dt = datetime.strptime(ts, "%Y-%m-%d %H:%M:%S")
+            times.append(dt.timestamp())
+        except (TypeError, ValueError):
+            continue
+    if len(times) < 2:
+        return None
+    times.sort()
+    deltas = []
+    for i in range(1, len(times)):
+        if times[i] > times[i - 1]:
+            deltas.append(times[i] - times[i - 1])
+    if not deltas:
+        return None
+    return sum(deltas) / len(deltas)
+
+
+def update_avg_block_time(max_blocks: int, db_path: Optional[str] = None) -> None:
+    """Recompute average block time from the last max_blocks blocks and store in block_stats."""
+    with _lock:
+        conn = _get_connection(db_path)
+        try:
+            cur = conn.execute(
+                """
+                SELECT block_time FROM blocks
+                ORDER BY block_height DESC
+                LIMIT ?
+                """,
+                (max_blocks,),
+            )
+            rows = cur.fetchall()
+            block_times = [r[0] for r in rows if r[0]]
+            avg = _compute_avg_block_time_from_times(block_times)
+            if avg is None:
+                return
+            updated_at = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+            conn.execute(
+                """
+                INSERT OR REPLACE INTO block_stats (id, avg_block_time_seconds, updated_at)
+                VALUES (1, ?, ?)
+                """,
+                (round(avg, 2), updated_at),
+            )
+            conn.commit()
+        finally:
+            conn.close()
+
+
+def get_avg_block_time(db_path: Optional[str] = None) -> Optional[float]:
+    """Return stored average block time in seconds, or None if not yet computed."""
+    with _lock:
+        conn = _get_connection(db_path)
+        try:
+            cur = conn.execute(
+                "SELECT avg_block_time_seconds FROM block_stats WHERE id = 1"
+            )
+            row = cur.fetchone()
+            if row is None or row[0] is None:
+                return None
+            return float(row[0])
+        finally:
+            conn.close()
 
 
 def get_last_logged_block_height(db_path: Optional[str] = None) -> int:

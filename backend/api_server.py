@@ -43,6 +43,7 @@ try:
         get_blocks_count,
         get_network_history,
         get_distribution,
+        get_avg_block_time,
         prune_blocks_if_over,
     )
     from chain_tip_state import get_chain_tip, set_chain_tip  # pyright: ignore[reportMissingImports]
@@ -657,7 +658,7 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
         except Exception:
             return None
 
-    def handle_blocks_data(self):
+    def handle_blocks_data(self):  # pylint: disable=too-many-locals
         """Handle blocks data requests from SQLite (paginated, with optional cache for first page)."""
         try:
             from datetime import datetime, timezone
@@ -687,7 +688,9 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
             if use_cache and self._blocks_cache is not None and self._blocks_cache_time is not None:
                 if (now - self._blocks_cache_time).total_seconds() < BLOCKS_CACHE_SECONDS:
                     cached = self._blocks_cache
-                    avg_block_time = self._compute_avg_block_time(cached or [])
+                    avg_block_time = get_avg_block_time(db_path)
+                    if avg_block_time is None:
+                        avg_block_time = self._compute_avg_block_time(cached or [])
                     chain_height = self._get_chain_height()
                     seconds_since = self._get_seconds_since_last_block(cached, now)
                     response = {
@@ -720,7 +723,9 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
                 "cached": False,
             }
             if offset == 0:
-                avg_block_time = self._compute_avg_block_time(blocks_data)
+                avg_block_time = get_avg_block_time(db_path)
+                if avg_block_time is None:
+                    avg_block_time = self._compute_avg_block_time(blocks_data)
                 data["avg_block_time_seconds"] = avg_block_time
                 data["chain_height"] = self._get_chain_height()
                 data["seconds_since_last_block"] = self._get_seconds_since_last_block(

@@ -27,7 +27,7 @@ except ImportError:
 
 from rpc_service import create_rpc_connection
 from price_service import get_bitcoin_price
-from constants import API_SERVER_URL, DEFAULT_ZMQ_ENDPOINT
+from constants import API_SERVER_URL, BLOCKS_DB_MAX_ENTRIES, DEFAULT_ZMQ_ENDPOINT
 from error_service import error_service
 try:
     from block_store import (
@@ -35,6 +35,8 @@ try:
         insert_block,
         insert_network_snapshot,
         get_last_logged_block_height,
+        prune_blocks_if_over,
+        update_avg_block_time,
     )
     BLOCK_STORE_AVAILABLE = True
 except ImportError:
@@ -718,6 +720,8 @@ class BlockchainMonitor:
                 db_path=self._db_path,
             )
             self._last_logged_block_height = block_height
+            prune_blocks_if_over(BLOCKS_DB_MAX_ENTRIES, self._db_path)
+            update_avg_block_time(BLOCKS_DB_MAX_ENTRIES, self._db_path)
             _log.info("block persisted height=%s hash=%s", block_height, block_dict.get("block_hash"))
         except (OSError, IOError, KeyError, ValueError, sqlite3.Error) as e:
             error_service.handle_file_error("block_store", "write", e)

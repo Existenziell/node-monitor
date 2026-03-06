@@ -3,6 +3,7 @@
 import os
 
 from block_store import (
+    get_avg_block_time,
     get_blocks_count,
     get_distribution,
     get_last_logged_block_height,
@@ -12,6 +13,7 @@ from block_store import (
     insert_block,
     insert_network_snapshot,
     prune_blocks_if_over,
+    update_avg_block_time,
 )
 
 
@@ -204,3 +206,44 @@ def test_insert_block_does_not_prune(tmp_path):
     heights = {b["block_height"] for b in blocks}
     assert 1000 not in heights
     assert 1500 in heights
+
+
+def test_get_avg_block_time_and_update_avg_block_time(tmp_path):
+    """get_avg_block_time returns None when not set; update_avg_block_time stores avg over last N blocks."""
+    path = _db_path(tmp_path)
+    init_schema(path)
+    assert get_avg_block_time(path) is None
+    insert_block(
+        block_height=1,
+        block_hash="a",
+        mining_pool="P",
+        transaction_count=0,
+        block_size=0,
+        block_weight=0,
+        block_reward=0.0,
+        total_fees=0.0,
+        total_fees_usd=0.0,
+        block_time="2025-01-01 12:00:00",
+        time_since_last_block="",
+        db_path=path,
+    )
+    update_avg_block_time(500, path)
+    assert get_avg_block_time(path) is None  # need at least 2 blocks
+    insert_block(
+        block_height=2,
+        block_hash="b",
+        mining_pool="P",
+        transaction_count=0,
+        block_size=0,
+        block_weight=0,
+        block_reward=0.0,
+        total_fees=0.0,
+        total_fees_usd=0.0,
+        block_time="2025-01-01 12:10:00",  # 600 s later
+        time_since_last_block="",
+        db_path=path,
+    )
+    update_avg_block_time(500, path)
+    avg = get_avg_block_time(path)
+    assert avg is not None
+    assert 590 <= avg <= 610

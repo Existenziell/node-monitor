@@ -98,11 +98,11 @@ function PoolDistributionChart({
         };
       })
       .sort((a, b) => b.value - a.value);
-    const top5 = sorted.slice(0, 5);
-    const rest = sorted.slice(5);
+    const top7 = sorted.slice(0, 7);
+    const rest = sorted.slice(7);
     const othersValue = rest.reduce((sum, d) => sum + d.value, 0);
-    if (othersValue <= 0) return top5;
-    return [...top5, { name: 'Others', value: othersValue }];
+    if (othersValue <= 0) return top7;
+    return [...top7, { name: 'Others', value: othersValue }];
   }, [distribution, poolByIdentifier]);
 
   if (pieData.length === 0) {
@@ -299,7 +299,7 @@ export function BlocksTab() {
   return (
     <LoadingErrorGate loading={loading} error={error} data={gateData} loadingLabel="blocks">
     <div className="relative space-y-4">
-      <LoadingOverlay show={loading && (blocks.length > 0 || metadata != null) && refreshTabId === 'blocks'} />
+      <LoadingOverlay show={loading && (blocks.length > 0 || metadata !== null) && refreshTabId === 'blocks'} />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="section-container">
           <SectionHeader>Current block</SectionHeader>

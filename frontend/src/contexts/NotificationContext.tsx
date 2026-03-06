@@ -69,7 +69,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 4000);
       const isNode =
-        typeof process !== 'undefined' && process.versions?.node != null;
+        typeof process !== 'undefined' && process.versions?.node !== undefined && process.versions?.node !== null;
       const init: RequestInit = { cache: 'no-store' };
       if (!isNode) {
         init.signal = controller.signal;
