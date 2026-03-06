@@ -3,6 +3,7 @@
 import os
 
 from block_store import (
+    get_blocks_count,
     get_distribution,
     get_last_logged_block_height,
     get_network_history,
@@ -10,6 +11,7 @@ from block_store import (
     init_schema,
     insert_block,
     insert_network_snapshot,
+    prune_blocks_if_over,
 )
 
 
@@ -45,7 +47,7 @@ def test_insert_block_and_get_recent_blocks(tmp_path):
         time_since_last_block="10m",
         db_path=path,
     )
-    blocks = get_recent_blocks(10, path)
+    blocks = get_recent_blocks(10, db_path=path)
     assert len(blocks) == 1
     assert blocks[0]["block_height"] == 100
     assert blocks[0]["block_hash"] == "abc123"
@@ -119,3 +121,86 @@ def test_get_last_logged_block_height(tmp_path):
         db_path=path,
     )
     assert get_last_logged_block_height(path) == 200
+
+
+def test_get_blocks_count(tmp_path):
+    """get_blocks_count returns 0 when empty and total count otherwise."""
+    path = _db_path(tmp_path)
+    init_schema(path)
+    assert get_blocks_count(path) == 0
+    for i in range(3):
+        insert_block(
+            block_height=100 + i,
+            block_hash=f"h{i}",
+            mining_pool="P",
+            transaction_count=0,
+            block_size=0,
+            block_weight=0,
+            block_reward=0.0,
+            total_fees=0.0,
+            total_fees_usd=0.0,
+            block_time="2025-01-01 12:00:00",
+            time_since_last_block="",
+            db_path=path,
+        )
+    assert get_blocks_count(path) == 3
+
+
+def test_get_recent_blocks_with_offset(tmp_path):
+    """get_recent_blocks(limit, offset) returns correct slice."""
+    path = _db_path(tmp_path)
+    init_schema(path)
+    for i in range(5):
+        insert_block(
+            block_height=100 + i,
+            block_hash=f"h{i}",
+            mining_pool="P",
+            transaction_count=0,
+            block_size=0,
+            block_weight=0,
+            block_reward=0.0,
+            total_fees=0.0,
+            total_fees_usd=0.0,
+            block_time="2025-01-01 12:00:00",
+            time_since_last_block="",
+            db_path=path,
+        )
+    # Newest first: 104, 103, 102, 101, 100
+    first_two = get_recent_blocks(2, 0, path)
+    assert len(first_two) == 2
+    assert first_two[0]["block_height"] == 104
+    assert first_two[1]["block_height"] == 103
+    next_two = get_recent_blocks(2, 2, path)
+    assert len(next_two) == 2
+    assert next_two[0]["block_height"] == 102
+    assert next_two[1]["block_height"] == 101
+
+
+def test_insert_block_does_not_prune(tmp_path):
+    """insert_block no longer deletes; count can exceed cap until prune_blocks_if_over is called."""
+    path = _db_path(tmp_path)
+    init_schema(path)
+    for i in range(501):
+        insert_block(
+            block_height=1000 + i,
+            block_hash=f"hash_{i}",
+            mining_pool="P",
+            transaction_count=0,
+            block_size=0,
+            block_weight=0,
+            block_reward=0.0,
+            total_fees=0.0,
+            total_fees_usd=0.0,
+            block_time="2025-01-01 12:00:00",
+            time_since_last_block="",
+            db_path=path,
+        )
+    assert get_blocks_count(path) == 501
+    prune_blocks_if_over(500, path)
+    assert get_blocks_count(path) == 500
+    # Oldest (1000) should be gone
+    blocks = get_recent_blocks(500, 0, path)
+    assert len(blocks) == 500
+    heights = {b["block_height"] for b in blocks}
+    assert 1000 not in heights
+    assert 1500 in heights

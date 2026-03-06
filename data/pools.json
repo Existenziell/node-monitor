@@ -34,7 +34,7 @@
       "name": "Est3lar",
       "identifier": "est3lar",
       "signatures": ["/Est3lar/", "est3lar", "Est3lar", "EST3LAR"],
-      "icon": "default.svg"
+      "icon": "est3lar.svg"
     },
     {
       "name": "F2Pool",
@@ -79,6 +79,12 @@
       "icon": "miningsquared.svg"
     },
     {
+      "name": "NiceHash",
+      "identifier": "nicehash",
+      "signatures": ["NiceHash", "NICEHASH", "nicehash", "nicehash.com", "NiceHash", "NiceHash", "NiceHashSolo", "NiceHashMining"],
+      "icon": "nicehash.svg"
+    },
+    {
       "name": "Ocean.xyz",
       "identifier": "ocean",
       "signatures": ["Ocean.xyz", "OCEAN.XYZ", "ocean", "ocean.xyz", "Ocean", "OCEAN"],
@@ -106,7 +112,7 @@
       "name": "RedRock",
       "identifier": "redrock",
       "signatures": ["RedRock", "REDRock", "redrock", "redrock.com", "RedRock Pool", "RedRock"],
-      "icon": "default.svg"
+      "icon": "unknown.svg"
     },
     {
       "name": "SBICrypto.com",

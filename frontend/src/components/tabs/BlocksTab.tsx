@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
 import { useApi } from '@/contexts/ApiContext';
-import type { BlockRow, BlocksData, DistributionData } from '@/types';
+import type { BlockRow, DistributionData } from '@/types';
 import { formatBytes, formatTimeSince, formatWeight } from '@/utils';
 import { useRefreshState, useRefreshDone } from '@/contexts/RefreshContext';
 import { useApiData } from '@/hooks/useApiData';
@@ -11,6 +11,8 @@ import { LoadingOverlay } from '@/components/LoadingOverlay';
 import { LoadingErrorGate } from '@/components/LoadingErrorGate';
 import { SectionHeader } from '@/components/SectionHeader';
 import { SortableTh } from '@/components/SortableTh';
+
+const BLOCKS_PAGE_SIZE = 20;
 
 const PIE_COLORS = [
   'oklch(0.55 0.2 250)',
@@ -151,15 +153,58 @@ function PoolDistributionChart({
   );
 }
 
+type BlocksMetadata = {
+  chain_height: number | null;
+  seconds_since_last_block: number | null;
+  avg_block_time_seconds: number | null;
+};
+
 export function BlocksTab() {
-  const { fetchBlocks, fetchPools, fetchDistribution } = useApi();
-  const { data, loading, error, load } = useApiData<BlocksData>(fetchBlocks);
+  const { fetchBlocksPage, fetchPools, fetchDistribution } = useApi();
   const { data: pools, load: loadPools } = useApiData(fetchPools);
   const { data: distribution, load: loadDistribution } = useApiData(fetchDistribution);
   const { refreshTabId } = useRefreshState();
 
-  useTabData(load, 'blocks', data !== null && data !== undefined);
+  const [blocks, setBlocks] = useState<BlockRow[]>([]);
+  const [totalBlocks, setTotalBlocks] = useState(0);
+  const [metadata, setMetadata] = useState<BlocksMetadata | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+  const loadMoreSentinelRef = useRef<HTMLTableRowElement | null>(null);
 
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await fetchBlocksPage({ limit: BLOCKS_PAGE_SIZE, offset: 0 });
+      setBlocks(data.blocks ?? []);
+      setTotalBlocks(data.total_blocks ?? data.blocks?.length ?? 0);
+      setMetadata({
+        chain_height: data.chain_height ?? null,
+        seconds_since_last_block: data.seconds_since_last_block ?? null,
+        avg_block_time_seconds: data.avg_block_time_seconds ?? null,
+      });
+    } catch (e) {
+      setError(e instanceof Error ? e : new Error(String(e)));
+    } finally {
+      setLoading(false);
+    }
+  }, [fetchBlocksPage]);
+
+  const loadMore = useCallback(async () => {
+    if (loadingMore || blocks.length >= totalBlocks) return;
+    setLoadingMore(true);
+    try {
+      const data = await fetchBlocksPage({ limit: BLOCKS_PAGE_SIZE, offset: blocks.length });
+      setBlocks((prev) => [...prev, ...(data.blocks ?? [])]);
+      setTotalBlocks(data.total_blocks ?? totalBlocks);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [fetchBlocksPage, blocks.length, totalBlocks, loadingMore]);
+
+  useTabData(load, 'blocks', blocks.length > 0 || (!loading && totalBlocks === 0));
   useRefreshDone(loading, 'blocks');
 
   useEffect(() => {
@@ -169,6 +214,21 @@ export function BlocksTab() {
   useEffect(() => {
     loadDistribution().catch(() => {});
   }, [loadDistribution]);
+
+  useEffect(() => {
+    const sentinel = loadMoreSentinelRef.current;
+    if (!sentinel) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting && blocks.length < totalBlocks && !loadingMore && !loading) {
+          loadMore();
+        }
+      },
+      { rootMargin: '200px', threshold: 0 }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [loadMore, blocks.length, totalBlocks, loadingMore, loading]);
 
   const poolByIdentifier = useMemo(() => {
     const map = new Map<string, { name: string; icon?: string }>();
@@ -183,9 +243,9 @@ export function BlocksTab() {
     return map;
   }, [pools]);
 
-  const blockTimeStr = data?.blocks?.[0]?.block_time ?? null;
+  const blockTimeStr = blocks[0]?.block_time ?? null;
   const blockTimestamp = blockTimeStr ? parseBlockTimeUtc(blockTimeStr) : null;
-  const apiSecondsSince = data?.seconds_since_last_block;
+  const apiSecondsSince = metadata?.seconds_since_last_block;
   const useApiSeconds =
     apiSecondsSince !== null &&
     apiSecondsSince !== undefined &&
@@ -211,7 +271,6 @@ export function BlocksTab() {
       ? formatTimeSince(Math.floor(elapsedSeconds))
       : '-';
 
-  const blocks = data?.blocks ?? [];
   const blocksSort = useTableSort<BlockRow>({
     data: blocks,
     keyExtractors: {
@@ -229,13 +288,16 @@ export function BlocksTab() {
     defaultSortDir: 'desc',
   });
 
-  const chainHeight = data?.chain_height ?? null;
+  const chainHeight = metadata?.chain_height ?? null;
   const nextBlockHeight = chainHeight !== null && chainHeight !== undefined ? chainHeight + 1 : null;
+  const avgBlockTimeSeconds = metadata?.avg_block_time_seconds;
+
+  const gateData = loading && blocks.length === 0 ? undefined : blocks;
 
   return (
-    <LoadingErrorGate loading={loading} error={error} data={data} loadingLabel="blocks">
+    <LoadingErrorGate loading={loading} error={error} data={gateData} loadingLabel="blocks">
     <div className="relative space-y-4">
-      <LoadingOverlay show={loading && !!data && refreshTabId === 'blocks'} />
+      <LoadingOverlay show={loading && (blocks.length > 0 || metadata != null) && refreshTabId === 'blocks'} />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="section-container">
           <SectionHeader>Current block</SectionHeader>
@@ -250,8 +312,8 @@ export function BlocksTab() {
               <dd className="text-level-5 tabular-nums">{timeSinceLastFormatted}</dd>
               <dt className="text-level-4">Average block time</dt>
               <dd className="text-level-5 tabular-nums">
-                {data?.avg_block_time_seconds !== null && data?.avg_block_time_seconds !== undefined && Number.isFinite(data.avg_block_time_seconds)
-                  ? formatTimeSince(Math.floor(data.avg_block_time_seconds))
+                {avgBlockTimeSeconds !== null && avgBlockTimeSeconds !== undefined && Number.isFinite(avgBlockTimeSeconds)
+                  ? formatTimeSince(Math.floor(avgBlockTimeSeconds))
                   : '-'}
               </dd>
           </dl>
@@ -317,6 +379,13 @@ export function BlocksTab() {
                   <td className="p-2 text-level-5 tabular-nums">{block.total_fees_usd !== null && block.total_fees_usd !== undefined ? Number(block.total_fees_usd).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}</td>
                 </tr>
               ))}
+              {blocks.length < totalBlocks && (
+                <tr ref={loadMoreSentinelRef}>
+                  <td colSpan={10} className="p-2 text-center text-level-4 text-sm">
+                    {loadingMore ? 'Loading more…' : ''}
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

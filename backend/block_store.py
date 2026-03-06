@@ -11,9 +11,8 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 try:
-    from constants import BLOCKS_JSON_MAX_ENTRIES, DIFFICULTY_JSON_MAX_ENTRIES
+    from constants import DIFFICULTY_JSON_MAX_ENTRIES
 except ImportError:
-    BLOCKS_JSON_MAX_ENTRIES = 100
     DIFFICULTY_JSON_MAX_ENTRIES = 100
 
 # Resolve data dir relative to project root (parent of backend)
@@ -114,15 +113,6 @@ def insert_block(  # pylint: disable=R0913
                 ),
             )
             conn.commit()
-            conn.execute(
-                """
-                DELETE FROM blocks WHERE id NOT IN (
-                    SELECT id FROM blocks ORDER BY block_height DESC LIMIT ?
-                )
-                """,
-                (BLOCKS_JSON_MAX_ENTRIES,),
-            )
-            conn.commit()
         finally:
             conn.close()
 
@@ -164,8 +154,44 @@ def insert_network_snapshot(
             conn.close()
 
 
-def get_recent_blocks(limit: int, db_path: Optional[str] = None) -> List[Dict[str, Any]]:
-    """Return last `limit` blocks, newest first. Same shape as former blocks.json entries."""
+def get_blocks_count(db_path: Optional[str] = None) -> int:
+    """Return total number of blocks in the blocks table."""
+    with _lock:
+        conn = _get_connection(db_path)
+        try:
+            cur = conn.execute("SELECT COUNT(*) FROM blocks")
+            return int(cur.fetchone()[0])
+        finally:
+            conn.close()
+
+
+def prune_blocks_if_over(max_count: int, db_path: Optional[str] = None) -> None:
+    """If blocks table has more than max_count rows, delete oldest (by height) to keep max_count."""
+    with _lock:
+        conn = _get_connection(db_path)
+        try:
+            cur = conn.execute("SELECT COUNT(*) FROM blocks")
+            count = int(cur.fetchone()[0])
+            if count <= max_count:
+                return
+            conn.execute(
+                """
+                DELETE FROM blocks
+                WHERE block_height NOT IN (
+                    SELECT block_height FROM blocks ORDER BY block_height DESC LIMIT ?
+                )
+                """,
+                (max_count,),
+            )
+            conn.commit()
+        finally:
+            conn.close()
+
+
+def get_recent_blocks(
+    limit: int, offset: int = 0, db_path: Optional[str] = None
+) -> List[Dict[str, Any]]:
+    """Return last `limit` blocks from `offset`, newest first. Same shape as former blocks.json entries."""
     with _lock:
         conn = _get_connection(db_path)
         try:
@@ -187,9 +213,9 @@ def get_recent_blocks(limit: int, db_path: Optional[str] = None) -> List[Dict[st
                     time_since_last_block
                 FROM blocks
                 ORDER BY block_height DESC
-                LIMIT ?
+                LIMIT ? OFFSET ?
                 """,
-                (limit,),
+                (limit, offset),
             )
             rows = cur.fetchall()
         finally:

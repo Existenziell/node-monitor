@@ -60,10 +60,20 @@ export function ApiProvider({ children }: { children: React.ReactNode }) {
     return result.data;
   }, [fetchWithRetry]);
 
+  const fetchBlocksPage = useCallback(
+    async (params?: { limit?: number; offset?: number }): Promise<BlocksData> => {
+      const limit = params?.limit ?? 20;
+      const offset = params?.offset ?? 0;
+      const endpoint = `/blocks?limit=${limit}&offset=${offset}`;
+      const result = await fetchWithRetry<BlocksData>(endpoint);
+      return result.data;
+    },
+    [fetchWithRetry]
+  );
+
   const fetchBlocks = useCallback(async (): Promise<BlocksData> => {
-    const result = await fetchWithRetry<BlocksData>('/blocks');
-    return result.data;
-  }, [fetchWithRetry]);
+    return fetchBlocksPage({ limit: 20, offset: 0 });
+  }, [fetchBlocksPage]);
 
   const fetchWallet = useCallback(async (): Promise<WalletData> => {
     const result = await fetchWithRetry<WalletData>('/wallet');
@@ -162,6 +172,7 @@ export function ApiProvider({ children }: { children: React.ReactNode }) {
     fetchWithRetry,
     fetchNode,
     fetchBlocks,
+    fetchBlocksPage,
     fetchWallet,
     fetchNetwork,
     fetchPools,

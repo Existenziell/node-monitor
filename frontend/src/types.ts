@@ -42,6 +42,7 @@ export interface ApiContextValue {
   fetchWithRetry: <T>(endpoint: string) => Promise<{ data: T }>;
   fetchNode: () => Promise<NodeData>;
   fetchBlocks: () => Promise<BlocksData>;
+  fetchBlocksPage: (params?: { limit?: number; offset?: number }) => Promise<BlocksData>;
   fetchWallet: () => Promise<WalletData>;
   fetchNetwork: () => Promise<NetworkData>;
   fetchPools: () => Promise<Pool[]>;

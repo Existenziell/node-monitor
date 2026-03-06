@@ -13,7 +13,7 @@ import threading
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
 _log = logging.getLogger(__name__)
-from urllib.parse import urlparse
+from urllib.parse import urlparse, parse_qs
 from urllib.request import urlopen
 from urllib.error import URLError, HTTPError
 
@@ -34,12 +34,16 @@ try:
         WALLET_CACHE_SECONDS,
         BLOCKS_CACHE_SECONDS,
         BLOCKS_DISPLAY_LIMIT,
+        BLOCKS_DB_MAX_ENTRIES,
+        BLOCKS_DEFAULT_PAGE_SIZE,
     )
     from block_store import (  # pyright: ignore[reportMissingImports]
         init_schema,
         get_recent_blocks,
+        get_blocks_count,
         get_network_history,
         get_distribution,
+        prune_blocks_if_over,
     )
     from chain_tip_state import get_chain_tip, set_chain_tip  # pyright: ignore[reportMissingImports]
 
@@ -654,57 +658,82 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
             return None
 
     def handle_blocks_data(self):
-        """Handle blocks data requests from SQLite (with in-memory cache)."""
+        """Handle blocks data requests from SQLite (paginated, with optional cache for first page)."""
         try:
             from datetime import datetime, timezone
             now = datetime.now(timezone.utc)
-            if (self._blocks_cache is not None and self._blocks_cache_time is not None and
-                    (now - self._blocks_cache_time).total_seconds() < BLOCKS_CACHE_SECONDS):
-                avg_block_time = self._compute_avg_block_time(self._blocks_cache or [])
-                chain_height = self._get_chain_height()
-                seconds_since = self._get_seconds_since_last_block(self._blocks_cache, now)
-                response = {
-                    "status": "success",
-                    "data": {
-                        "blocks": self._blocks_cache,
-                        "total_blocks": len(self._blocks_cache),
-                        "cached": True,
-                        "avg_block_time_seconds": avg_block_time,
-                        "chain_height": chain_height,
-                        "seconds_since_last_block": seconds_since
-                    }
-                }
-                self.wfile.write(json.dumps(response, indent=2).encode())
-                return
+            db_path = self._get_db_path()
 
-            blocks_data = get_recent_blocks(BLOCKS_DISPLAY_LIMIT, self._get_db_path())
-            if not blocks_data and self.rpc_service is not None:
+            # Parse limit and offset from query string
+            parsed = urlparse(self.path)
+            query = parse_qs(parsed.query)
+            try:
+                limit = int(query.get("limit", [BLOCKS_DEFAULT_PAGE_SIZE])[0])
+            except (IndexError, TypeError, ValueError):
+                limit = BLOCKS_DEFAULT_PAGE_SIZE
+            limit = max(1, min(limit, BLOCKS_DISPLAY_LIMIT))
+            try:
+                offset = int(query.get("offset", [0])[0])
+            except (IndexError, TypeError, ValueError):
+                offset = 0
+            offset = max(0, offset)
+
+            # Enforce DB cap on read (no per-write deletes)
+            prune_blocks_if_over(BLOCKS_DB_MAX_ENTRIES, db_path)
+            total_blocks = get_blocks_count(db_path)
+
+            # Use cache only for first page (limit=20, offset=0)
+            use_cache = offset == 0 and limit == BLOCKS_DEFAULT_PAGE_SIZE
+            if use_cache and self._blocks_cache is not None and self._blocks_cache_time is not None:
+                if (now - self._blocks_cache_time).total_seconds() < BLOCKS_CACHE_SECONDS:
+                    cached = self._blocks_cache
+                    avg_block_time = self._compute_avg_block_time(cached or [])
+                    chain_height = self._get_chain_height()
+                    seconds_since = self._get_seconds_since_last_block(cached, now)
+                    response = {
+                        "status": "success",
+                        "data": {
+                            "blocks": cached,
+                            "total_blocks": total_blocks,
+                            "cached": True,
+                            "avg_block_time_seconds": avg_block_time,
+                            "chain_height": chain_height,
+                            "seconds_since_last_block": seconds_since,
+                        },
+                    }
+                    self.wfile.write(json.dumps(response, indent=2).encode())
+                    return
+
+            blocks_data = get_recent_blocks(limit, offset, db_path)
+            if not blocks_data and offset == 0 and self.rpc_service is not None:
                 tip_block = self._get_tip_block_from_rpc()
                 if tip_block is not None:
                     blocks_data = [tip_block]
-            avg_block_time = self._compute_avg_block_time(blocks_data)
-            self._blocks_cache = blocks_data
-            self._blocks_cache_time = now
-            chain_height = self._get_chain_height()
-            seconds_since = self._get_seconds_since_last_block(blocks_data, now)
 
-            response = {
-                "status": "success",
-                "data": {
-                    "blocks": blocks_data,
-                    "total_blocks": len(blocks_data),
-                    "cached": False,
-                    "avg_block_time_seconds": avg_block_time,
-                    "chain_height": chain_height,
-                    "seconds_since_last_block": seconds_since
-                }
+            if use_cache:
+                self._blocks_cache = blocks_data
+                self._blocks_cache_time = now
+
+            data = {
+                "blocks": blocks_data,
+                "total_blocks": total_blocks,
+                "cached": False,
             }
+            if offset == 0:
+                avg_block_time = self._compute_avg_block_time(blocks_data)
+                data["avg_block_time_seconds"] = avg_block_time
+                data["chain_height"] = self._get_chain_height()
+                data["seconds_since_last_block"] = self._get_seconds_since_last_block(
+                    blocks_data, now
+                )
+
+            response = {"status": "success", "data": data}
             self.wfile.write(json.dumps(response, indent=2).encode())
 
         except Exception as e:
             error_response = {
                 "status": "error",
-                "message": f"Failed to get blocks data: {str(e)}"
+                "message": f"Failed to get blocks data: {str(e)}",
             }
             self.wfile.write(json.dumps(error_response).encode())
 
@@ -928,7 +957,7 @@ def start_api_server(port=None):
     db_path = os.path.join(data_dir, "node_monitor.db")
     os.makedirs(data_dir, exist_ok=True)
     init_schema(db_path)
-    recent_blocks = get_recent_blocks(1, db_path)
+    recent_blocks = get_recent_blocks(1, db_path=db_path)
     if recent_blocks:
         tip = recent_blocks[0]
         set_chain_tip(
