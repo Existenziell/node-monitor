@@ -121,8 +121,10 @@ function PoolDistributionChart({
             nameKey="name"
             cx="50%"
             cy="50%"
+            innerRadius={0}
             outerRadius="70%"
             paddingAngle={1}
+            cornerRadius={0}
             stroke="none"
           >
             {pieData.map((_, index) => (
