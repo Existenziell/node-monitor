@@ -267,6 +267,7 @@ export function BlocksTab() {
               <tr>
                 <SortableTh label="Height" sortKey="height" currentSortKey={blocksSort.sortKey} sortDir={blocksSort.sortDir} onSort={blocksSort.setSort} className="px-2 py-3 text-level-4" />
                 <SortableTh label="Time" sortKey="time" currentSortKey={blocksSort.sortKey} sortDir={blocksSort.sortDir} onSort={blocksSort.setSort} className="px-2 py-3 text-level-4" />
+                <th className="px-2 py-3 text-level-4">Duration</th>
                 <SortableTh label="Pool" sortKey="pool" currentSortKey={blocksSort.sortKey} sortDir={blocksSort.sortDir} onSort={blocksSort.setSort} className="px-2 py-3 text-level-4" />
                 <SortableTh label="Tx Count" sortKey="txCount" currentSortKey={blocksSort.sortKey} sortDir={blocksSort.sortDir} onSort={blocksSort.setSort} className="px-2 py-3 text-level-4" />
                 <SortableTh label="Weight" sortKey="weight" currentSortKey={blocksSort.sortKey} sortDir={blocksSort.sortDir} onSort={blocksSort.setSort} className="px-2 py-3 text-level-4" />
@@ -297,6 +298,7 @@ export function BlocksTab() {
                 >
                   <td className="p-2 text-level-5">{block.block_height}</td>
                   <td className="p-2 text-level-5">{block.block_time ?? '-'}</td>
+                  <td className="p-2 text-level-5 tabular-nums">{(block.time_since_last_block ?? '').trim() || '-'}</td>
                   <td className="p-2 max-w-[160px] text-level-5">
                     <PoolCell
                       identifier={block.mining_pool}
