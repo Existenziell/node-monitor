@@ -53,6 +53,8 @@ export interface ApiContextValue {
   fetchConfigTest: () => Promise<ConfigTestResult>;
   saveConfig: (payload: ConfigSavePayload) => Promise<{ ok: boolean; error?: string }>;
   saveWalletName: (walletName: string | null) => Promise<{ ok: boolean; error?: string }>;
+  saveAccountLabels: (walletName: string, labels: Record<string, string>) => Promise<{ ok: boolean; error?: string }>;
+  saveSelectedAccount: (walletName: string, selectedAccount: string) => Promise<{ ok: boolean; error?: string }>;
 }
 
 export interface ConfigSavePayload {
@@ -143,6 +145,8 @@ export interface ConfigStatus {
   node_configured: boolean;
   /** Loaded wallet names from listwallets (when RPC available). */
   loaded_wallets?: string[];
+  /** Per-wallet last selected account: wallet_name -> 'all' | account index string. */
+  selected_account_by_wallet?: Record<string, string>;
   error?: string;
 }
 
@@ -181,8 +185,14 @@ export interface UtxoEntry {
   txid?: string;
   vout?: number;
   address?: string;
+  /** Address label (from listunspent). */
+  label?: string;
   amount?: number;
   confirmations?: number;
+  /** We have private keys to spend this output. */
+  spendable?: boolean;
+  /** Considered safe to spend (unconfirmed from external/replacement are unsafe). */
+  safe?: boolean;
   /** BIP44/BIP84 account index when wallet has multiple accounts (from listdescriptors). */
   accountIndex?: number | null;
   [key: string]: unknown;
@@ -213,6 +223,8 @@ export interface WalletBalanceBreakdown {
 export interface WalletAccount {
   index: number;
   path?: string;
+  /** User-defined label (persisted in backend config). */
+  label?: string;
 }
 
 /** Props for the WalletConfig component (wallet + account selector block). */
@@ -245,6 +257,8 @@ export interface WalletConfigProps {
   showWalletDropdown?: boolean;
   /** When false, hide the account (derivation path) section. Default true. */
   showAccountSection?: boolean;
+  /** When false, do not show wallet switch message inline (caller shows it at bottom of section). Default true. */
+  showSwitchMessageInline?: boolean;
 }
 
 export interface WalletData {

@@ -286,6 +286,8 @@ class ConfigService:
             status["rpc_port"] = config.get("rpc_port")
             status["cookie_file"] = config.get("cookie_file") if config.get("auth_method") == "cookie" else None
             status["wallet_name"] = config.get("wallet_name")
+            if isinstance(config.get("selected_account_by_wallet"), dict):
+                status["selected_account_by_wallet"] = config["selected_account_by_wallet"]
             rpc_user = config.get("rpc_user")
             if rpc_user:
                 status["rpc_user_masked"] = (rpc_user[:2] + "***") if len(rpc_user) > 2 else "***"
@@ -304,6 +306,84 @@ class ConfigService:
                 config = json.load(f)
             name = (wallet_name or "").strip()
             config["wallet_name"] = name if name else None
+            with open(self.config_file, 'w', encoding='utf-8') as f:
+                json.dump(config, f, indent=2)
+            os.chmod(self.config_file, 0o600)
+            self._config_cache = None
+            return True, ""
+        except Exception as e:
+            return False, str(e)
+
+    def get_account_labels(self, wallet_name: str) -> Dict[str, str]:
+        """Return account index -> label for the given wallet. Empty dict if not found or no labels."""
+        if not wallet_name or not self.config_file.exists():
+            return {}
+        try:
+            with open(self.config_file, 'r', encoding='utf-8') as f:
+                config = json.load(f)
+            all_labels = config.get("account_labels")
+            if not isinstance(all_labels, dict):
+                return {}
+            labels = all_labels.get((wallet_name or "").strip())
+            if not isinstance(labels, dict):
+                return {}
+            return {str(k): str(v) for k, v in labels.items() if v is not None}
+        except Exception:
+            return {}
+
+    def save_account_labels(
+        self, wallet_name: str, labels: Dict[str, str]
+    ) -> Tuple[bool, str]:
+        """Merge account labels for one wallet into config. labels: index_str -> label. Returns (success, error_message)."""
+        wallet_name = (wallet_name or "").strip()
+        if not wallet_name:
+            return False, "wallet_name is required"
+        if not self.config_file.exists():
+            return False, "Config not found"
+        try:
+            with open(self.config_file, 'r', encoding='utf-8') as f:
+                config = json.load(f)
+            all_labels = config.get("account_labels")
+            if not isinstance(all_labels, dict):
+                all_labels = {}
+            # Normalize: only string keys and string values; empty string means clear label
+            normalized = {}
+            for k, v in (labels or {}).items():
+                if not isinstance(k, str):
+                    k = str(k)
+                if v is None:
+                    continue
+                normalized[k] = str(v).strip()
+            all_labels[wallet_name] = normalized
+            config["account_labels"] = all_labels
+            with open(self.config_file, 'w', encoding='utf-8') as f:
+                json.dump(config, f, indent=2)
+            os.chmod(self.config_file, 0o600)
+            self._config_cache = None
+            return True, ""
+        except Exception as e:
+            return False, str(e)
+
+    def save_selected_account(
+        self, wallet_name: str, selected_account: str
+    ) -> Tuple[bool, str]:
+        """Save last selected account for a wallet. selected_account: 'all' or account index as string. Returns (success, error_message)."""
+        if not self.config_file.exists():
+            return False, "Config not found"
+        wallet_name = (wallet_name or "").strip()
+        if not wallet_name:
+            return False, "wallet_name is required"
+        sel = (selected_account or "all").strip().lower()
+        if sel != "all" and not sel.isdigit():
+            return False, "selected_account must be 'all' or a numeric account index"
+        try:
+            with open(self.config_file, 'r', encoding='utf-8') as f:
+                config = json.load(f)
+            by_wallet = config.get("selected_account_by_wallet")
+            if not isinstance(by_wallet, dict):
+                by_wallet = {}
+            by_wallet[wallet_name] = sel
+            config["selected_account_by_wallet"] = by_wallet
             with open(self.config_file, 'w', encoding='utf-8') as f:
                 json.dump(config, f, indent=2)
             os.chmod(self.config_file, 0o600)
@@ -361,6 +441,10 @@ class ConfigService:
             }
             if existing and existing.get("wallet_name"):
                 config["wallet_name"] = existing["wallet_name"]
+            if existing and isinstance(existing.get("account_labels"), dict):
+                config["account_labels"] = existing["account_labels"]
+            if existing and isinstance(existing.get("selected_account_by_wallet"), dict):
+                config["selected_account_by_wallet"] = existing["selected_account_by_wallet"]
         else:
             # password
             user = (rpc_user or "").strip()
@@ -426,6 +510,10 @@ class ConfigService:
                     }
                     if existing and existing.get("wallet_name"):
                         config["wallet_name"] = existing["wallet_name"]
+                    if existing and isinstance(existing.get("account_labels"), dict):
+                        config["account_labels"] = existing["account_labels"]
+                    if existing and isinstance(existing.get("selected_account_by_wallet"), dict):
+                        config["selected_account_by_wallet"] = existing["selected_account_by_wallet"]
                     with open(self.config_file, 'w', encoding='utf-8') as f:
                         json.dump(config, f, indent=2)
                     os.chmod(self.config_file, 0o600)
@@ -445,6 +533,10 @@ class ConfigService:
             }
             if existing and existing.get("wallet_name"):
                 config["wallet_name"] = existing["wallet_name"]
+            if existing and isinstance(existing.get("account_labels"), dict):
+                config["account_labels"] = existing["account_labels"]
+            if existing and isinstance(existing.get("selected_account_by_wallet"), dict):
+                config["selected_account_by_wallet"] = existing["selected_account_by_wallet"]
 
         try:
             with open(self.config_file, 'w', encoding='utf-8') as f:

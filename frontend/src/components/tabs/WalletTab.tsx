@@ -62,8 +62,11 @@ export function WalletTab() {
       txid: (u) => (u.txid ?? '') || null,
       vout: (u) => (u.vout !== null && u.vout !== undefined ? u.vout : null),
       address: (u) => (u.address ?? '') || null,
+      label: (u) => (u.label ?? '') || null,
       amount: (u) => (u.amount !== null && u.amount !== undefined && Number.isFinite(u.amount) ? u.amount : null),
       confirmations: (u) => (u.confirmations !== null && u.confirmations !== undefined ? u.confirmations : null),
+      spendable: (u) => (u.spendable === true ? 1 : u.spendable === false ? 0 : null),
+      safe: (u) => (u.safe === true ? 1 : u.safe === false ? 0 : null),
       accountIndex: (u) => (u.accountIndex !== null && u.accountIndex !== undefined ? u.accountIndex : null),
     },
     defaultSortKey: 'confirmations',
@@ -331,8 +334,18 @@ export function WalletTab() {
               </>
             )}
             <div className="flex justify-between">
-              <dt className="text-level-4" title="Distinct transactions in the wallet (from getwalletinfo)">Tx count</dt>
-              <dd className="text-level-5">{wallet.txcount !== null && wallet.txcount !== undefined ? String(wallet.txcount) : 'N/A'}</dd>
+              <dt className="text-level-4" title={hasMultipleAccounts && selectedAccount !== 'all' ? 'Transaction count for selected account (from list)' : 'Distinct transactions in the wallet (from getwalletinfo)'}>Tx count</dt>
+              <dd className="text-level-5">
+                {hasMultipleAccounts && selectedAccount !== 'all'
+                  ? String(transactions.length)
+                  : wallet.txcount !== null && wallet.txcount !== undefined
+                    ? String(wallet.txcount)
+                    : 'N/A'}
+              </dd>
+            </div>
+            <div className="flex justify-between">
+              <dt className="text-level-4" title={hasMultipleAccounts && selectedAccount !== 'all' ? 'Unspent outputs for selected account' : 'Unspent outputs in the wallet'}>UTXO count</dt>
+              <dd className="text-level-5">{String(unspent.length)}</dd>
             </div>
             {wallet.walletversion !== null && wallet.walletversion !== undefined && (
               <div className="flex justify-between">
@@ -375,8 +388,11 @@ export function WalletTab() {
                 <SortableTh label="Txid" sortKey="txid" currentSortKey={unspentSort.sortKey} sortDir={unspentSort.sortDir} onSort={unspentSort.setSort} className="px-2 py-3 text-level-4" />
                 <SortableTh label="Vout" sortKey="vout" currentSortKey={unspentSort.sortKey} sortDir={unspentSort.sortDir} onSort={unspentSort.setSort} className="px-2 py-3 text-level-4" />
                 <SortableTh label="Address" sortKey="address" currentSortKey={unspentSort.sortKey} sortDir={unspentSort.sortDir} onSort={unspentSort.setSort} className="px-2 py-3 text-level-4" />
+                <SortableTh label="Label" sortKey="label" currentSortKey={unspentSort.sortKey} sortDir={unspentSort.sortDir} onSort={unspentSort.setSort} className="px-2 py-3 text-level-4" />
                 <SortableTh label="Amount (BTC)" sortKey="amount" currentSortKey={unspentSort.sortKey} sortDir={unspentSort.sortDir} onSort={unspentSort.setSort} className="px-2 py-3 text-level-4" />
                 <SortableTh label="Confirmations" sortKey="confirmations" currentSortKey={unspentSort.sortKey} sortDir={unspentSort.sortDir} onSort={unspentSort.setSort} className="px-2 py-3 text-level-4" />
+                <SortableTh label="Spendable" sortKey="spendable" currentSortKey={unspentSort.sortKey} sortDir={unspentSort.sortDir} onSort={unspentSort.setSort} className="px-2 py-3 text-level-4" />
+                <SortableTh label="Safe" sortKey="safe" currentSortKey={unspentSort.sortKey} sortDir={unspentSort.sortDir} onSort={unspentSort.setSort} className="px-2 py-3 text-level-4" />
                 {hasMultipleAccounts && selectedAccount === 'all' && (
                   <SortableTh label="Account" sortKey="accountIndex" currentSortKey={unspentSort.sortKey} sortDir={unspentSort.sortDir} onSort={unspentSort.setSort} className="px-2 py-3 text-level-4" />
                 )}
@@ -385,7 +401,7 @@ export function WalletTab() {
             <tbody>
               {unspent.length === 0 ? (
                 <tr className="border-t border-level-3">
-                  <td colSpan={hasMultipleAccounts && selectedAccount === 'all' ? 6 : 5} className="p-4 text-center text-level-4">
+                  <td colSpan={hasMultipleAccounts && selectedAccount === 'all' ? 9 : 8} className="p-4 text-center text-level-4">
                     No UTXOs
                   </td>
                 </tr>
@@ -402,10 +418,15 @@ export function WalletTab() {
                     <td className="p-2 max-w-[200px] truncate text-level-5" title={utxo.address ?? ''}>
                       {utxo.address ?? '-'}
                     </td>
+                    <td className="p-2 max-w-[120px] truncate text-level-5" title={utxo.label ?? ''}>
+                      {(utxo.label ?? '').trim() || '-'}
+                    </td>
                     <td className="p-2 text-level-5">
                       {utxo.amount !== null && utxo.amount !== undefined && Number.isFinite(utxo.amount) ? Number(utxo.amount).toFixed(8) : '-'}
                     </td>
                     <td className="p-2 text-level-5">{utxo.confirmations ?? '-'}</td>
+                    <td className="p-2 text-level-5">{utxo.spendable === true ? 'Yes' : utxo.spendable === false ? 'No' : '-'}</td>
+                    <td className="p-2 text-level-5">{utxo.safe === true ? 'Yes' : utxo.safe === false ? 'No' : '-'}</td>
                     {hasMultipleAccounts && selectedAccount === 'all' && (
                       <td className="p-2 text-level-5">{utxo.accountIndex !== null && utxo.accountIndex !== undefined ? utxo.accountIndex : '-'}</td>
                     )}

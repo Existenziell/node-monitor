@@ -67,7 +67,7 @@ function getPendingChanges(
 
 export function SettingsTab() {
   const { activeTab } = useActiveTab();
-  const { fetchConfigStatus, fetchConfigTest, saveConfig, saveWalletName, fetchWallet } = useApi();
+  const { fetchConfigStatus, fetchConfigTest, saveConfig, saveWalletName, saveAccountLabels, saveSelectedAccount, fetchWallet } = useApi();
   const [status, setStatus] = useState<ConfigStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -77,8 +77,13 @@ export function SettingsTab() {
   const [lastSaved, setLastSaved] = useState<SettingsBaseline | null>(null);
   const [walletSaveLoading, setWalletSaveLoading] = useState(false);
   const [walletSwitchMessage, setWalletSwitchMessage] = useState<string | null>(null);
+  const [accountSwitchMessage, setAccountSwitchMessage] = useState<string | null>(null);
   const [walletAccounts, setWalletAccounts] = useState<WalletAccount[] | null>(null);
   const [selectedAccount, setSelectedAccount] = useState<number | 'all'>('all');
+  /** Local edits for account labels (index string -> label). Synced from walletAccounts when they load. */
+  const [accountLabelInputs, setAccountLabelInputs] = useState<Record<string, string>>({});
+  const [accountLabelsSaving, setAccountLabelsSaving] = useState(false);
+  const [accountLabelsMessage, setAccountLabelsMessage] = useState<string | null>(null);
 
   const [authMethod, setAuthMethod] = useState<'password' | 'cookie'>('password');
   const [rpcHost, setRpcHost] = useState(DEFAULT_RPC_HOST);
@@ -115,14 +120,34 @@ export function SettingsTab() {
       if (s.node_configured && s.wallet_name) {
         try {
           const walletData = await fetchWallet();
-          setWalletAccounts(Array.isArray(walletData?.accounts) ? walletData.accounts : []);
+          const accounts = Array.isArray(walletData?.accounts) ? walletData.accounts : [];
+          setWalletAccounts(accounts);
+          const labels: Record<string, string> = {};
+          for (const a of accounts) {
+            labels[String(a.index)] = (a.label && a.label.trim()) ? a.label : '';
+          }
+          setAccountLabelInputs(labels);
+          const saved = s.selected_account_by_wallet?.[s.wallet_name];
+          if (saved === 'all' || saved === undefined || saved === null) {
+            setSelectedAccount('all');
+          } else {
+            const idx = parseInt(saved, 10);
+            if (Number.isInteger(idx) && accounts.some((a) => a.index === idx)) {
+              setSelectedAccount(idx);
+            } else {
+              setSelectedAccount('all');
+            }
+          }
         } catch {
           setWalletAccounts([]);
+          setAccountLabelInputs({});
+          setSelectedAccount('all');
         }
       } else {
         setWalletAccounts(null);
+        setAccountLabelInputs({});
+        setSelectedAccount('all');
       }
-      setSelectedAccount('all');
     } catch {
       const fallback: ConfigStatus = {
         config_exists: false,
@@ -144,6 +169,7 @@ export function SettingsTab() {
         hasPassword: false,
       });
       setWalletAccounts(null);
+      setAccountLabelInputs({});
     } finally {
       setLoading(false);
     }
@@ -164,6 +190,20 @@ export function SettingsTab() {
     return () => clearTimeout(t);
   }, [walletSwitchMessage]);
 
+  // Clear "account switched to X" message after 3 seconds
+  useEffect(() => {
+    if (accountSwitchMessage === null) return;
+    const t = setTimeout(() => setAccountSwitchMessage(null), 3000);
+    return () => clearTimeout(t);
+  }, [accountSwitchMessage]);
+
+  // Clear "Account names saved." message after 3 seconds
+  useEffect(() => {
+    if (accountLabelsMessage === null) return;
+    const t = setTimeout(() => setAccountLabelsMessage(null), 3000);
+    return () => clearTimeout(t);
+  }, [accountLabelsMessage]);
+
   const pendingChanges = useMemo(
     () =>
       getPendingChanges(lastSaved, {
@@ -177,6 +217,24 @@ export function SettingsTab() {
     [lastSaved, authMethod, rpcHost, rpcPort, rpcUser, rpcPassword, cookieFile]
   );
   const hasPendingChanges = pendingChanges.length > 0;
+
+  const accountLabelPendingChanges = useMemo((): PendingChange[] => {
+    if (!walletAccounts?.length) return [];
+    const changes: PendingChange[] = [];
+    for (const a of walletAccounts) {
+      const saved = (a.label && a.label.trim()) ? a.label.trim() : '';
+      const current = (accountLabelInputs[String(a.index)] ?? '').trim();
+      if (saved !== current) {
+        changes.push({
+          field: `Account ${a.index}`,
+          from: saved || '(empty)',
+          to: current || '(empty)',
+        });
+      }
+    }
+    return changes;
+  }, [walletAccounts, accountLabelInputs]);
+  const hasAccountLabelPendingChanges = accountLabelPendingChanges.length > 0;
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
@@ -427,35 +485,187 @@ export function SettingsTab() {
         <div className="section-container w-full lg:w-1/2 py-3">
           <SectionHeader as="h2">Wallet configuration</SectionHeader>
           {status?.config_exists ? (
-            <WalletConfig
-              walletLabel="Active wallet"
-              loadedWallets={status.loaded_wallets ?? []}
-              walletName={status.wallet_name ?? ''}
-              onWalletChange={async (name) => {
-                setWalletSaveLoading(true);
-                setMessage(null);
-                try {
-                  const result = await saveWalletName(name);
-                  if (result.ok) {
-                    await loadStatus();
-                    window.dispatchEvent(new CustomEvent('tab-refresh', { detail: 'wallet' }));
-                    setWalletSwitchMessage(name ?? 'None');
-                  } else {
-                    setMessage({ type: 'error', text: result.error ?? 'Failed to save default wallet' });
+            <>
+              <WalletConfig
+                walletLabel="Active wallet"
+                loadedWallets={status.loaded_wallets ?? []}
+                walletName={status.wallet_name ?? ''}
+                onWalletChange={async (name) => {
+                  setWalletSaveLoading(true);
+                  setMessage(null);
+                  try {
+                    const result = await saveWalletName(name);
+                    if (result.ok) {
+                      await loadStatus();
+                      window.dispatchEvent(new CustomEvent('tab-refresh', { detail: 'wallet' }));
+                      setWalletSwitchMessage(name ?? 'None');
+                    } else {
+                      setMessage({ type: 'error', text: result.error ?? 'Failed to save default wallet' });
+                    }
+                  } catch (err) {
+                    setMessage({ type: 'error', text: getErrorMessage(err) });
+                  } finally {
+                    setWalletSaveLoading(false);
                   }
-                } catch (err) {
-                  setMessage({ type: 'error', text: getErrorMessage(err) });
-                } finally {
-                  setWalletSaveLoading(false);
-                }
-              }}
-              walletLoading={walletSaveLoading}
-              walletSwitchMessage={walletSwitchMessage}
-              accounts={walletAccounts}
-              selectedAccount={selectedAccount}
-              onAccountChange={setSelectedAccount}
-              allowNoWallet
-            />
+                }}
+                walletLoading={walletSaveLoading}
+                walletSwitchMessage={walletSwitchMessage}
+                showSwitchMessageInline={false}
+                accounts={walletAccounts}
+                selectedAccount={selectedAccount}
+                onAccountChange={async (value) => {
+                  setSelectedAccount(value);
+                  if (status?.wallet_name) {
+                    const selStr = value === 'all' ? 'all' : String(value);
+                    await saveSelectedAccount(status.wallet_name, selStr);
+                    const displayName =
+                      value === 'all'
+                        ? 'All accounts'
+                        : (() => {
+                          const a = walletAccounts?.find((x) => x.index === value);
+                          return a ? ((a.label && a.label.trim()) ? a.label : `Account ${a.index}`) : String(value);
+                        })();
+                    setAccountSwitchMessage(displayName);
+                  }
+                }}
+                allowNoWallet
+              />
+              {walletAccounts && walletAccounts.length > 0 && status?.wallet_name && (
+                <div className="mt-2">
+                  {selectedAccount === 'all' ? (
+                    <p className="text-sm text-level-5">All accounts — viewing combined data from every account.</p>
+                  ) : (
+                    (() => {
+                      const acc = walletAccounts.find((a) => a.index === selectedAccount);
+                      if (!acc) return null;
+                      const label = (acc.label && acc.label.trim()) ? acc.label : null;
+                      const path = acc.path ?? `m/84'/0'/${acc.index}'`;
+                      const pathInferred = !acc.path;
+                      return (
+                        <dl className="text-sm pl-1">
+                          <div>
+                            <dt className="text-level-5 inline">Account index: </dt>
+                            <dd className="inline text-level-4">{acc.index}</dd>
+                          </div>
+                          <div>
+                            <dt className="text-level-5 inline">
+                              Derivation path{pathInferred ? ' (BIP84)' : ''}:{' '}
+                            </dt>
+                            <dd className="inline text-level-4 font-mono">{path}</dd>
+                          </div>
+                          {label !== null && (
+                            <div>
+                              <dt className="text-level-5 inline">Label: </dt>
+                              <dd className="inline text-level-4">{label}</dd>
+                            </div>
+                          )}
+                        </dl>
+                      );
+                    })()
+                  )}
+                </div>
+              )}
+              {(walletSwitchMessage !== null || accountSwitchMessage !== null) && (
+                <div className="mt-2 p-2 rounded text-sm bg-semantic-success/20 text-semantic-success">
+                  {walletSwitchMessage !== null && <span>Wallet switched to {walletSwitchMessage}.</span>}
+                  {walletSwitchMessage !== null && accountSwitchMessage !== null && ' '}
+                  {accountSwitchMessage !== null && <span>Account switched to {accountSwitchMessage}.</span>}
+                </div>
+              )}
+              {walletAccounts && walletAccounts.length > 0 && status?.wallet_name && (
+                <div className="mt-4 pt-4 border-t border-level-3">
+                  <p className="text-sm text-level-5 mb-3">
+                    Custom account labels (optional):
+                  </p>
+                  <ul className="space-y-2 list-none">
+                    {walletAccounts.map((a) => (
+                      <li key={a.index} className="flex flex-wrap items-center gap-2">
+                        <span className="text-sm text-level-4 min-w-[8rem]">
+                          Account {a.index}
+                          {a.path ? ` (${a.path})` : ''}
+                        </span>
+                        <input
+                          type="text"
+                          value={accountLabelInputs[String(a.index)] ?? ''}
+                          onChange={(e) =>
+                            setAccountLabelInputs((prev) => ({
+                              ...prev,
+                              [String(a.index)]: e.target.value,
+                            }))
+                          }
+                          placeholder="Label"
+                          className="form-input form-input-surface-1 flex-1 min-w-0 max-w-xs"
+                        />
+                      </li>
+                    ))}
+                  </ul>
+                  {hasAccountLabelPendingChanges && (
+                    <div className="rounded-lg border border-level-3 bg-level-2 p-3 mt-3">
+                      <SectionHeader>Pending changes</SectionHeader>
+                      <ul className="text-sm text-level-4 space-y-1 list-disc list-inside">
+                        {accountLabelPendingChanges.map((c, i) => (
+                          <li key={i}>
+                            {c.field}: {c.from !== null && c.from !== undefined ? `${c.from} → ` : ''}{c.to ?? ''}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  <div className="flex flex-wrap items-center gap-2 mt-3">
+                    <button
+                      type="button"
+                      disabled={accountLabelsSaving || !hasAccountLabelPendingChanges}
+                      title={!hasAccountLabelPendingChanges ? 'No changes to save' : undefined}
+                      onClick={async () => {
+                        setAccountLabelsSaving(true);
+                        setAccountLabelsMessage(null);
+                        try {
+                          const labels: Record<string, string> = {};
+                          for (const a of walletAccounts) {
+                            const v = (accountLabelInputs[String(a.index)] ?? '').trim();
+                            labels[String(a.index)] = v;
+                          }
+                          const walletName = status?.wallet_name ?? '';
+                          const result = await saveAccountLabels(walletName, labels);
+                          if (result.ok) {
+                            await loadStatus();
+                            window.dispatchEvent(new CustomEvent('tab-refresh', { detail: 'wallet' }));
+                            setAccountLabelsMessage('Account names saved.');
+                          } else {
+                            setMessage({ type: 'error', text: result.error ?? 'Failed to save account names' });
+                          }
+                        } catch (err) {
+                          setMessage({ type: 'error', text: getErrorMessage(err) });
+                        } finally {
+                          setAccountLabelsSaving(false);
+                        }
+                      }}
+                      className="btn-primary"
+                    >
+                      {accountLabelsSaving ? 'Saving…' : 'Save labels'}
+                    </button>
+                    {accountLabelsMessage && (
+                      <span className="text-sm text-semantic-success">{accountLabelsMessage}</span>
+                    )}
+                    <span className="flex-1" />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const labels: Record<string, string> = {};
+                        for (const a of walletAccounts ?? []) {
+                          labels[String(a.index)] = (a.label && a.label.trim()) ? a.label : '';
+                        }
+                        setAccountLabelInputs(labels);
+                        setAccountLabelsMessage(null);
+                      }}
+                      className="text-sm text-level-4 hover:text-level-5 underline underline-offset-2 transition-colors"
+                    >
+                      Reset
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
           ) : (
             <p className="text-sm text-level-4">Save node configuration first to choose a default wallet.</p>
           )}

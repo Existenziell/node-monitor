@@ -15,10 +15,14 @@ export function WalletConfig({
   allowNoWallet = false,
   showWalletDropdown = true,
   showAccountSection = true,
+  showSwitchMessageInline = true,
 }: WalletConfigProps) {
   const hasAccounts = Array.isArray(accounts) && accounts.length >= 1;
   const hasMultipleAccounts = Array.isArray(accounts) && accounts.length > 1;
   const accountDropdown = hasMultipleAccounts && onAccountChange !== null && onAccountChange !== undefined;
+
+  const accountDisplayName = (a: { index: number; path?: string; label?: string }) =>
+    (a.label && a.label.trim()) ? a.label : `Account ${a.index}`;
 
   return (
     <div className="space-y-2">
@@ -50,7 +54,7 @@ export function WalletConfig({
           {walletError && (
             <p className="mt-1 text-sm text-semantic-error">{walletError}</p>
           )}
-          {walletSwitchMessage !== null && walletSwitchMessage !== undefined && (
+          {showSwitchMessageInline && walletSwitchMessage !== null && walletSwitchMessage !== undefined && (
             <div className="mt-2 p-2 rounded text-sm bg-semantic-success/20 text-semantic-success">
               Wallet switched to {walletSwitchMessage}
             </div>
@@ -76,7 +80,7 @@ export function WalletConfig({
                 <option value="all">All accounts</option>
                 {(accounts ?? []).map((a) => (
                   <option key={a.index} value={String(a.index)}>
-                    Account {a.index}{a.path ? ` (${a.path})` : ''}
+                    {accountDisplayName(a)}{a.path ? ` (${a.path})` : ''}
                   </option>
                 ))}
               </select>
@@ -84,7 +88,7 @@ export function WalletConfig({
               <ul className="text-sm text-level-5 mt-1 space-y-1 list-none">
                 {(accounts ?? []).map((a) => (
                   <li key={a.index}>
-                    Account {a.index}
+                    {accountDisplayName(a)}
                     {a.path ? ` — ${a.path}` : ''}
                   </li>
                 ))}

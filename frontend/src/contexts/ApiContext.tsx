@@ -167,6 +167,44 @@ export function ApiProvider({ children }: { children: React.ReactNode }) {
     []
   );
 
+  const saveAccountLabels = useCallback(
+    async (
+      walletName: string,
+      labels: Record<string, string>
+    ): Promise<{ ok: boolean; error?: string }> => {
+      const res = await fetch(`${API_BASE_URL}/config/account-labels`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ wallet_name: walletName, labels }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        return { ok: false, error: data?.error ?? 'Request failed' };
+      }
+      return { ok: data.ok === true, error: data.error };
+    },
+    []
+  );
+
+  const saveSelectedAccount = useCallback(
+    async (
+      walletName: string,
+      selectedAccount: string
+    ): Promise<{ ok: boolean; error?: string }> => {
+      const res = await fetch(`${API_BASE_URL}/config/selected-account`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ wallet_name: walletName, selected_account: selectedAccount }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        return { ok: false, error: data?.error ?? 'Request failed' };
+      }
+      return { ok: data.ok === true, error: data.error };
+    },
+    []
+  );
+
   const value: ApiContextValue = {
     apiBaseUrl: API_BASE_URL,
     fetchWithRetry,
@@ -183,6 +221,8 @@ export function ApiProvider({ children }: { children: React.ReactNode }) {
     fetchConfigTest,
     saveConfig,
     saveWalletName,
+    saveAccountLabels,
+    saveSelectedAccount,
   };
 
   return <ApiContext.Provider value={value}>{children}</ApiContext.Provider>;

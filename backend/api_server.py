@@ -195,6 +195,14 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
                 self.handle_config_wallet_save()
                 return
 
+            if path == '/api/config/account-labels':
+                self.handle_config_account_labels_save()
+                return
+
+            if path == '/api/config/selected-account':
+                self.handle_config_selected_account_save()
+                return
+
             if path != '/api/rpc':
                 self.send_response(404)
                 self.send_header('Content-Type', 'application/json')
@@ -637,6 +645,15 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
             print("[wallet] final accounts:", accounts)
             print("[wallet] balances_per_account keys:", list(balances_per_account.keys()))
 
+            # Merge stored account labels (wallet_name -> index -> label) into each account
+            wallet_name_for_labels = (self.rpc_service.wallet_name or "").strip()
+            if wallet_name_for_labels:
+                stored_labels = config_service.get_account_labels(wallet_name_for_labels)
+                for acc in accounts:
+                    idx_str = str(acc.get("index"))
+                    if idx_str in stored_labels and stored_labels[idx_str]:
+                        acc["label"] = stored_labels[idx_str]
+
             list_result = self.rpc_service.list_wallets()
             loaded_wallets = list_result.get('result') if 'result' in list_result else []
             if not isinstance(loaded_wallets, list):
@@ -692,6 +709,77 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
         if wallet_name is not None and not isinstance(wallet_name, str):
             wallet_name = str(wallet_name)
         ok, err = config_service.save_wallet_name(wallet_name)
+        if ok:
+            self.wfile.write(json.dumps({"ok": True}).encode())
+        else:
+            self.wfile.write(json.dumps({"ok": False, "error": err}).encode())
+
+    def handle_config_account_labels_save(self):
+        """POST /api/config/account-labels - save account labels for a wallet."""
+        self.send_response(200)
+        self.send_header('Content-Type', 'application/json')
+        self._send_cors_headers()
+        self.end_headers()
+        content_length = int(self.headers.get('Content-Length', 0))
+        if content_length <= 0:
+            self.wfile.write(json.dumps({"ok": False, "error": "Missing body"}).encode())
+            return
+        try:
+            body = self.rfile.read(content_length)
+        except Exception:
+            self.wfile.write(json.dumps({"ok": False, "error": "Failed to read body"}).encode())
+            return
+        try:
+            data = json.loads(body.decode('utf-8'))
+        except (ValueError, UnicodeDecodeError):
+            self.wfile.write(json.dumps({"ok": False, "error": "Invalid JSON"}).encode())
+            return
+        wallet_name = data.get('wallet_name')
+        if wallet_name is not None and not isinstance(wallet_name, str):
+            wallet_name = str(wallet_name)
+        labels = data.get('labels')
+        if labels is not None and not isinstance(labels, dict):
+            self.wfile.write(json.dumps({"ok": False, "error": "labels must be an object"}).encode())
+            return
+        labels = labels or {}
+        normalized = {}
+        for k, v in labels.items():
+            if not isinstance(k, str):
+                k = str(k)
+            normalized[k] = str(v) if v is not None else ""
+        ok, err = config_service.save_account_labels(wallet_name or "", normalized)
+        if ok:
+            self.wfile.write(json.dumps({"ok": True}).encode())
+        else:
+            self.wfile.write(json.dumps({"ok": False, "error": err}).encode())
+
+    def handle_config_selected_account_save(self):
+        """POST /api/config/selected-account - save selected account for a wallet."""
+        self.send_response(200)
+        self.send_header('Content-Type', 'application/json')
+        self._send_cors_headers()
+        self.end_headers()
+        content_length = int(self.headers.get('Content-Length', 0))
+        if content_length <= 0:
+            self.wfile.write(json.dumps({"ok": False, "error": "Missing body"}).encode())
+            return
+        try:
+            body = self.rfile.read(content_length)
+        except Exception:
+            self.wfile.write(json.dumps({"ok": False, "error": "Failed to read body"}).encode())
+            return
+        try:
+            data = json.loads(body.decode('utf-8'))
+        except (ValueError, UnicodeDecodeError):
+            self.wfile.write(json.dumps({"ok": False, "error": "Invalid JSON"}).encode())
+            return
+        wallet_name = data.get('wallet_name')
+        if wallet_name is not None and not isinstance(wallet_name, str):
+            wallet_name = str(wallet_name)
+        selected_account = data.get('selected_account')
+        if selected_account is not None and not isinstance(selected_account, str):
+            selected_account = str(selected_account)
+        ok, err = config_service.save_selected_account(wallet_name or "", selected_account or "all")
         if ok:
             self.wfile.write(json.dumps({"ok": True}).encode())
         else:
