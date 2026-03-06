@@ -110,6 +110,9 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
             else:
                 self.send_error(404, "Not Found")
 
+        except (BrokenPipeError, ConnectionResetError):
+            # Client disconnected before response was fully sent; ignore
+            pass
         except Exception as e:
             self.send_error(500, f"Internal Server Error: {str(e)}")
 
