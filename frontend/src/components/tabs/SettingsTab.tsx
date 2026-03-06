@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useApi } from '@/contexts/ApiContext';
 import { useActiveTab } from '@/contexts/TabContext';
 import { DEFAULT_RPC_HOST, DEFAULT_RPC_PORT } from '@/constants';
@@ -16,6 +16,7 @@ export function SettingsTab() {
   const [saving, setSaving] = useState(false);
   const [testLoading, setTestLoading] = useState(false);
   const [testResult, setTestResult] = useState<ConfigTestResult | null>(null);
+  const testResultClearTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [lastSaved, setLastSaved] = useState<SettingsBaseline | null>(null);
   const [walletSaveLoading, setWalletSaveLoading] = useState(false);
@@ -27,6 +28,7 @@ export function SettingsTab() {
   const [accountLabelInputs, setAccountLabelInputs] = useState<Record<string, string>>({});
   const [accountLabelsSaving, setAccountLabelsSaving] = useState(false);
   const [accountLabelsMessage, setAccountLabelsMessage] = useState<string | null>(null);
+  const [accountLabelsExpanded, setAccountLabelsExpanded] = useState(false);
 
   const [authMethod, setAuthMethod] = useState<'password' | 'cookie'>('password');
   const [rpcHost, setRpcHost] = useState(DEFAULT_RPC_HOST);
@@ -146,6 +148,15 @@ export function SettingsTab() {
     const t = setTimeout(() => setAccountLabelsMessage(null), 3000);
     return () => clearTimeout(t);
   }, [accountLabelsMessage]);
+
+  // Clear test result timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (testResultClearTimeoutRef.current) {
+        clearTimeout(testResultClearTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const pendingChanges = useMemo(
     () =>
@@ -382,13 +393,25 @@ export function SettingsTab() {
               <button
                 type="button"
                 onClick={async () => {
+                  if (testResultClearTimeoutRef.current) {
+                    clearTimeout(testResultClearTimeoutRef.current);
+                    testResultClearTimeoutRef.current = null;
+                  }
                   setTestResult(null);
                   setTestLoading(true);
                   try {
                     const r = await fetchConfigTest();
                     setTestResult(r);
+                    testResultClearTimeoutRef.current = setTimeout(() => {
+                      setTestResult(null);
+                      testResultClearTimeoutRef.current = null;
+                    }, 5000);
                   } catch (e) {
                     setTestResult({ ok: false, error: getErrorMessage(e) });
+                    testResultClearTimeoutRef.current = setTimeout(() => {
+                      setTestResult(null);
+                      testResultClearTimeoutRef.current = null;
+                    }, 5000);
                   } finally {
                     setTestLoading(false);
                   }
@@ -481,7 +504,6 @@ export function SettingsTab() {
                     (() => {
                       const acc = walletAccounts.find((a) => a.index === selectedAccount);
                       if (!acc) return null;
-                      const label = (acc.label && acc.label.trim()) ? acc.label : null;
                       const path = acc.path ?? `m/84'/0'/${acc.index}'`;
                       const pathInferred = !acc.path;
                       return (
@@ -496,12 +518,6 @@ export function SettingsTab() {
                             </dt>
                             <dd className="inline text-level-4 font-mono">{path}</dd>
                           </div>
-                          {label !== null && (
-                            <div>
-                              <dt className="text-level-5 inline">Label: </dt>
-                              <dd className="inline text-level-4">{label}</dd>
-                            </div>
-                          )}
                         </dl>
                       );
                     })()
@@ -517,9 +533,23 @@ export function SettingsTab() {
               )}
               {walletAccounts && walletAccounts.length > 0 && status?.wallet_name && (
                 <div className="mt-4 pt-4 border-t border-level-3">
-                  <p className="text-sm text-level-5 mb-3">
+                  <button
+                    type="button"
+                    onClick={() => setAccountLabelsExpanded((prev) => !prev)}
+                    aria-expanded={accountLabelsExpanded}
+                    className="flex items-center gap-1.5 text-sm text-level-5 mb-3 w-full text-left hover:text-level-4 transition-colors"
+                  >
+                    <span
+                      className="inline-block transition-transform"
+                      style={{ transform: accountLabelsExpanded ? 'none' : 'rotate(-90deg)' }}
+                      aria-hidden
+                    >
+                      ▼
+                    </span>
                     Custom account labels (optional):
-                  </p>
+                  </button>
+                  {accountLabelsExpanded && (
+                  <>
                   <ul className="space-y-2 list-none">
                     {walletAccounts.map((a) => (
                       <li key={a.index} className="flex flex-wrap items-center gap-2">
@@ -606,6 +636,8 @@ export function SettingsTab() {
                       Reset
                     </button>
                   </div>
+                  </>
+                  )}
                 </div>
               )}
             </>
