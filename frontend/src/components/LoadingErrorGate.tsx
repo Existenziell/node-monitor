@@ -16,7 +16,7 @@ export function LoadingErrorGate<T>({
     return (
       <div className="p-4 text-level-4 flex items-center gap-2" role="status" aria-live="polite">
         <Spinner size="sm" />
-        Loading {loadingLabel}…
+        Loading {loadingLabel} data…
       </div>
     );
   }
