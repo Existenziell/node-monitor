@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
 import { useApi } from '@/contexts/ApiContext';
 import type { BlockRow, BlocksData, DistributionData } from '@/types';
-import { formatBytes, formatWeight } from '@/utils';
+import { formatBytes, formatTimeSince, formatWeight } from '@/utils';
 import { useRefreshState, useRefreshDone } from '@/contexts/RefreshContext';
 import { useApiData } from '@/hooks/useApiData';
 import { useTabData } from '@/hooks/useTabData';
@@ -28,12 +28,6 @@ const PIE_COLORS = [
 ];
 
 const POOL_ICON_SIZE = 16;
-
-function formatTimeSince(seconds: number): string {
-  const m = Math.floor(seconds / 60);
-  const s = Math.floor(seconds % 60);
-  return `${m}:${String(s).padStart(2, '0')}`;
-}
 
 /** Parse block_time UTC string (YYYY-MM-DD HH:mm:ss) to timestamp ms, or null. */
 function parseBlockTimeUtc(blockTimeStr: string): number | null {
@@ -119,7 +113,7 @@ function PoolDistributionChart({
 
   return (
     <div className="w-full h-[240px]" role="img" aria-label="Pool distribution by block share">
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={240}>
         <PieChart margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
           <Pie
             data={pieData}

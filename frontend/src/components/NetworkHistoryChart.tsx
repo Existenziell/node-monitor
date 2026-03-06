@@ -59,7 +59,7 @@ export function NetworkHistoryChart({ networkHistory }: NetworkHistoryChartProps
 
   return (
     <div className="w-full h-[280px]" role="img" aria-label="Hashrate and difficulty over time">
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={280}>
         <LineChart
           data={data}
           margin={{ top: 8, right: 56, left: 56, bottom: 8 }}

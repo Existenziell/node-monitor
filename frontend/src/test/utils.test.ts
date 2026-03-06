@@ -3,6 +3,7 @@ import type { WalletTransaction } from '@/types';
 import {
   formatDuration,
   formatBytes,
+  formatTimeSince,
   formatWeight,
   formatDifficulty,
   truncateTxid,
@@ -33,6 +34,43 @@ describe('formatDuration', () => {
     expect(formatDuration(3600)).toBe('1h');
     expect(formatDuration(3660)).toBe('1h 1m');
     expect(formatDuration(7325)).toBe('2h 2m');
+  });
+});
+
+describe('formatTimeSince', () => {
+  it('returns "-" for non-finite or negative seconds', () => {
+    expect(formatTimeSince(NaN)).toBe('-');
+    expect(formatTimeSince(Infinity)).toBe('-');
+    expect(formatTimeSince(-1)).toBe('-');
+  });
+
+  it('returns "0 s" for zero', () => {
+    expect(formatTimeSince(0)).toBe('0 s');
+  });
+
+  it('formats seconds', () => {
+    expect(formatTimeSince(1)).toBe('1 s');
+    expect(formatTimeSince(45)).toBe('45 s');
+  });
+
+  it('formats minutes as M:SS min', () => {
+    expect(formatTimeSince(60)).toBe('1:00 min');
+    expect(formatTimeSince(184)).toBe('3:04 min');
+    expect(formatTimeSince(309)).toBe('5:09 min');
+    expect(formatTimeSince(522)).toBe('8:42 min');
+  });
+
+  it('formats hours as H:MM h', () => {
+    expect(formatTimeSince(3600)).toBe('1:00 h');
+    expect(formatTimeSince(3660)).toBe('1:01 h');
+    expect(formatTimeSince(7200)).toBe('2:00 h');
+    expect(formatTimeSince(36000)).toBe('10:00 h');
+  });
+
+  it('formats days as D:HH d', () => {
+    expect(formatTimeSince(86400)).toBe('1:00 d');
+    expect(formatTimeSince(86400 + 12 * 3600)).toBe('1:12 d');
+    expect(formatTimeSince(86400 * 11 + 12 * 3600)).toBe('11:12 d');
   });
 });
 

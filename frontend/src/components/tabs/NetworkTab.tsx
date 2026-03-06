@@ -10,7 +10,7 @@ import { LoadingOverlay } from '@/components/LoadingOverlay';
 import { LoadingErrorGate } from '@/components/LoadingErrorGate';
 import { SectionHeader } from '@/components/SectionHeader';
 import { BITCOIN_HALVING_INTERVAL, BITCOIN_RETARGET_INTERVAL } from '@/constants';
-import { formatDifficulty, getErrorMessage } from '@/utils';
+import { formatDifficulty, formatTimeSince, getErrorMessage } from '@/utils';
 
 function SummaryCard({
   title,
@@ -57,13 +57,6 @@ function formatPrice(usd: number | undefined): string {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(usd);
-}
-
-function formatSeconds(sec: number | undefined | null): string {
-  if (sec === null || sec === undefined || !Number.isFinite(sec)) return '—';
-  if (sec < 60) return `${Math.round(sec)} s`;
-  if (sec < 3600) return `${(sec / 60).toFixed(1)} min`;
-  return `${(sec / 3600).toFixed(1)} h`;
 }
 
 export function NetworkTab() {
@@ -126,7 +119,7 @@ export function NetworkTab() {
     label: 'Avg block time',
     value:
       blocksData?.avg_block_time_seconds !== null && blocksData?.avg_block_time_seconds !== undefined && Number.isFinite(blocksData.avg_block_time_seconds)
-        ? formatSeconds(blocksData.avg_block_time_seconds)
+        ? formatTimeSince(blocksData.avg_block_time_seconds)
         : '—',
   });
   const difficultySubLines: { label: string; value: string; progress?: number }[] = [];
@@ -149,7 +142,7 @@ export function NetworkTab() {
     label: 'Next adjustment',
     value:
       nextAdjustmentSeconds !== null && Number.isFinite(nextAdjustmentSeconds)
-        ? formatSeconds(nextAdjustmentSeconds)
+        ? formatTimeSince(nextAdjustmentSeconds)
         : '—',
   });
 

@@ -50,6 +50,26 @@ export function formatDuration(seconds: number): string {
   return `${hours}h ${remainingMinutes}m`;
 }
 
+/** Human-readable duration (e.g. "3:04 min", "1:30 h", "1:12 d"). */
+export function formatTimeSince(seconds: number): string {
+  if (!Number.isFinite(seconds) || seconds < 0) return '-';
+  if (seconds === 0) return '0 s';
+  if (seconds < 60) return `${Math.round(seconds)} s`;
+  if (seconds < 3600) {
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return `${m}:${String(s).padStart(2, '0')} min`;
+  }
+  if (seconds < 86400) {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    return `${h}:${String(m).padStart(2, '0')} h`;
+  }
+  const d = Math.floor(seconds / 86400);
+  const h = Math.floor((seconds % 86400) / 3600);
+  return `${d}:${String(h).padStart(2, '0')} d`;
+}
+
 export function formatBytes(bytes: number | undefined | null): string {
   if (bytes === null || bytes === undefined || !Number.isFinite(bytes) || bytes < 0) return '-';
   if (bytes < 1024) return `${bytes} B`;

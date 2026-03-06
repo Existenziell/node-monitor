@@ -89,6 +89,9 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
           ? `Block #${currentHeight} found (${pool})`
           : `Block #${currentHeight} found`;
         addNotification({ message: msg, type: 'new_block' });
+        (['blocks', 'network', 'node'] as const).forEach((tabId) => {
+          window.dispatchEvent(new CustomEvent('tab-refresh', { detail: tabId }));
+        });
       } catch {
         // ignore polling errors; next interval retries
       } finally {
