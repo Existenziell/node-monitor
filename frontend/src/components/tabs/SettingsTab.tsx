@@ -3,7 +3,8 @@ import { useApi } from '@/contexts/ApiContext';
 import { useActiveTab } from '@/contexts/TabContext';
 import { DEFAULT_RPC_HOST, DEFAULT_RPC_PORT } from '@/constants';
 import { SectionHeader } from '@/components/SectionHeader';
-import type { ConfigStatus, ConfigSavePayload, ConfigTestResult, PendingChange, SettingsBaseline } from '@/types';
+import { WalletConfig } from '@/components/WalletConfig';
+import type { ConfigStatus, ConfigSavePayload, ConfigTestResult, PendingChange, SettingsBaseline, WalletAccount } from '@/types';
 import { getErrorMessage } from '@/utils';
 
 function getPendingChanges(
@@ -66,7 +67,7 @@ function getPendingChanges(
 
 export function SettingsTab() {
   const { activeTab } = useActiveTab();
-  const { fetchConfigStatus, fetchConfigTest, saveConfig, saveWalletName } = useApi();
+  const { fetchConfigStatus, fetchConfigTest, saveConfig, saveWalletName, fetchWallet } = useApi();
   const [status, setStatus] = useState<ConfigStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -76,6 +77,8 @@ export function SettingsTab() {
   const [lastSaved, setLastSaved] = useState<SettingsBaseline | null>(null);
   const [walletSaveLoading, setWalletSaveLoading] = useState(false);
   const [walletSwitchMessage, setWalletSwitchMessage] = useState<string | null>(null);
+  const [walletAccounts, setWalletAccounts] = useState<WalletAccount[] | null>(null);
+  const [selectedAccount, setSelectedAccount] = useState<number | 'all'>('all');
 
   const [authMethod, setAuthMethod] = useState<'password' | 'cookie'>('password');
   const [rpcHost, setRpcHost] = useState(DEFAULT_RPC_HOST);
@@ -109,6 +112,17 @@ export function SettingsTab() {
         cookieFile: cookie,
         hasPassword: !!(s.config_exists && s.auth_method === 'password'),
       });
+      if (s.node_configured && s.wallet_name) {
+        try {
+          const walletData = await fetchWallet();
+          setWalletAccounts(Array.isArray(walletData?.accounts) ? walletData.accounts : []);
+        } catch {
+          setWalletAccounts([]);
+        }
+      } else {
+        setWalletAccounts(null);
+      }
+      setSelectedAccount('all');
     } catch {
       const fallback: ConfigStatus = {
         config_exists: false,
@@ -129,10 +143,11 @@ export function SettingsTab() {
         cookieFile: '',
         hasPassword: false,
       });
+      setWalletAccounts(null);
     } finally {
       setLoading(false);
     }
-  }, [fetchConfigStatus]);
+  }, [fetchConfigStatus, fetchWallet]);
 
   // Refetch config status when the Settings tab becomes visible so "Default wallet" stays in sync
   // (e.g. after loading a wallet in the Wallet tab).
@@ -209,7 +224,7 @@ export function SettingsTab() {
 
   if (loading && !status) {
     return (
-      <div className="p-4 text-level-4">Loading settings...</div>
+      <></>
     );
   }
 
@@ -236,7 +251,7 @@ export function SettingsTab() {
           )}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="form-label">
+              <label className="form-label pb-1">
                 Authentication
               </label>
               <div className="flex gap-4">
@@ -285,7 +300,7 @@ export function SettingsTab() {
                   </label>
                   <input
                     id="rpc_password"
-                    type="password"
+                    type="text"
                     value={rpcPassword}
                     onChange={(e) => setRpcPassword(e.target.value)}
                     className="form-input"
@@ -382,6 +397,22 @@ export function SettingsTab() {
               >
                 {testLoading ? 'Testing…' : 'Test connection'}
               </button>
+              <span className="flex-1" />
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthMethod('password');
+                  setRpcHost(DEFAULT_RPC_HOST);
+                  setRpcPort(DEFAULT_RPC_PORT);
+                  setRpcUser('');
+                  setRpcPassword('');
+                  setCookieFile('');
+                  setTestResult(null);
+                }}
+                className="text-sm text-level-4 hover:text-level-5 underline underline-offset-2 transition-colors"
+              >
+                Reset
+              </button>
             </div>
             {testResult && !testLoading && (
               <p className={`text-sm ${testResult.ok ? 'text-semantic-success' : 'text-semantic-error'}`}>
@@ -395,58 +426,37 @@ export function SettingsTab() {
 
         <div className="section-container w-full lg:w-1/2 py-3">
           <SectionHeader as="h2">Wallet configuration</SectionHeader>
-          {status?.config_exists && (
-            <div className="space-y-2">
-              <div>
-                <label className="form-label-muted">Default wallet</label>
-                {Array.isArray(status.loaded_wallets) ? (
-                  <select
-                    value={status.wallet_name ?? ''}
-                    onChange={async (e) => {
-                      const value = e.target.value;
-                      const name = value === '' ? null : value;
-                      setWalletSaveLoading(true);
-                      setMessage(null);
-                      try {
-                        const result = await saveWalletName(name);
-                        if (result.ok) {
-                          await loadStatus();
-                          window.dispatchEvent(new CustomEvent('tab-refresh', { detail: 'wallet' }));
-                          const displayName = name ?? 'None';
-                          setWalletSwitchMessage(displayName);
-                        } else {
-                          setMessage({ type: 'error', text: result.error ?? 'Failed to save default wallet' });
-                        }
-                      } catch (err) {
-                        setMessage({ type: 'error', text: getErrorMessage(err) });
-                      } finally {
-                        setWalletSaveLoading(false);
-                      }
-                    }}
-                    disabled={walletSaveLoading}
-                    className="form-input"
-                  >
-                    <option value="">None</option>
-                    {status.loaded_wallets.map((w) => (
-                      <option key={w} value={w}>
-                        {w}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <p className="text-sm text-level-4">
-                    {status.wallet_name !== null && status.wallet_name !== undefined && status.wallet_name !== '' ? status.wallet_name : 'None'}
-                  </p>
-                )}
-              </div>
-              {walletSwitchMessage !== null && (
-                <div className="p-2 rounded text-sm bg-semantic-success/20 text-semantic-success">
-                  Wallet switched to {walletSwitchMessage}
-                </div>
-              )}
-            </div>
-          )}
-          {status?.config_exists === false && (
+          {status?.config_exists ? (
+            <WalletConfig
+              walletLabel="Active wallet"
+              loadedWallets={status.loaded_wallets ?? []}
+              walletName={status.wallet_name ?? ''}
+              onWalletChange={async (name) => {
+                setWalletSaveLoading(true);
+                setMessage(null);
+                try {
+                  const result = await saveWalletName(name);
+                  if (result.ok) {
+                    await loadStatus();
+                    window.dispatchEvent(new CustomEvent('tab-refresh', { detail: 'wallet' }));
+                    setWalletSwitchMessage(name ?? 'None');
+                  } else {
+                    setMessage({ type: 'error', text: result.error ?? 'Failed to save default wallet' });
+                  }
+                } catch (err) {
+                  setMessage({ type: 'error', text: getErrorMessage(err) });
+                } finally {
+                  setWalletSaveLoading(false);
+                }
+              }}
+              walletLoading={walletSaveLoading}
+              walletSwitchMessage={walletSwitchMessage}
+              accounts={walletAccounts}
+              selectedAccount={selectedAccount}
+              onAccountChange={setSelectedAccount}
+              allowNoWallet
+            />
+          ) : (
             <p className="text-sm text-level-4">Save node configuration first to choose a default wallet.</p>
           )}
         </div>

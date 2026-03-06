@@ -16,7 +16,8 @@ from constants import DEFAULT_RPC_PORT, DEFAULT_RPC_TIMEOUT
 _BASE_ONLY_METHODS = frozenset({"listwallets", "loadwallet", "createwallet"})
 # Methods that operate on a specific wallet; use wallet URL when wallet_name is set
 _WALLET_SCOPED_METHODS = frozenset({
-    "getwalletinfo", "getbalance", "getbalances", "listunspent", "listtransactions", "gettransaction"
+    "getwalletinfo", "getbalance", "getbalances", "listunspent", "listtransactions", "gettransaction",
+    "listdescriptors", "getaddressinfo",
 })
 
 
@@ -202,6 +203,10 @@ class RPCService:
     def load_wallet(self, name: str) -> Dict[str, Any]:
         """Load a wallet by name (uses base URL, no wallet path)."""
         return self.rpc_call("loadwallet", [name])
+
+    def list_descriptors(self, private: bool = False) -> Dict[str, Any]:
+        """List descriptors in a descriptor wallet (Core 22+)."""
+        return self.rpc_call("listdescriptors", [private])
 
     # Network Hashrate Methods
     def get_network_hashrate(self, nblocks: int = 120) -> Dict[str, Any]:

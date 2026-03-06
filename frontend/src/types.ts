@@ -183,6 +183,8 @@ export interface UtxoEntry {
   address?: string;
   amount?: number;
   confirmations?: number;
+  /** BIP44/BIP84 account index when wallet has multiple accounts (from listdescriptors). */
+  accountIndex?: number | null;
   [key: string]: unknown;
 }
 
@@ -195,6 +197,8 @@ export interface WalletTransaction {
   time?: number;
   blocktime?: number;
   address?: string;
+  /** BIP44/BIP84 account index when wallet has multiple accounts. */
+  accountIndex?: number | null;
   [key: string]: unknown;
 }
 
@@ -203,6 +207,44 @@ export interface WalletBalanceBreakdown {
   untrusted_pending?: number;
   immature?: number;
   [key: string]: unknown;
+}
+
+/** Account from listdescriptors (BIP44/BIP84 derivation path). */
+export interface WalletAccount {
+  index: number;
+  path?: string;
+}
+
+/** Props for the WalletConfig component (wallet + account selector block). */
+export interface WalletConfigProps {
+  /** Label above the wallet dropdown (e.g. "Active wallet" or "Default wallet"). */
+  walletLabel: string;
+  /** Currently loaded wallet names. */
+  loadedWallets: string[];
+  /** Currently selected wallet name. */
+  walletName: string;
+  /** Called when user selects a different wallet. Pass null for "None". */
+  onWalletChange: (name: string | null) => void;
+  /** Show loading state on the wallet dropdown. */
+  walletLoading?: boolean;
+  /** Error message to show below the wallet dropdown. */
+  walletError?: string | null;
+  /** Optional success message (e.g. "Wallet switched to X") shown below the dropdown. */
+  walletSwitchMessage?: string | null;
+  /** Account options from API. null = not loaded, [] = no paths detected. */
+  accounts: WalletAccount[] | null;
+  /** When true, show "Loading…" for the account section (e.g. Settings fetching wallet data). */
+  accountsLoading?: boolean;
+  /** Current selected account for dropdown mode. Omit for list-only mode (Settings). */
+  selectedAccount?: number | 'all';
+  /** Called when user selects a different account. Provide for dropdown mode (Wallet tab). */
+  onAccountChange?: (value: number | 'all') => void;
+  /** Include "None" option in wallet dropdown (e.g. Settings default wallet). */
+  allowNoWallet?: boolean;
+  /** When false, hide the wallet dropdown (e.g. Wallet tab when only one wallet is loaded). Default true. */
+  showWalletDropdown?: boolean;
+  /** When false, hide the account (derivation path) section. Default true. */
+  showAccountSection?: boolean;
 }
 
 export interface WalletData {
@@ -218,6 +260,10 @@ export interface WalletData {
   wallets?: string[];
   /** All currently loaded wallet names (from listwallets). Used for wallet switcher. */
   loadedWallets?: string[];
+  /** Multiple accounts (derivation paths) when descriptor wallet has more than one. */
+  accounts?: WalletAccount[];
+  /** Balance breakdown per account index (key = string index). */
+  balancesPerAccount?: Record<string, WalletBalanceBreakdown>;
 }
 
 export interface NetworkHistoryEntry {

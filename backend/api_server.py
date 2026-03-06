@@ -6,6 +6,7 @@ Runs the block monitor inside this process (SQLite for blocks/network/distributi
 """
 
 import json
+import re
 import sys
 import os
 import threading
@@ -51,6 +52,46 @@ except Exception as e:
     print(f"Backend path: {_backend_dir}")
     print(f"Available files: {os.listdir(_backend_dir) if os.path.exists(_backend_dir) else 'Path does not exist'}")
     sys.exit(1)
+
+
+def _extract_bip44_account_index(parts):
+    """Return the BIP44 account index from a list of path components.
+
+    Account is always the 3rd hardened level (purpose'/coin_type'/account').
+    Fingerprints (8 hex chars, never hardened) and non-hardened change/index
+    components are automatically excluded, making this robust to:
+      - bracket paths with or without a fingerprint prefix
+      - full hdkeypath strings with or without a leading 'm'
+      - paths that also include change and address-index levels
+    """
+    hardened = [p for p in parts if p.endswith("'") or p.endswith("h")]
+    if len(hardened) < 3:
+        return None
+    account_part = hardened[2].rstrip("'").rstrip("h")
+    try:
+        return int(account_part)
+    except (ValueError, TypeError):
+        return None
+
+
+def _parse_account_index_from_descriptor(desc):
+    """Extract BIP44 account index from a descriptor's key-origin bracket path."""
+    if not desc or not isinstance(desc, str):
+        return None
+    match = re.search(r'\[([^]]+)\]', desc)
+    if not match:
+        return None
+    parts = [p.strip() for p in match.group(1).split('/') if p.strip()]
+    return _extract_bip44_account_index(parts)
+
+
+def _parse_account_index_from_hdkeypath(hdkeypath):
+    """Extract BIP44 account index from an hdkeypath string."""
+    if not hdkeypath or not isinstance(hdkeypath, str):
+        return None
+    parts = [p.strip() for p in hdkeypath.split('/') if p.strip()]
+    return _extract_bip44_account_index(parts)
+
 
 class BitcoinAPIHandler(BaseHTTPRequestHandler):
     """HTTP request handler for Bitcoin monitoring API"""
@@ -410,7 +451,7 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
         msg = str(err).lower()
         return 'no wallet' in msg or 'not loaded' in msg
 
-    def handle_wallet_data(self):
+    def handle_wallet_data(self):  # pylint: disable=too-many-locals
         """Handle wallet monitoring data requests (cached to reduce RPC load)."""
         if self.rpc_service is None:
             self._send_no_config_response()
@@ -464,6 +505,137 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
                 return
 
             balances_result = balances.get('result') if 'result' in balances and balances.get('error') is None else None
+            unspent_list = unspent.get('result') if 'result' in unspent and unspent.get('error') is None else []
+            transactions_list = transactions.get('result') if 'result' in transactions and transactions.get('error') is None else []
+            if not isinstance(unspent_list, list):
+                unspent_list = []
+            if not isinstance(transactions_list, list):
+                transactions_list = []
+
+            accounts = []
+            address_to_account = {}
+            balances_per_account = {}
+            max_addresses = 500
+            # Ordered list of xpubs found in descriptors; index = account index for bare-xpub wallets
+            xpub_ordered: list = []
+            xpub_to_account_map: dict = {}
+
+            list_descriptors_result = self.rpc_service.list_descriptors()
+            print("[wallet] list_descriptors error:", list_descriptors_result.get('error'))
+            descs = None
+            if list_descriptors_result.get('error') is None:
+                result = list_descriptors_result.get('result') or {}
+                descs = result.get('descriptors') if isinstance(result, dict) else None
+                print("[wallet] list_descriptors count:", len(descs) if isinstance(descs, list) else 0)
+                if isinstance(descs, list):
+                    account_indices = set()
+                    path_by_account = {}
+                    for d in descs:
+                        if not isinstance(d, dict):
+                            continue
+                        # Include all descriptors (receiving and change); active: false is fine
+                        raw = d.get('desc') or d.get('descriptor')
+                        if not raw or not isinstance(raw, str):
+                            continue
+                        idx = _parse_account_index_from_descriptor(raw)
+                        if idx is not None:
+                            account_indices.add(idx)
+                            if idx not in path_by_account:
+                                path_by_account[idx] = f"m/84'/0'/{idx}'"
+                        # Always build an xpub map — used as fallback for bare-xpub descriptors
+                        xpub_m = re.search(r'(xpub[A-Za-z0-9]+)', raw)
+                        if xpub_m:
+                            xpub = xpub_m.group(1)
+                            if xpub not in xpub_to_account_map:
+                                xpub_to_account_map[xpub] = len(xpub_ordered)
+                                xpub_ordered.append(xpub)
+                    print("[wallet] accounts from descriptors:", sorted(account_indices))
+                    print("[wallet] unique xpubs found:", len(xpub_ordered))
+                    for idx in sorted(account_indices):
+                        accounts.append({"index": idx, "path": path_by_account.get(idx)})
+
+            # Bare-xpub fallback: when descriptors have no key-origin brackets,
+            # treat each unique xpub as a separate account (only when >1 xpub found,
+            # since a single xpub means no multi-account structure is detectable).
+            if not accounts and len(xpub_ordered) > 1:
+                print("[wallet] using xpub-based account detection:", len(xpub_ordered), "accounts")
+                for i in range(len(xpub_ordered)):
+                    accounts.append({"index": i, "path": None})
+
+            unique_addresses = set()
+            for u in unspent_list:
+                if isinstance(u, dict) and u.get('address'):
+                    unique_addresses.add(u['address'])
+            for t in transactions_list:
+                if isinstance(t, dict) and t.get('address'):
+                    unique_addresses.add(t['address'])
+            unique_addresses = list(unique_addresses)[:max_addresses]
+            print("[wallet] unique_addresses count:", len(unique_addresses))
+
+            for i, addr in enumerate(unique_addresses):
+                if not addr:
+                    continue
+                info = self.rpc_service.get_address_info(addr)
+                if 'error' in info and info['error']:
+                    continue
+                res = info.get('result') if 'result' in info else info
+                if not isinstance(res, dict):
+                    continue
+                parent_desc = res.get('parent_desc')
+                hdkeypath = res.get('hdkeypath')
+                acc = None
+                if parent_desc:
+                    acc = _parse_account_index_from_descriptor(parent_desc)
+                    if acc is None and xpub_to_account_map:
+                        # Bare-xpub descriptor: map address to account via its xpub
+                        xpub_m = re.search(r'(xpub[A-Za-z0-9]+)', parent_desc)
+                        if xpub_m:
+                            acc = xpub_to_account_map.get(xpub_m.group(1))
+                if acc is None and hdkeypath:
+                    acc = _parse_account_index_from_hdkeypath(hdkeypath)
+                if acc is not None:
+                    address_to_account[addr] = acc
+                if i < 3:  # debug first 3 addresses
+                    print("[wallet] getaddressinfo sample:", addr[:16] + "...", "parent_desc:", (parent_desc[:60] + "..." if parent_desc and len(parent_desc) > 60 else parent_desc), "hdkeypath:", hdkeypath, "-> acc:", acc)
+
+            print("[wallet] address_to_account size:", len(address_to_account), "sample:", dict(list(address_to_account.items())[:3]) if address_to_account else None)
+            print("[wallet] accounts (before fallback):", accounts)
+
+            # Last-resort fallback: derive accounts from whatever address_to_account values exist
+            if not accounts and address_to_account:
+                seen = sorted(set(address_to_account.values()))
+                for idx in seen:
+                    accounts.append({"index": idx, "path": None})
+
+            enriched_unspent = []
+            for u in unspent_list:
+                item = dict(u) if isinstance(u, dict) else {}
+                addr = item.get('address')
+                item['accountIndex'] = address_to_account.get(addr) if addr else None
+                enriched_unspent.append(item)
+
+            enriched_transactions = []
+            for t in transactions_list:
+                item = dict(t) if isinstance(t, dict) else {}
+                addr = item.get('address')
+                item['accountIndex'] = address_to_account.get(addr) if addr else None
+                enriched_transactions.append(item)
+
+            for acc in [a['index'] for a in accounts]:
+                key = str(acc)
+                total = sum(
+                    float(u.get('amount', 0) or 0)
+                    for u in enriched_unspent
+                    if u.get('accountIndex') == acc
+                )
+                balances_per_account[key] = {
+                    "trusted": total,
+                    "untrusted_pending": 0,
+                    "immature": 0,
+                }
+
+            print("[wallet] final accounts:", accounts)
+            print("[wallet] balances_per_account keys:", list(balances_per_account.keys()))
 
             list_result = self.rpc_service.list_wallets()
             loaded_wallets = list_result.get('result') if 'result' in list_result else []
@@ -477,9 +649,11 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
                     "wallet": wallet_info.get('result') if 'result' in wallet_info else None,
                     "balance": balance.get('result') if 'result' in balance else None,
                     "balances": balances_result,
-                    "unspent": unspent.get('result') if 'result' in unspent else None,
-                    "transactions": transactions.get('result') if 'result' in transactions else None,
-                    "loadedWallets": loaded_wallets
+                    "unspent": enriched_unspent,
+                    "transactions": enriched_transactions,
+                    "loadedWallets": loaded_wallets,
+                    "accounts": accounts,
+                    "balancesPerAccount": balances_per_account,
                 }
             }
 

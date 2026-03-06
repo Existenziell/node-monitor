@@ -11,6 +11,7 @@ import { LoadingOverlay } from '@/components/LoadingOverlay';
 import { LoadingErrorGate } from '@/components/LoadingErrorGate';
 import { SectionHeader } from '@/components/SectionHeader';
 import { SortableTh } from '@/components/SortableTh';
+import { WalletConfig } from '@/components/WalletConfig';
 import { EyeIcon, EyeSlashIcon } from '@/components/Icons';
 
 export function WalletTab() {
@@ -23,19 +24,38 @@ export function WalletTab() {
   const [createPassphrase, setCreatePassphrase] = useState('');
   const [selectedWallet, setSelectedWallet] = useState('');
   const [balanceVisible, setBalanceVisible] = useState(true);
+  /** Selected BIP44/BIP84 account index, or 'all' when multiple accounts. */
+  const [selectedAccount, setSelectedAccount] = useState<number | 'all'>('all');
 
   useTabData(load, 'wallet', data !== null && data !== undefined);
 
   useRefreshDone(loading, 'wallet');
 
-  const unspent: UtxoEntry[] = useMemo(
+  const accounts = useMemo(
+    () => (Array.isArray(data?.accounts) ? data.accounts : []),
+    [data?.accounts]
+  );
+  const hasMultipleAccounts = accounts.length > 1;
+
+
+  const unspentRaw: UtxoEntry[] = useMemo(
     () => (Array.isArray(data?.unspent) ? data.unspent : []),
     [data?.unspent]
   );
-  const transactions: WalletTransaction[] = useMemo(
+  const transactionsRaw: WalletTransaction[] = useMemo(
     () => (Array.isArray(data?.transactions) ? data.transactions : []),
     [data?.transactions]
   );
+
+  const unspent: UtxoEntry[] = useMemo(() => {
+    if (!hasMultipleAccounts || selectedAccount === 'all') return unspentRaw;
+    return unspentRaw.filter((u) => u.accountIndex === selectedAccount);
+  }, [hasMultipleAccounts, selectedAccount, unspentRaw]);
+
+  const transactions: WalletTransaction[] = useMemo(() => {
+    if (!hasMultipleAccounts || selectedAccount === 'all') return transactionsRaw;
+    return transactionsRaw.filter((t) => t.accountIndex === selectedAccount);
+  }, [hasMultipleAccounts, selectedAccount, transactionsRaw]);
   const unspentSort = useTableSort<UtxoEntry>({
     data: unspent,
     keyExtractors: {
@@ -44,6 +64,7 @@ export function WalletTab() {
       address: (u) => (u.address ?? '') || null,
       amount: (u) => (u.amount !== null && u.amount !== undefined && Number.isFinite(u.amount) ? u.amount : null),
       confirmations: (u) => (u.confirmations !== null && u.confirmations !== undefined ? u.confirmations : null),
+      accountIndex: (u) => (u.accountIndex !== null && u.accountIndex !== undefined ? u.accountIndex : null),
     },
     defaultSortKey: 'confirmations',
     defaultSortDir: 'desc',
@@ -57,8 +78,9 @@ export function WalletTab() {
       amount: (t) => (t.amount !== null && t.amount !== undefined && Number.isFinite(t.amount) ? t.amount : null),
       confirmations: (t) => (t.confirmations !== null && t.confirmations !== undefined ? t.confirmations : null),
       time: (t) => (t.blocktime ?? t.time) ?? null,
+      accountIndex: (t) => (t.accountIndex !== null && t.accountIndex !== undefined ? t.accountIndex : null),
     },
-    defaultSortKey: 'time',
+    defaultSortKey: 'confirmations',
     defaultSortDir: 'desc',
   });
 
@@ -120,7 +142,15 @@ export function WalletTab() {
   };
 
   const wallet = (data?.wallet ?? {}) as Record<string, unknown>;
-  const balance = data?.balance ?? 0;
+  const balance = useMemo(() => {
+    if (selectedAccount === 'all' || !hasMultipleAccounts) return data?.balance ?? 0;
+    const breakdown = data?.balancesPerAccount?.[String(selectedAccount)];
+    if (!breakdown) return 0;
+    const t = Number(breakdown.trusted) || 0;
+    const p = Number(breakdown.untrusted_pending) || 0;
+    const i = Number(breakdown.immature) || 0;
+    return t + p + i;
+  }, [data?.balance, data?.balancesPerAccount, hasMultipleAccounts, selectedAccount]);
 
   return (
     <LoadingErrorGate
@@ -211,46 +241,31 @@ export function WalletTab() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="section-container">
           <SectionHeader>Config</SectionHeader>
-          {(data?.loadedWallets?.length ?? 0) > 1 && (
-            <div className="mb-4">
-              <label className="form-label-muted">Active wallet</label>
-              <select
-                value={String(wallet.walletname ?? '')}
-                onChange={async (e) => {
-                  const name = e.target.value;
-                  if (!name || name === wallet.walletname) return;
-                  setActionError(null);
-                  setActionLoading(true);
-                  try {
-                    const save = await saveWalletName(name);
-                    if (!save.ok) throw new Error(save.error ?? 'Failed to save wallet');
-                    await load();
-                  } catch (err) {
-                    setActionError(getErrorMessage(err));
-                  } finally {
-                    setActionLoading(false);
-                  }
-                }}
-                disabled={actionLoading}
-                className="form-input form-input-surface-1"
-              >
-                {(data?.loadedWallets ?? []).map((w) => (
-                  <option key={w} value={w}>
-                    {w}
-                  </option>
-                ))}
-              </select>
-              {actionError && (
-                <p className="mt-1 text-sm text-semantic-error">{actionError}</p>
-              )}
-            </div>
-          )}
-          <dl className="text-sm space-y-1">
-            <div className="flex justify-between">
-              <dt className="text-level-4">Wallet name</dt>
-              <dd className="text-level-5">{String(wallet.walletname ?? 'N/A')}</dd>
-            </div>
-          </dl>
+          <WalletConfig
+            walletLabel="Active wallet"
+            loadedWallets={data?.loadedWallets ?? []}
+            walletName={String(wallet.walletname ?? '')}
+            onWalletChange={async (name) => {
+              if (!name || name === wallet.walletname) return;
+              setActionError(null);
+              setActionLoading(true);
+              try {
+                const save = await saveWalletName(name);
+                if (!save.ok) throw new Error(save.error ?? 'Failed to save wallet');
+                await load();
+              } catch (err) {
+                setActionError(getErrorMessage(err));
+              } finally {
+                setActionLoading(false);
+              }
+            }}
+            walletLoading={actionLoading}
+            walletError={actionError}
+            accounts={data?.accounts ?? null}
+            selectedAccount={selectedAccount}
+            onAccountChange={setSelectedAccount}
+            showWalletDropdown={(data?.loadedWallets?.length ?? 0) > 1}
+          />
         </div>
         <div className="section-container">
           <SectionHeader>Wallet</SectionHeader>
@@ -276,32 +291,43 @@ export function WalletTab() {
                 {balanceVisible ? `${Number(balance).toFixed(8)} BTC` : '***.**'}
               </dd>
             </div>
-            {data?.balances?.mine && (
+            {(selectedAccount === 'all' ? data?.balances?.mine : data?.balancesPerAccount?.[String(selectedAccount)]) && (
               <>
-                {data.balances.mine.trusted !== null && data.balances.mine.trusted !== undefined && Number.isFinite(data.balances.mine.trusted) && (
-                  <div className="flex justify-between">
-                    <dt className="text-level-4">Balance (confirmed)</dt>
-                    <dd className="text-level-5 tabular-nums">
-                      {balanceVisible ? `${Number(data.balances.mine.trusted).toFixed(8)} BTC` : '***.**'}
-                    </dd>
-                  </div>
-                )}
-                {data.balances.mine.untrusted_pending !== null && data.balances.mine.untrusted_pending !== undefined && Number.isFinite(data.balances.mine.untrusted_pending) && data.balances.mine.untrusted_pending !== 0 && (
-                  <div className="flex justify-between">
-                    <dt className="text-level-4">Pending</dt>
-                    <dd className="text-level-5 tabular-nums">
-                      {balanceVisible ? `${Number(data.balances.mine.untrusted_pending).toFixed(8)} BTC` : '***.**'}
-                    </dd>
-                  </div>
-                )}
-                {data.balances.mine.immature !== null && data.balances.mine.immature !== undefined && Number.isFinite(data.balances.mine.immature) && data.balances.mine.immature !== 0 && (
-                  <div className="flex justify-between">
-                    <dt className="text-level-4">Immature</dt>
-                    <dd className="text-level-5 tabular-nums">
-                      {balanceVisible ? `${Number(data.balances.mine.immature).toFixed(8)} BTC` : '***.**'}
-                    </dd>
-                  </div>
-                )}
+                {(() => {
+                  const breakdown = selectedAccount === 'all' ? data?.balances?.mine : data?.balancesPerAccount?.[String(selectedAccount)];
+                  if (!breakdown) return null;
+                  const trusted = breakdown.trusted !== null && breakdown.trusted !== undefined && Number.isFinite(breakdown.trusted);
+                  const pending = breakdown.untrusted_pending !== null && breakdown.untrusted_pending !== undefined && Number.isFinite(breakdown.untrusted_pending) && breakdown.untrusted_pending !== 0;
+                  const immature = breakdown.immature !== null && breakdown.immature !== undefined && Number.isFinite(breakdown.immature) && breakdown.immature !== 0;
+                  return (
+                    <>
+                      {trusted && (
+                        <div className="flex justify-between">
+                          <dt className="text-level-4">Balance (confirmed)</dt>
+                          <dd className="text-level-5 tabular-nums">
+                            {balanceVisible ? `${Number(breakdown.trusted).toFixed(8)} BTC` : '***.**'}
+                          </dd>
+                        </div>
+                      )}
+                      {pending && (
+                        <div className="flex justify-between">
+                          <dt className="text-level-4">Pending</dt>
+                          <dd className="text-level-5 tabular-nums">
+                            {balanceVisible ? `${Number(breakdown.untrusted_pending).toFixed(8)} BTC` : '***.**'}
+                          </dd>
+                        </div>
+                      )}
+                      {immature && (
+                        <div className="flex justify-between">
+                          <dt className="text-level-4">Immature</dt>
+                          <dd className="text-level-5 tabular-nums">
+                            {balanceVisible ? `${Number(breakdown.immature).toFixed(8)} BTC` : '***.**'}
+                          </dd>
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
               </>
             )}
             <div className="flex justify-between">
@@ -351,12 +377,15 @@ export function WalletTab() {
                 <SortableTh label="Address" sortKey="address" currentSortKey={unspentSort.sortKey} sortDir={unspentSort.sortDir} onSort={unspentSort.setSort} className="px-2 py-3 text-level-4" />
                 <SortableTh label="Amount (BTC)" sortKey="amount" currentSortKey={unspentSort.sortKey} sortDir={unspentSort.sortDir} onSort={unspentSort.setSort} className="px-2 py-3 text-level-4" />
                 <SortableTh label="Confirmations" sortKey="confirmations" currentSortKey={unspentSort.sortKey} sortDir={unspentSort.sortDir} onSort={unspentSort.setSort} className="px-2 py-3 text-level-4" />
+                {hasMultipleAccounts && selectedAccount === 'all' && (
+                  <SortableTh label="Account" sortKey="accountIndex" currentSortKey={unspentSort.sortKey} sortDir={unspentSort.sortDir} onSort={unspentSort.setSort} className="px-2 py-3 text-level-4" />
+                )}
               </tr>
             </thead>
             <tbody>
               {unspent.length === 0 ? (
                 <tr className="border-t border-level-3">
-                  <td colSpan={5} className="p-4 text-center text-level-4">
+                  <td colSpan={hasMultipleAccounts && selectedAccount === 'all' ? 6 : 5} className="p-4 text-center text-level-4">
                     No UTXOs
                   </td>
                 </tr>
@@ -377,6 +406,9 @@ export function WalletTab() {
                       {utxo.amount !== null && utxo.amount !== undefined && Number.isFinite(utxo.amount) ? Number(utxo.amount).toFixed(8) : '-'}
                     </td>
                     <td className="p-2 text-level-5">{utxo.confirmations ?? '-'}</td>
+                    {hasMultipleAccounts && selectedAccount === 'all' && (
+                      <td className="p-2 text-level-5">{utxo.accountIndex !== null && utxo.accountIndex !== undefined ? utxo.accountIndex : '-'}</td>
+                    )}
                   </tr>
                 ))
               )}
@@ -399,12 +431,15 @@ export function WalletTab() {
                 <SortableTh label="Amount (BTC)" sortKey="amount" currentSortKey={transactionsSort.sortKey} sortDir={transactionsSort.sortDir} onSort={transactionsSort.setSort} className="px-2 py-3 text-level-4" />
                 <SortableTh label="Confirmations" sortKey="confirmations" currentSortKey={transactionsSort.sortKey} sortDir={transactionsSort.sortDir} onSort={transactionsSort.setSort} className="px-2 py-3 text-level-4" />
                 <SortableTh label="Time" sortKey="time" currentSortKey={transactionsSort.sortKey} sortDir={transactionsSort.sortDir} onSort={transactionsSort.setSort} className="px-2 py-3 text-level-4" />
+                {hasMultipleAccounts && selectedAccount === 'all' && (
+                  <SortableTh label="Account" sortKey="accountIndex" currentSortKey={transactionsSort.sortKey} sortDir={transactionsSort.sortDir} onSort={transactionsSort.setSort} className="px-2 py-3 text-level-4" />
+                )}
               </tr>
             </thead>
             <tbody>
               {transactions.length === 0 ? (
                 <tr className="border-t border-level-3">
-                  <td colSpan={6} className="p-4 text-center text-level-4">
+                  <td colSpan={hasMultipleAccounts && selectedAccount === 'all' ? 7 : 6} className="p-4 text-center text-level-4">
                     No transactions
                   </td>
                 </tr>
@@ -439,6 +474,9 @@ export function WalletTab() {
                     </td>
                     <td className="p-2 text-level-5">{tx.confirmations ?? '-'}</td>
                     <td className="p-2 text-level-5">{formatTxTime(tx)}</td>
+                    {hasMultipleAccounts && selectedAccount === 'all' && (
+                      <td className="p-2 text-level-5">{tx.accountIndex !== null && tx.accountIndex !== undefined ? tx.accountIndex : '-'}</td>
+                    )}
                   </tr>
                 ))
               )}

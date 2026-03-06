@@ -322,6 +322,7 @@ export const RPC_SAMPLE_PARAMS: Record<string, string> = {
   importpubkey: formatParams(['pubkey']),
   importwallet: formatParams(['filename']),
   keypoolrefill: formatParams([100]),
+  listdescriptors: formatParams([]),
   listtransactions: formatParams(['*', 10]),
   listunspent: formatParams([0, 9999999]),
   loadwallet: formatParams(['filename']),
