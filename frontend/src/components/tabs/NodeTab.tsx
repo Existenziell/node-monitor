@@ -6,7 +6,7 @@ import { useTabData } from '@/hooks/useTabData';
 import { LoadingOverlay } from '@/components/LoadingOverlay';
 import { LoadingErrorGate } from '@/components/LoadingErrorGate';
 import { SectionHeader } from '@/components/SectionHeader';
-import { formatBytes, formatDifficulty } from '@/utils';
+import { formatBytes, formatDifficulty, formatHash } from '@/utils';
 import { KNOWN_INDEXES } from '@/data/indexTypes';
 
 function formatBtcPerKvB(n: number | undefined | null): string {
@@ -184,7 +184,7 @@ function NodeTabContent({ data, loading }: { data: NodeData; loading: boolean })
     { label: 'Chain', value: blockchain.chain },
     {
       label: 'Best block hash',
-      value: bestBlockHash ? `${bestBlockHash.slice(0, 16)}…${bestBlockHash.slice(-8)}` : 'N/A',
+      value: formatHash(bestBlockHash, 'N/A'),
     },
     {
       label: 'Verification progress',

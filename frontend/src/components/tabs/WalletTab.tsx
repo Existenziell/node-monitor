@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useApi } from '@/contexts/ApiContext';
 import type { UtxoEntry, WalletData, WalletTransaction } from '@/types';
 import { API_SERVER_HINT } from '@/constants';
-import { formatTxTime, getErrorMessage, truncateTxid } from '@/utils';
+import { formatHash, formatTxTime, getErrorMessage } from '@/utils';
 import { useRefreshState, useRefreshDone } from '@/contexts/RefreshContext';
 import { useApiData } from '@/hooks/useApiData';
 import { useTabData } from '@/hooks/useTabData';
@@ -412,11 +412,11 @@ export function WalletTab() {
                     className="table-row-hover"
                   >
                     <td className="p-2 text-level-5 font-mono" title={utxo.txid ?? ''}>
-                      {truncateTxid(utxo.txid)}
+                      {formatHash(utxo.txid)}
                     </td>
                     <td className="p-2 text-level-5">{utxo.vout ?? '-'}</td>
-                    <td className="p-2 max-w-[200px] truncate text-level-5" title={utxo.address ?? ''}>
-                      {utxo.address ?? '-'}
+                    <td className="p-2 max-w-[200px] truncate text-level-5 font-mono" title={utxo.address ?? ''}>
+                      {formatHash(utxo.address)}
                     </td>
                     <td className="p-2 max-w-[120px] truncate text-level-5" title={utxo.label ?? ''}>
                       {(utxo.label ?? '').trim() || '-'}
@@ -484,11 +484,11 @@ export function WalletTab() {
                     }}
                   >
                     <td className="p-2 text-level-5 font-mono" title={tx.txid ?? ''}>
-                      {truncateTxid(tx.txid)}
+                      {formatHash(tx.txid)}
                     </td>
                     <td className="p-2 text-level-5">{tx.category ?? '-'}</td>
-                    <td className="p-2 max-w-[200px] truncate text-level-5" title={tx.address ?? ''}>
-                      {tx.address ?? '-'}
+                    <td className="p-2 max-w-[200px] truncate text-level-5 font-mono" title={tx.address ?? ''}>
+                      {formatHash(tx.address)}
                     </td>
                     <td className="p-2 text-level-5">
                       {tx.amount !== null && tx.amount !== undefined && Number.isFinite(tx.amount) ? Number(tx.amount).toFixed(8) : '-'}

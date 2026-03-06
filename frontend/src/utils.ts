@@ -109,10 +109,16 @@ export function formatDifficulty(value: number | undefined | null): string {
   return num.toLocaleString();
 }
 
-export function truncateTxid(txid: string | undefined): string {
-  if (txid === null || txid === undefined || txid === '') return '-';
-  if (txid.length <= 16) return txid;
-  return `${txid.slice(0, 8)}…${txid.slice(-8)}`;
+const HASH_START = 6;
+const HASH_END = 6;
+const HASH_MAX_FULL = 12;
+
+/** Uniform format for hash-like strings (address, txid, block hash): "123456…789abc". */
+export function formatHash(value: string | undefined | null, emptyPlaceholder = '-'): string {
+  if (value === null || value === undefined || value === '') return emptyPlaceholder;
+  const s = String(value).trim();
+  if (s.length <= HASH_MAX_FULL) return s;
+  return `${s.slice(0, HASH_START)}…${s.slice(-HASH_END)}`;
 }
 
 export function formatTxTime(tx: WalletTransaction): string {

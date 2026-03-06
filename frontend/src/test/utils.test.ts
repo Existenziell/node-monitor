@@ -6,7 +6,7 @@ import {
   formatTimeSince,
   formatWeight,
   formatDifficulty,
-  truncateTxid,
+  formatHash,
   formatTxTime,
   formatParams,
 } from '@/utils';
@@ -159,20 +159,21 @@ describe('formatDifficulty', () => {
   });
 });
 
-describe('truncateTxid', () => {
-  it('returns "-" for empty or missing txid', () => {
-    expect(truncateTxid(undefined)).toBe('-');
-    expect(truncateTxid(null as unknown as undefined)).toBe('-');
-    expect(truncateTxid('')).toBe('-');
+describe('formatHash', () => {
+  it('returns emptyPlaceholder for empty or missing value', () => {
+    expect(formatHash(undefined)).toBe('-');
+    expect(formatHash(null)).toBe('-');
+    expect(formatHash('')).toBe('-');
+    expect(formatHash(undefined, 'N/A')).toBe('N/A');
   });
 
-  it('returns txid as-is when length <= 16', () => {
-    expect(truncateTxid('abc')).toBe('abc');
-    expect(truncateTxid('0123456789abcdef')).toBe('0123456789abcdef');
+  it('returns value as-is when length <= 12', () => {
+    expect(formatHash('abc')).toBe('abc');
+    expect(formatHash('0123456789ab')).toBe('0123456789ab');
   });
 
-  it('truncates long txid to first 8 and last 8', () => {
-    expect(truncateTxid('0123456789abcdef0123456789abcdef')).toBe('01234567…89abcdef');
+  it('formats long value as first 6…last 6', () => {
+    expect(formatHash('0123456789abcdef0123456789abcdef')).toBe('012345…abcdef');
   });
 });
 
