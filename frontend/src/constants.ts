@@ -17,19 +17,16 @@ export const DEFAULT_RPC_PORT = String(shared.DEFAULT_RPC_PORT);
 export const BITCOIN_HALVING_INTERVAL = shared.BITCOIN_HALVING_INTERVAL as number;
 export const BITCOIN_RETARGET_INTERVAL = shared.BITCOIN_RETARGET_INTERVAL as number;
 
-export const PIE_COLORS = [
-  'oklch(0.55 0.2 250)',
-  'oklch(0.65 0.2 85)',
-  'oklch(0.6 0.18 160)',
-  'oklch(0.55 0.22 300)',
-  'oklch(0.7 0.15 200)',
-  'oklch(0.6 0.2 30)',
-  'oklch(0.5 0.2 180)',
-  'oklch(0.65 0.18 280)',
-  'oklch(0.55 0.15 140)',
-  'oklch(0.6 0.2 340)',
-  'oklch(0.5 0.18 220)',
-  'oklch(0.7 0.12 60)',
+/** Pie chart palette – shades of accent (#5a7a9a), single hue (OKLCH ~250). */
+export const PIE_COLORS: readonly string[] = [
+  'oklch(0.35 0.06 250)',
+  'oklch(0.42 0.06 250)',
+  'oklch(0.49 0.06 250)',
+  'oklch(0.56 0.06 250)',
+  'oklch(0.63 0.06 250)',
+  'oklch(0.70 0.06 250)',
+  'oklch(0.77 0.05 250)',
+  'oklch(0.52 0.04 250)', // Others – muted mid-tone
 ];
 
 export const POOL_ICON_SIZE = 16;

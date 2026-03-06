@@ -41,7 +41,7 @@ export function PoolDistributionChart({
   return (
     <div className="w-full h-[240px]" role="img" aria-label="Pool distribution by block share">
       <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={240}>
-        <PieChart margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
+        <PieChart margin={{ top: 8, right: 140, bottom: 8, left: 8 }}>
           <Pie
             data={pieData}
             dataKey="value"
@@ -49,16 +49,18 @@ export function PoolDistributionChart({
             cx="50%"
             cy="50%"
             innerRadius={0}
-            outerRadius="70%"
+            outerRadius="100%"
             paddingAngle={0}
             cornerRadius={0}
-            stroke="none"
+            stroke="var(--level-2)"
+            strokeWidth={1}
           >
             {pieData.map((_, index) => (
               <Cell
                 key={index}
                 fill={PIE_COLORS[index % PIE_COLORS.length]}
-                stroke="none"
+                stroke="var(--level-2)"
+                strokeWidth={1}
               />
             ))}
           </Pie>
@@ -73,7 +75,13 @@ export function PoolDistributionChart({
             labelStyle={{ color: 'var(--tooltip-text, #0f172a)' }}
             formatter={(value: number, name: string) => [`${value.toFixed(1)}%`, name]}
           />
-          <Legend wrapperStyle={{ fontSize: 12 }} />
+          <Legend
+            layout="vertical"
+            align="right"
+            verticalAlign="middle"
+            wrapperStyle={{ fontSize: 12, paddingLeft: 20, color: 'var(--level-5)' }}
+            formatter={(value) => <span style={{ color: 'var(--level-5)' }}>{value}</span>}
+          />
         </PieChart>
       </ResponsiveContainer>
     </div>
