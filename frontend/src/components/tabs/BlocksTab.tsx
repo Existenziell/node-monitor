@@ -171,6 +171,7 @@ export function BlocksTab() {
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
   const loadMoreSentinelRef = useRef<HTMLTableRowElement | null>(null);
 
   const load = useCallback(async () => {
@@ -189,6 +190,7 @@ export function BlocksTab() {
       setError(e instanceof Error ? e : new Error(String(e)));
     } finally {
       setLoading(false);
+      setInitialLoadDone(true);
     }
   }, [fetchBlocksPage]);
 
@@ -204,7 +206,7 @@ export function BlocksTab() {
     }
   }, [fetchBlocksPage, blocks.length, totalBlocks, loadingMore]);
 
-  useTabData(load, 'blocks', blocks.length > 0 || (!loading && totalBlocks === 0));
+  useTabData(load, 'blocks', initialLoadDone);
   useRefreshDone(loading, 'blocks');
 
   useEffect(() => {
