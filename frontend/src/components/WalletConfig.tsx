@@ -1,4 +1,5 @@
 import type { WalletConfigProps } from '@/types';
+import { Link } from '@/components/Link';
 
 export function WalletConfig({
   walletLabel,
@@ -96,8 +97,8 @@ export function WalletConfig({
             )
           ) : accounts !== undefined && accounts !== null ? (
             <p className="text-sm text-level-5 mt-1">
-              No paths detected — descriptors may not include BIP32 account paths
-              {onAccountChange === null || onAccountChange === undefined ? '.' : ' (see listdescriptors in Console).'}
+              No paths detected. Descriptors may not include BIP32 account paths.
+              {onAccountChange === null || onAccountChange === undefined ? '.' : <> See listdescriptors in <Link href="/?tab=console"><span className="link-accent">Console</span></Link>.</>}
             </p>
           ) : null}
         </div>
