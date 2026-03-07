@@ -144,28 +144,46 @@ export function NetworkTab() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <SummaryCard
             title="Block height"
-            value={blocks !== null ? blocks.toLocaleString() : '—'}
+            value={
+              nodeState.loading && (nodeData === null || nodeData === undefined)
+                ? ''
+                : blocks !== null
+                  ? blocks.toLocaleString()
+                  : '—'
+            }
             subLines={blockHeightSubLines.length ? blockHeightSubLines : undefined}
             loading={nodeState.loading && (nodeData === null || nodeData === undefined)}
           />
           <SummaryCard
             title="Network difficulty"
-            value={difficulty !== null ? formatDifficulty(difficulty) : '—'}
+            value={
+              nodeState.loading && (nodeData === null || nodeData === undefined)
+                ? ''
+                : difficulty !== null
+                  ? formatDifficulty(difficulty)
+                  : '—'
+            }
             subLines={difficultySubLines.length ? difficultySubLines : undefined}
             loading={nodeState.loading && (nodeData === null || nodeData === undefined)}
           />
           <SummaryCard
             title="BTC price"
-            value={formatPrice(btcPriceUsd)}
+            value={
+              priceState.loading && (priceData === null || priceData === undefined)
+                ? ''
+                : formatPrice(btcPriceUsd)
+            }
             subLines={btcPriceSubLines}
             loading={priceState.loading && (priceData === null || priceData === undefined)}
           />
           <SummaryCard
             title="Network hashrate"
             value={
-              hashrate !== null && hashrate !== undefined && Number.isFinite(hashrate)
-                ? `${(hashrate / 1e18).toFixed(2)} EH/s`
-                : '—'
+              nodeState.loading && (nodeData === null || nodeData === undefined)
+                ? ''
+                : hashrate !== null && hashrate !== undefined && Number.isFinite(hashrate)
+                  ? `${(hashrate / 1e18).toFixed(2)} EH/s`
+                  : '—'
             }
             subLines={hashrateSubLinesFinal}
             compactSubLines

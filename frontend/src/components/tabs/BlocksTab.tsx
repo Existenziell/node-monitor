@@ -172,10 +172,7 @@ export function BlocksTab() {
               <dt className="text-level-4">Block height</dt>
               <dd className="text-level-5 font-medium tabular-nums flex items-center gap-2">
                 {loading && !metadata ? (
-                  <>
-                    <span>—</span>
-                    <Spinner size="sm" className="flex-shrink-0" />
-                  </>
+                  <Spinner size="sm" className="flex-shrink-0" />
                 ) : (
                   nextBlockHeight !== null ? `${nextBlockHeight.toLocaleString()}` : '—'
                 )}
@@ -183,10 +180,7 @@ export function BlocksTab() {
               <dt className="text-level-4">Time since last block</dt>
               <dd className="text-level-5 tabular-nums flex items-center gap-2">
                 {loading && !metadata ? (
-                  <>
-                    <span>—</span>
-                    <Spinner size="sm" className="flex-shrink-0" />
-                  </>
+                  <Spinner size="sm" className="flex-shrink-0" />
                 ) : (
                   timeSinceLastFormatted
                 )}
@@ -194,10 +188,7 @@ export function BlocksTab() {
               <dt className="text-level-4">Average block time</dt>
               <dd className="text-level-5 tabular-nums flex items-center gap-2">
                 {loading && !metadata ? (
-                  <>
-                    <span>—</span>
-                    <Spinner size="sm" className="flex-shrink-0" />
-                  </>
+                  <Spinner size="sm" className="flex-shrink-0" />
                 ) : avgBlockTimeSeconds !== null && avgBlockTimeSeconds !== undefined && Number.isFinite(avgBlockTimeSeconds)
                   ? formatTimeSince(Math.floor(avgBlockTimeSeconds))
                   : '—'}
