@@ -250,98 +250,70 @@ export function WalletTab() {
     ) : (
     <div className="relative space-y-4">
       <LoadingOverlay show={loading && !!data && refreshTabId === 'wallet'} />
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="section-container">
-          <SectionHeader>Config</SectionHeader>
-          <WalletConfig
-            walletLabel="Active wallet"
-            loadedWallets={data?.loadedWallets ?? []}
-            walletName={String(wallet.walletname ?? '')}
-            onWalletChange={async (name) => {
-              if (!name || name === wallet.walletname) return;
-              setActionError(null);
-              setActionLoading(true);
-              try {
-                const save = await saveWalletName(name);
-                if (!save.ok) throw new Error(save.error ?? 'Failed to save wallet');
-                await load();
-              } catch (err) {
-                setActionError(getErrorMessage(err));
-              } finally {
-                setActionLoading(false);
-              }
-            }}
-            walletLoading={actionLoading}
-            walletError={actionError}
-            accounts={data?.accounts ?? null}
-            selectedAccount={selectedAccount}
-            onAccountChange={setSelectedAccount}
-            showWalletDropdown={(data?.loadedWallets?.length ?? 0) > 1}
-          />
+          <SectionHeader>Balance</SectionHeader>
+          <div className="flex flex-col gap-0.5">
+            <div className="flex items-start justify-between gap-2">
+              <div className="tabular-nums text-accent min-w-0">
+                {balanceVisible ? (
+                  <>
+                    <div className="text-2xl md:text-3xl lg:text-4xl font-medium">
+                      {Number(balance).toFixed(8)} BTC
+                    </div>
+                    <div className="text-base md:text-lg text-level-4 mt-0.5">
+                      {Math.round(balance * 100_000_000).toLocaleString()} sats
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-2xl md:text-3xl lg:text-4xl font-medium">****</div>
+                    <div className="text-base md:text-lg text-level-4">****</div>
+                  </>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => setBalanceVisible((v) => !v)}
+                className="icon-button-muted shrink-0"
+                title={balanceVisible ? 'Hide balance' : 'Show balance'}
+                aria-label={balanceVisible ? 'Hide balance' : 'Show balance'}
+              >
+                {balanceVisible ? (
+                  <EyeSlashIcon className="w-4 h-4" />
+                ) : (
+                  <EyeIcon className="w-4 h-4" />
+                )}
+              </button>
+            </div>
+            {(() => {
+              const breakdown = selectedAccount === 'all' ? data?.balances?.mine : data?.balancesPerAccount?.[String(selectedAccount)];
+              if (!breakdown) return null;
+              const trusted = breakdown.trusted !== null && breakdown.trusted !== undefined && Number.isFinite(breakdown.trusted);
+              const pending = breakdown.untrusted_pending !== null && breakdown.untrusted_pending !== undefined && Number.isFinite(breakdown.untrusted_pending) && breakdown.untrusted_pending !== 0;
+              const immature = breakdown.immature !== null && breakdown.immature !== undefined && Number.isFinite(breakdown.immature) && breakdown.immature !== 0;
+              const fmt = (btc: number) => balanceVisible ? `${Number(btc).toFixed(8)} BTC` : '****';
+              return (
+                <div className="text-sm text-level-4 mt-2 pt-2 border-t border-level-3 space-y-1">
+                  {trusted && (
+                    <div>
+                      Confirmed: {balanceVisible ? `${Number(breakdown.trusted).toFixed(8)} BTC` : '****'}
+                    </div>
+                  )}
+                  {pending && (
+                    <div>Pending: {fmt(Number(breakdown.untrusted_pending))}</div>
+                  )}
+                  {immature && (
+                    <div>Immature: {fmt(Number(breakdown.immature))}</div>
+                  )}
+                </div>
+              );
+            })()}
+          </div>
         </div>
         <div className="section-container">
           <SectionHeader>Wallet</SectionHeader>
           <dl className="text-sm space-y-1">
-            <div className="flex justify-between items-center gap-2">
-              <dt className="text-level-4 flex items-center gap-1.5">
-                Balance
-                <button
-                  type="button"
-                  onClick={() => setBalanceVisible((v) => !v)}
-                  className="icon-button-muted"
-                  title={balanceVisible ? 'Hide balance' : 'Show balance'}
-                  aria-label={balanceVisible ? 'Hide balance' : 'Show balance'}
-                >
-                  {balanceVisible ? (
-                    <EyeSlashIcon className="w-4 h-4" />
-                  ) : (
-                    <EyeIcon className="w-4 h-4" />
-                  )}
-                </button>
-              </dt>
-              <dd className="text-accent tabular-nums">
-                {balanceVisible ? `${Number(balance).toFixed(8)} BTC` : '***.**'}
-              </dd>
-            </div>
-            {(selectedAccount === 'all' ? data?.balances?.mine : data?.balancesPerAccount?.[String(selectedAccount)]) && (
-              <>
-                {(() => {
-                  const breakdown = selectedAccount === 'all' ? data?.balances?.mine : data?.balancesPerAccount?.[String(selectedAccount)];
-                  if (!breakdown) return null;
-                  const trusted = breakdown.trusted !== null && breakdown.trusted !== undefined && Number.isFinite(breakdown.trusted);
-                  const pending = breakdown.untrusted_pending !== null && breakdown.untrusted_pending !== undefined && Number.isFinite(breakdown.untrusted_pending) && breakdown.untrusted_pending !== 0;
-                  const immature = breakdown.immature !== null && breakdown.immature !== undefined && Number.isFinite(breakdown.immature) && breakdown.immature !== 0;
-                  return (
-                    <>
-                      {trusted && (
-                        <div className="flex justify-between">
-                          <dt className="text-level-4">Balance (confirmed)</dt>
-                          <dd className="text-level-5 tabular-nums">
-                            {balanceVisible ? `${Number(breakdown.trusted).toFixed(8)} BTC` : '***.**'}
-                          </dd>
-                        </div>
-                      )}
-                      {pending && (
-                        <div className="flex justify-between">
-                          <dt className="text-level-4">Pending</dt>
-                          <dd className="text-level-5 tabular-nums">
-                            {balanceVisible ? `${Number(breakdown.untrusted_pending).toFixed(8)} BTC` : '***.**'}
-                          </dd>
-                        </div>
-                      )}
-                      {immature && (
-                        <div className="flex justify-between">
-                          <dt className="text-level-4">Immature</dt>
-                          <dd className="text-level-5 tabular-nums">
-                            {balanceVisible ? `${Number(breakdown.immature).toFixed(8)} BTC` : '***.**'}
-                          </dd>
-                        </div>
-                      )}
-                    </>
-                  );
-                })()}
-              </>
-            )}
             <div className="flex justify-between">
               <dt className="text-level-4" title={hasMultipleAccounts && selectedAccount !== 'all' ? 'Transaction count for selected account (from list)' : 'Distinct transactions in the wallet (from getwalletinfo)'}>Tx count</dt>
               <dd className="text-level-5">
@@ -385,6 +357,34 @@ export function WalletTab() {
               </div>
             )}
           </dl>
+        </div>
+        <div className="section-container">
+          <SectionHeader>Config</SectionHeader>
+          <WalletConfig
+            walletLabel="Active wallet"
+            loadedWallets={data?.loadedWallets ?? []}
+            walletName={String(wallet.walletname ?? '')}
+            onWalletChange={async (name) => {
+              if (!name || name === wallet.walletname) return;
+              setActionError(null);
+              setActionLoading(true);
+              try {
+                const save = await saveWalletName(name);
+                if (!save.ok) throw new Error(save.error ?? 'Failed to save wallet');
+                await load();
+              } catch (err) {
+                setActionError(getErrorMessage(err));
+              } finally {
+                setActionLoading(false);
+              }
+            }}
+            walletLoading={actionLoading}
+            walletError={actionError}
+            accounts={data?.accounts ?? null}
+            selectedAccount={selectedAccount}
+            onAccountChange={setSelectedAccount}
+            showWalletDropdown={(data?.loadedWallets?.length ?? 0) > 1}
+          />
         </div>
       </div>
 
