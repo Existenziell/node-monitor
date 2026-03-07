@@ -30,7 +30,7 @@ from price_service import get_bitcoin_price
 from constants import API_SERVER_URL, BLOCKS_DB_MAX_ENTRIES, DEFAULT_ZMQ_ENDPOINT
 from error_service import error_service
 try:
-    from block_store import (
+    from data_store import (
         init_schema,
         insert_block,
         insert_network_snapshot,
@@ -681,7 +681,7 @@ class BlockchainMonitor:
         }
 
     def _persist_block(self, block, mining_pool, block_details, time_since_last_block):
-        """Persist block to SQLite (block_store)."""
+        """Persist block to SQLite (data_store)."""
         if not BLOCK_STORE_AVAILABLE:
             return
         block_height = block.get('height', 0)
@@ -710,10 +710,10 @@ class BlockchainMonitor:
             update_avg_block_time(BLOCKS_DB_MAX_ENTRIES, self._db_path)
             _log.info("block persisted height=%s hash=%s", block_height, block_dict.get("block_hash"))
         except (OSError, IOError, KeyError, ValueError, sqlite3.Error) as e:
-            error_service.handle_file_error("block_store", "write", e)
+            error_service.handle_file_error("data_store", "write", e)
 
     def _persist_network_snapshot(self, hashrate: Optional[float], difficulty: Optional[float]) -> None:
-        """Append one difficulty/hashrate record to SQLite (block_store)."""
+        """Append one difficulty/hashrate record to SQLite (data_store)."""
         if not BLOCK_STORE_AVAILABLE:
             return
         try:
@@ -730,7 +730,7 @@ class BlockchainMonitor:
                 db_path=self._db_path,
             )
         except (OSError, IOError, KeyError, ValueError, sqlite3.Error) as e:
-            error_service.handle_file_error("block_store", "write", e)
+            error_service.handle_file_error("data_store", "write", e)
 
     def check_mempool_changes(self, mempool_info):
         """Check for significant mempool changes"""
@@ -751,7 +751,7 @@ class BlockchainMonitor:
             hashrate = self.get_network_hashrate()
             difficulty = self.get_network_difficulty()
 
-            # Persist to SQLite (block_store) if we have valid data
+            # Persist to SQLite (data_store) if we have valid data
             if hashrate is not None or difficulty is not None:
                 self._persist_network_snapshot(hashrate, difficulty)
                 self._last_network_log_time = current_time

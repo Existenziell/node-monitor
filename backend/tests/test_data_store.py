@@ -1,8 +1,8 @@
-"""Tests for block_store (SQLite blocks/network/distribution)."""
+"""Tests for data_store (SQLite blocks/network/distribution/price history)."""
 
 import os
 
-from block_store import (
+from data_store import (
     get_avg_block_time,
     get_blocks_count,
     get_distribution,

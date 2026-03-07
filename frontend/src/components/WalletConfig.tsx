@@ -48,7 +48,7 @@ export function WalletConfig({
               ))}
             </select>
           ) : (
-            <p className="text-sm text-level-4 mt-1">
+            <p className="text-muted mt-1">
               {walletName || 'None'}
             </p>
           )}
@@ -67,7 +67,7 @@ export function WalletConfig({
         <div>
           <label className="form-label-muted">Account (derivation path)</label>
           {accountsLoading ? (
-            <p className="text-sm text-level-5 mt-1">Loading…</p>
+            <p className="text-caption mt-1">Loading…</p>
           ) : hasAccounts ? (
             accountDropdown ? (
               <select
@@ -86,7 +86,7 @@ export function WalletConfig({
                 ))}
               </select>
             ) : (
-              <ul className="text-sm text-level-5 mt-1 space-y-1 list-none">
+              <ul className="text-caption mt-1 space-y-1 list-none">
                 {(accounts ?? []).map((a) => (
                   <li key={a.index}>
                     {accountDisplayName(a)}
@@ -96,7 +96,7 @@ export function WalletConfig({
               </ul>
             )
           ) : accounts !== undefined && accounts !== null ? (
-            <p className="text-sm text-level-5 mt-1">
+            <p className="text-caption mt-1">
               No paths detected. Descriptors may not include BIP32 account paths.
               {onAccountChange === null || onAccountChange === undefined ? '.' : <> See listdescriptors in <Link href="/?tab=console"><span className="link-accent">Console</span></Link>.</>}
             </p>

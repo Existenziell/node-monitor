@@ -62,8 +62,9 @@ export function ConsoleTab() {
 
   return (
     <div className="space-y-4">
-      <div className="section-container">
+      <div className="card">
         <SectionHeader>RPC Commands</SectionHeader>
+        <div className="section-container">
         {Object.entries(RPC_COMMANDS_BY_CATEGORY).map(([category, commands]) => {
           const isCollapsed = collapsed.has(category);
           return (
@@ -103,11 +104,13 @@ export function ConsoleTab() {
             </div>
           );
         })}
+        </div>
       </div>
 
       <div className="flex gap-4 flex-col lg:flex-row">
-        <div className="flex-[1] min-w-0 section-container">
+        <div className="flex-[1] min-w-0 card">
           <SectionHeader>RPC Console</SectionHeader>
+          <div className="section-container">
           <div className="space-y-3">
             <div className="flex flex-wrap gap-4 items-start">
               <div className="min-w-0 flex-grow">
@@ -129,7 +132,7 @@ export function ConsoleTab() {
                     className="form-input form-input-mono min-w-[22ch] w-full max-w-md"
                     placeholder="getblockcount"
                   />
-                  <p className="text-level-5 text-sm">
+                  <p className="text-caption">
                     {getCommandDescription(method) || '—'}
                   </p>
                 </div>
@@ -158,10 +161,12 @@ export function ConsoleTab() {
               {loading ? 'Executing…' : 'Execute'}
             </button>
           </div>
+          </div>
         </div>
 
-        <div className="flex-[2] min-w-0 section-container">
+        <div className="flex-[2] min-w-0 card">
           <SectionHeader>Response</SectionHeader>
+          <div className="section-container">
           <div className="p-3 font-mono text-sm overflow-x-auto flex-1 min-h-[120px]">
             {error !== null ? (
               <pre className="text-semantic-error whitespace-pre-wrap break-words">{error}</pre>
@@ -170,8 +175,9 @@ export function ConsoleTab() {
                 {formatResponseForDisplay(response)}
               </pre>
             ) : (
-              <p className="text-level-4 text-sm">Response will appear here after Execute.</p>
+              <p className="text-muted">Response will appear here after Execute.</p>
             )}
+          </div>
           </div>
         </div>
       </div>

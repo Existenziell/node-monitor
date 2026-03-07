@@ -29,7 +29,12 @@ function formatSubver(subver: string | undefined | null): string {
   return s || '-';
 }
 
-export function PeersTable({ peers }: { peers: Peer[] }) {
+interface PeersTableProps {
+  peers: Peer[];
+  embedded?: boolean;
+}
+
+export function PeersTable({ peers, embedded = false }: PeersTableProps) {
   const sort = useTableSort<Peer>({
     data: peers,
     keyExtractors: {
@@ -51,53 +56,63 @@ export function PeersTable({ peers }: { peers: Peer[] }) {
     return null;
   }
 
-  return (
-    <div className="section-container">
-      <SectionHeader>Peers ({peers.length})</SectionHeader>
-      <div className="overflow-x-auto max-h-[60vh]">
-        <table className="sortable-table w-full text-sm">
-          <thead className="sticky top-0 bg-level-2 text-left">
-            <tr>
-              <SortableTh label="Address" sortKey="address" currentSortKey={sort.sortKey} sortDir={sort.sortDir} onSort={sort.setSort} className="px-2 py-3 text-level-4" />
-              <SortableTh label="Version" sortKey="version" currentSortKey={sort.sortKey} sortDir={sort.sortDir} onSort={sort.setSort} className="px-2 py-3 text-level-4" />
-              <SortableTh label="Connection type" sortKey="connectionType" currentSortKey={sort.sortKey} sortDir={sort.sortDir} onSort={sort.setSort} className="px-2 py-3 text-level-4" />
-              <SortableTh label="Connected" sortKey="connected" currentSortKey={sort.sortKey} sortDir={sort.sortDir} onSort={sort.setSort} className="px-2 py-3 text-level-4" />
-              <SortableTh label="Last recv" sortKey="lastRecv" currentSortKey={sort.sortKey} sortDir={sort.sortDir} onSort={sort.setSort} className="px-2 py-3 text-level-4" />
-              <SortableTh label="Sent" sortKey="sent" currentSortKey={sort.sortKey} sortDir={sort.sortDir} onSort={sort.setSort} className="px-2 py-3 text-level-4" />
-              <SortableTh label="Recv" sortKey="recv" currentSortKey={sort.sortKey} sortDir={sort.sortDir} onSort={sort.setSort} className="px-2 py-3 text-level-4" />
-              <SortableTh label="Ping" sortKey="ping" currentSortKey={sort.sortKey} sortDir={sort.sortDir} onSort={sort.setSort} className="px-2 py-3 text-level-4" />
-              <SortableTh label="Starting height" sortKey="startingHeight" currentSortKey={sort.sortKey} sortDir={sort.sortDir} onSort={sort.setSort} className="px-2 py-3 text-level-4" />
-              <SortableTh label="Transport" sortKey="transport" currentSortKey={sort.sortKey} sortDir={sort.sortDir} onSort={sort.setSort} className="px-2 py-3 text-level-4" />
+  const tableContent = (
+    <div className="overflow-x-auto max-h-[60vh]">
+      <table className="sortable-table w-full text-sm">
+        <thead className="sticky top-0 bg-level-2 text-left">
+          <tr>
+            <SortableTh label="Address" sortKey="address" currentSortKey={sort.sortKey} sortDir={sort.sortDir} onSort={sort.setSort} className="table-th" />
+            <SortableTh label="Version" sortKey="version" currentSortKey={sort.sortKey} sortDir={sort.sortDir} onSort={sort.setSort} className="table-th" />
+            <SortableTh label="Connection type" sortKey="connectionType" currentSortKey={sort.sortKey} sortDir={sort.sortDir} onSort={sort.setSort} className="table-th" />
+            <SortableTh label="Connected" sortKey="connected" currentSortKey={sort.sortKey} sortDir={sort.sortDir} onSort={sort.setSort} className="table-th" />
+            <SortableTh label="Last recv" sortKey="lastRecv" currentSortKey={sort.sortKey} sortDir={sort.sortDir} onSort={sort.setSort} className="table-th" />
+            <SortableTh label="Sent" sortKey="sent" currentSortKey={sort.sortKey} sortDir={sort.sortDir} onSort={sort.setSort} className="table-th" />
+            <SortableTh label="Recv" sortKey="recv" currentSortKey={sort.sortKey} sortDir={sort.sortDir} onSort={sort.setSort} className="table-th" />
+            <SortableTh label="Ping" sortKey="ping" currentSortKey={sort.sortKey} sortDir={sort.sortDir} onSort={sort.setSort} className="table-th" />
+            <SortableTh label="Starting height" sortKey="startingHeight" currentSortKey={sort.sortKey} sortDir={sort.sortDir} onSort={sort.setSort} className="table-th" />
+            <SortableTh label="Transport" sortKey="transport" currentSortKey={sort.sortKey} sortDir={sort.sortDir} onSort={sort.setSort} className="table-th" />
+          </tr>
+        </thead>
+        <tbody>
+          {sort.sortedData.map((peer, index) => (
+            <tr
+              key={String(peer.id ?? peer.addr ?? index)}
+              className="table-row-hover"
+            >
+              <td className="table-cell font-mono truncate max-w-[180px]" title={peer.addr ?? ''}>
+                {peer.addr ?? '-'}
+              </td>
+              <td className="table-cell truncate max-w-[140px]" title={peer.subver ?? ''}>
+                {formatSubver(peer.subver)}
+              </td>
+              <td className="table-cell">{peer.connection_type ?? '-'}</td>
+              <td className="table-cell">{formatPeerTime(peer.conntime)}</td>
+              <td className="table-cell">{formatPeerTime(peer.lastrecv)}</td>
+              <td className="table-cell">{formatBytes(peer.bytessent)}</td>
+              <td className="table-cell">{formatBytes(peer.bytesrecv)}</td>
+              <td className="table-cell">
+                {peer.pingtime !== null && peer.pingtime !== undefined && Number.isFinite(peer.pingtime) ? `${Number(peer.pingtime).toFixed(0)} ms` : '-'}
+              </td>
+              <td className="table-cell">
+                {peer.startingheight !== null && peer.startingheight !== undefined && Number.isFinite(peer.startingheight) ? Number(peer.startingheight).toLocaleString() : '-'}
+              </td>
+              <td className="table-cell">{peer.transport_protocol_type ?? '-'}</td>
             </tr>
-          </thead>
-          <tbody>
-            {sort.sortedData.map((peer, index) => (
-              <tr
-                key={String(peer.id ?? peer.addr ?? index)}
-                className="table-row-hover"
-              >
-                <td className="table-cell font-mono truncate max-w-[180px]" title={peer.addr ?? ''}>
-                  {peer.addr ?? '-'}
-                </td>
-                <td className="table-cell truncate max-w-[140px]" title={peer.subver ?? ''}>
-                  {formatSubver(peer.subver)}
-                </td>
-                <td className="table-cell">{peer.connection_type ?? '-'}</td>
-                <td className="table-cell">{formatPeerTime(peer.conntime)}</td>
-                <td className="table-cell">{formatPeerTime(peer.lastrecv)}</td>
-                <td className="table-cell">{formatBytes(peer.bytessent)}</td>
-                <td className="table-cell">{formatBytes(peer.bytesrecv)}</td>
-                <td className="table-cell">
-                  {peer.pingtime !== null && peer.pingtime !== undefined && Number.isFinite(peer.pingtime) ? `${Number(peer.pingtime).toFixed(0)} ms` : '-'}
-                </td>
-                <td className="table-cell">
-                  {peer.startingheight !== null && peer.startingheight !== undefined && Number.isFinite(peer.startingheight) ? Number(peer.startingheight).toLocaleString() : '-'}
-                </td>
-                <td className="table-cell">{peer.transport_protocol_type ?? '-'}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+
+  if (embedded) {
+    return tableContent;
+  }
+
+  return (
+    <div className="card">
+      <SectionHeader>Peers ({peers.length})</SectionHeader>
+      <div className="section-container">
+        {tableContent}
       </div>
     </div>
   );

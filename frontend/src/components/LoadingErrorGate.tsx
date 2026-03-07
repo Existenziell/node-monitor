@@ -14,7 +14,7 @@ export function LoadingErrorGate<T>({
 }: LoadingErrorGateProps<T>) {
   if (loading && !data) {
     return (
-      <div className="p-4 text-level-4 flex items-center gap-2" role="status" aria-live="polite">
+      <div className="status-row" role="status" aria-live="polite">
         <Spinner size="sm" />
         Loading {loadingLabel} data…
       </div>

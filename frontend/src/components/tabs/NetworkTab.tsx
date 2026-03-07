@@ -11,7 +11,7 @@ import { formatPrice } from '@/utils';
 import { LoadingOverlay } from '@/components/LoadingOverlay';
 import { LoadingErrorGate } from '@/components/LoadingErrorGate';
 import { Spinner } from '@/components/Spinner';
-import { SectionHeader } from '@/components/SectionHeader';
+import { CollapsibleSection } from '@/components/CollapsibleSection';
 import { BITCOIN_HALVING_INTERVAL, BITCOIN_RETARGET_INTERVAL } from '@/constants';
 import { formatDifficulty, formatTimeSince } from '@/utils';
 
@@ -190,22 +190,25 @@ export function NetworkTab() {
             loading={nodeState.loading && (nodeData === null || nodeData === undefined)}
           />
         </div>
-        <PeersTable peers={peers} />
-        <div className="section-container">
-          <SectionHeader>Network History</SectionHeader>
+        {peers.length > 0 && (
+          <CollapsibleSection id="peers" title={`Peers (${peers.length})`}>
+            <PeersTable peers={peers} embedded />
+          </CollapsibleSection>
+        )}
+        <CollapsibleSection id="network-history" title="Network History">
           {networkState.loading && (networkData === null || networkData === undefined) ? (
-            <div className="flex items-center justify-center gap-2 min-h-[240px] text-level-4 text-sm" role="status" aria-live="polite">
+            <div className="empty-state min-h-[240px]" role="status" aria-live="polite">
               <Spinner size="sm" aria-hidden={false} className="flex-shrink-0" />
               <span>Loading network history…</span>
             </div>
           ) : (networkData?.network_history?.length ?? 0) === 0 ? (
-            <p className="text-sm text-level-4">
+            <p className="text-muted">
               No network history yet. Data is recorded over time when the block monitor is running.
             </p>
           ) : (
             <NetworkHistoryChart networkHistory={networkData?.network_history ?? []} />
           )}
-        </div>
+        </CollapsibleSection>
       </div>
     </LoadingErrorGate>
   );

@@ -3,6 +3,7 @@ import { API_BASE_URL, MAX_RETRIES, RETRY_DELAY_MS } from '@/constants';
 import type {
   ApiContextValue,
   BlocksData,
+  BtcPriceHistoryEntry,
   BtcPrices,
   ConfigSavePayload,
   ConfigStatus,
@@ -89,6 +90,11 @@ export function ApiProvider({ children }: { children: React.ReactNode }) {
   const fetchPrice = useCallback(async (): Promise<BtcPrices> => {
     const result = await fetchWithRetry<BtcPrices>('/price');
     return result.data;
+  }, [fetchWithRetry]);
+
+  const fetchPriceHistory = useCallback(async (): Promise<BtcPriceHistoryEntry[]> => {
+    const result = await fetchWithRetry<{ priceHistory: BtcPriceHistoryEntry[] }>('/price-history');
+    return result.data.priceHistory ?? [];
   }, [fetchWithRetry]);
 
   const fetchNetworkTab = useCallback(async (): Promise<NetworkTabData> => {
@@ -223,6 +229,7 @@ export function ApiProvider({ children }: { children: React.ReactNode }) {
     fetchPools,
     fetchDistribution,
     fetchPrice,
+    fetchPriceHistory,
     callRpc,
     fetchConfigStatus,
     fetchConfigTest,

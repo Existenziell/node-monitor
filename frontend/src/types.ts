@@ -37,6 +37,12 @@ export interface BtcPrices {
   [key: string]: number | undefined;
 }
 
+/** Single day in BTC price history (from SQLite / fetch script). */
+export interface BtcPriceHistoryEntry {
+  date: string;
+  priceUsd: number;
+}
+
 export interface ApiContextValue {
   apiBaseUrl: string;
   fetchWithRetry: <T>(endpoint: string) => Promise<{ data: T }>;
@@ -49,6 +55,7 @@ export interface ApiContextValue {
   fetchPools: () => Promise<Pool[]>;
   fetchDistribution: () => Promise<DistributionData>;
   fetchPrice: () => Promise<BtcPrices>;
+  fetchPriceHistory: () => Promise<BtcPriceHistoryEntry[]>;
   callRpc: (method: string, params?: unknown[]) => Promise<Record<string, unknown>>;
   fetchConfigStatus: () => Promise<ConfigStatus>;
   fetchConfigTest: () => Promise<ConfigTestResult>;
@@ -436,6 +443,10 @@ export interface SectionHeaderProps {
   as?: 'h2' | 'h3';
   title?: string;
   className?: string;
+  /** When true, header is clickable with a chevron on the right; requires collapsed and onToggle. */
+  expandable?: boolean;
+  collapsed?: boolean;
+  onToggle?: () => void;
 }
 
 export interface LoadingErrorGateProps<T> {

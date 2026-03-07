@@ -36,11 +36,12 @@ try:
         BLOCKS_DB_MAX_ENTRIES,
         BLOCKS_DEFAULT_PAGE_SIZE,
     )
-    from block_store import (  # pyright: ignore[reportMissingImports]
+    from data_store import (  # pyright: ignore[reportMissingImports]
         init_schema,
         get_recent_blocks,
         get_blocks_count,
         get_network_history,
+        get_btc_price_history,
         get_distribution,
         get_avg_block_time,
         prune_blocks_if_over,
@@ -140,6 +141,8 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
                 self.handle_health()
             elif path == '/api/price':
                 self.handle_price()
+            elif path == '/api/price-history':
+                self.handle_price_history()
             elif path == '/api/network-tab':
                 self.handle_network_tab_data()
             elif path == '/api/config/status':
@@ -1121,6 +1124,22 @@ class BitcoinAPIHandler(BaseHTTPRequestHandler):
             error_response = {
                 "status": "error",
                 "message": f"Failed to get price data: {str(e)}"
+            }
+            self.wfile.write(json.dumps(error_response).encode())
+
+    def handle_price_history(self):
+        """Handle BTC price history requests (from SQLite, populated by fetch script)."""
+        try:
+            price_history = get_btc_price_history(self._get_db_path())
+            response = {
+                "status": "success",
+                "data": {"priceHistory": price_history}
+            }
+            self.wfile.write(json.dumps(response, indent=2).encode())
+        except Exception as e:
+            error_response = {
+                "status": "error",
+                "message": f"Failed to get price history: {str(e)}"
             }
             self.wfile.write(json.dumps(error_response).encode())
 

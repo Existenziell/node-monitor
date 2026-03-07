@@ -3,8 +3,15 @@
 @tailwind utilities;
 
 @keyframes notification-glow {
-  0%, 100% { box-shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.15), 0 0 0 1px var(--level-3), 0 0 12px -2px var(--accent); }
-  50% { box-shadow: 0 8px 28px -4px rgba(0, 0, 0, 0.2), 0 0 0 1px var(--level-3), 0 0 20px 0 var(--accent); }
+
+  0%,
+  100% {
+    box-shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.15), 0 0 0 1px var(--level-3), 0 0 12px -2px var(--accent);
+  }
+
+  50% {
+    box-shadow: 0 8px 28px -4px rgba(0, 0, 0, 0.2), 0 0 0 1px var(--level-3), 0 0 20px 0 var(--accent);
+  }
 }
 
 /* Light theme (slate) */
@@ -46,7 +53,6 @@
     @apply font-sans bg-level-1 text-level-4 min-h-screen text-base antialiased;
   }
 
-  /* Hide number input spinners */
   input[type="number"]::-webkit-outer-spin-button,
   input[type="number"]::-webkit-inner-spin-button {
     -webkit-appearance: none;
@@ -61,7 +67,6 @@
 
 @layer components {
 
-  /* Align table body content with sortable header buttons (th px-2 + button px-2 = 1rem) */
   .sortable-table td {
     padding-left: 1rem;
   }
@@ -70,19 +75,26 @@
     @apply h-5 w-5 shrink-0 cursor-pointer rounded-full border-2 border-level-3 bg-level-2 transition-[border-color_box-shadow] duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-level-1 focus:ring-accent/50 accent-accent;
   }
 
+  .card {
+    @apply rounded bg-level-2 border border-level-3 overflow-hidden shadow;
+  }
+
   .section-container {
-    @apply rounded-lg bg-level-2 border border-level-3 overflow-hidden p-4;
+    @apply p-4;
   }
 
   .section-header {
-    @apply text-base text-accent px-4 py-2 mb-3 bg-level-3 -mx-4 -mt-4 rounded-t-lg;
+    @apply text-base text-accent px-4 py-2 bg-level-3 rounded-t w-full;
+  }
+
+  .section-container-collapsed .section-container {
+    display: none;
   }
 
   .square-button {
     @apply p-2.5 rounded-md hover:bg-level-3 flex-shrink-0 transition-colors duration-200;
   }
 
-  /* Form inputs (text, number, select, textarea) */
   .form-input {
     @apply w-full rounded border border-level-3 bg-level-2 px-3 py-2 text-level-5 transition-colors duration-200 focus:border-accent focus:outline-none disabled:opacity-50;
   }
@@ -95,7 +107,6 @@
     @apply bg-level-1;
   }
 
-  /* Custom dropdown arrow with padding; native arrow ignores padding on some browsers */
   select.form-input {
     appearance: none;
     -webkit-appearance: none;
@@ -111,12 +122,10 @@
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none' stroke='%23b8c0d4' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 4.5 L6 7.5 L9 4.5'/%3E%3C/svg%3E");
   }
 
-  /* Primary action button */
   .btn-primary {
     @apply px-4 py-2 rounded font-medium bg-accent text-accent-foreground border border-accent hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200;
   }
 
-  /* Form labels */
   .form-label {
     @apply block text-sm font-medium text-level-5 mb-1;
   }
@@ -125,22 +134,18 @@
     @apply block text-sm font-medium text-level-4 mb-1;
   }
 
-  /* Accent link (e.g. docs) */
   .link-accent {
     @apply text-accent underline hover:no-underline;
   }
 
-  /* Section heading (e.g. docs h3) */
   .section-heading {
     @apply text-base font-semibold text-level-5 mb-1;
   }
 
-  /* Code block (e.g. docs bitcoin.conf examples) */
   .code-block {
     @apply text-level-5 text-sm font-mono rounded p-3 overflow-x-auto mb-2 bg-level-3 shadow;
   }
 
-  /* Table cell and row (e.g. PeersTable) */
   .table-cell {
     @apply p-2 text-level-5;
   }
@@ -149,7 +154,6 @@
     @apply border-t border-level-3 hover:bg-level-3 transition-colors duration-150;
   }
 
-  /* Tab nav */
   .tab-button {
     @apply px-4 py-2 rounded text-base font-medium transition border text-level-4 hover:bg-level-3 border-transparent;
   }
@@ -158,22 +162,18 @@
     @apply text-accent border-accent;
   }
 
-  /* Sortable table header button */
   .sortable-th-button {
     @apply flex items-center gap-1 w-full text-left font-medium hover:text-level-5 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-inset rounded px-2 py-3;
   }
 
-  /* Muted nav/footer link */
   .nav-link-muted {
     @apply inline-flex items-center gap-1.5 text-base text-level-4 hover:text-level-5 rounded px-2 py-1 hover:bg-level-3 transition-colors;
   }
 
-  /* Subsection heading (small uppercase divider) */
   .subsection-heading {
     @apply text-sm font-semibold uppercase tracking-wider text-level-4 border-b border-level-3 pb-1;
   }
 
-  /* Callouts */
   .callout-warning {
     @apply rounded-lg border border-level-3 bg-level-2 p-4 text-level-5 border-l-4 border-l-semantic-warning;
   }
@@ -185,28 +185,63 @@
     background-color: color-mix(in srgb, var(--color-error) 12%, transparent);
   }
 
-  /* Read-only display field */
   .form-display {
     @apply rounded border border-level-3 bg-level-2 px-3 py-2 text-sm font-medium text-level-5 hover:bg-level-3 disabled:opacity-50;
   }
 
-  /* Console outer panel */
   .console-panel {
     @apply rounded border border-level-3 bg-level-2 mb-4;
   }
 
-  /* ConsoleTab method list link */
   .method-list-link {
     @apply flex items-center gap-1.5 w-full text-left text-sm font-medium text-accent hover:text-accent-hover transition-colors mb-1.5;
   }
 
-  /* Small icon-only muted button (e.g. copy) */
   .icon-button-muted {
     @apply p-0.5 rounded text-level-4 hover:text-level-5 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent;
   }
 
-  /* Console toolbar button */
   .console-tool-button {
     @apply px-2 py-1 text-sm rounded hover:bg-level-3;
+  }
+
+  .text-muted {
+    @apply text-sm text-level-4;
+  }
+
+  .text-caption {
+    @apply text-level-5 text-sm;
+  }
+
+  .link-muted {
+    @apply text-sm text-level-4 hover:text-level-5 underline underline-offset-2 transition-colors;
+  }
+
+  .list-muted {
+    @apply text-sm text-level-4 space-y-1 list-disc list-inside;
+  }
+
+  .panel {
+    @apply rounded-lg border border-level-3 bg-level-2 p-3;
+  }
+
+  .status-row {
+    @apply p-4 text-level-4 flex items-center gap-2;
+  }
+
+  .table-th {
+    @apply px-2 py-3 text-level-4;
+  }
+
+  .empty-state {
+    @apply flex items-center justify-center gap-2 text-level-4 text-sm;
+  }
+
+  .toggle-pill {
+    @apply px-2 py-1 rounded text-sm text-level-5 hover:bg-level-3 transition-colors;
+  }
+
+  .toggle-pill-active {
+    @apply bg-level-3 text-level-6 hover:bg-level-3;
   }
 }

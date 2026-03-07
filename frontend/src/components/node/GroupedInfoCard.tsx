@@ -30,11 +30,13 @@ export function GroupedInfoCard({
     </div>
   );
   return (
-    <div className="section-container">
+    <div className="card">
       <SectionHeader>{title}</SectionHeader>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-        <div>{renderGroup(leftGroup.heading, leftGroup.items)}</div>
-        <div>{renderGroup(rightGroup.heading, rightGroup.items)}</div>
+      <div className="section-container">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div>{renderGroup(leftGroup.heading, leftGroup.items)}</div>
+          <div>{renderGroup(rightGroup.heading, rightGroup.items)}</div>
+        </div>
       </div>
     </div>
   );

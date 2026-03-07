@@ -32,7 +32,7 @@ export function PoolDistributionChart({
 
   if (pieData.length === 0) {
     return (
-      <div className="flex items-center justify-center h-[240px] text-level-4 text-sm">
+      <div className="empty-state h-[240px]">
         No distribution data
       </div>
     );

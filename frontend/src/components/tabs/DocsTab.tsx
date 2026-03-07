@@ -14,8 +14,9 @@ const README_URL = `${GITHUB_REPO_URL}/blob/main/README.md`;
 
 export function DocsTab() {
   return (
-    <div className="section-container">
+    <div className="card">
       <SectionHeader as="h2">Node Monitor docs</SectionHeader>
+      <div className="section-container">
       <article className="prose prose-sm max-w-none prose-headings:text-level-5 prose-p:text-level-5 prose-li:text-level-5">
         <section className="mb-6">
           <h3 className="section-heading mt-6">
@@ -148,6 +149,7 @@ onion=127.0.0.1:8336`}</code></pre>
           </ul>
         </section>
       </article>
+      </div>
     </div>
   );
 }

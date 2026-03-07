@@ -237,7 +237,7 @@ export function SettingsTab() {
 
   if (loading && !status) {
     return (
-      <div className="p-4 text-level-4 flex items-center gap-2" role="status" aria-live="polite">
+      <div className="status-row" role="status" aria-live="polite">
         <Spinner size="sm" />
         <span>Loading settings…</span>
       </div>
@@ -247,10 +247,11 @@ export function SettingsTab() {
   return (
     <div className="space-y-4">
       <div className="flex flex-col lg:flex-row gap-4">
-        <div className="section-container w-full lg:w-1/2 flex-1 min-w-0">
+        <div className="card w-full lg:w-1/2 flex-1 min-w-0">
           <SectionHeader as="h2">Node configuration</SectionHeader>
+          <div className="section-container">
           {status && !status.config_exists && (
-            <p className="text-level-5 text-sm mb-4">
+            <p className="text-caption mb-4">
               No configuration found. Enter RPC credentials or cookie path to connect to your Bitcoin
               node.
             </p>
@@ -373,9 +374,9 @@ export function SettingsTab() {
             </div>
 
             {lastSaved && hasPendingChanges && (
-              <div className="rounded-lg border border-level-3 bg-level-2 p-3">
+              <div className="panel">
                 <SectionHeader>Pending Changes</SectionHeader>
-                <ul className="text-sm text-level-4 space-y-1 list-disc list-inside">
+                <ul className="list-muted">
                   {pendingChanges.map((c, i) => (
                     <li key={i}>
                       {c.field}: {c.from !== null && c.from !== undefined ? `${c.from} → ` : ''}{c.to ?? ''}
@@ -437,7 +438,7 @@ export function SettingsTab() {
                   setCookieFile('');
                   setTestResult(null);
                 }}
-                className="text-sm text-level-4 hover:text-level-5 underline underline-offset-2 transition-colors"
+                className="link-muted"
               >
                 Reset
               </button>
@@ -450,10 +451,12 @@ export function SettingsTab() {
               </p>
             )}
           </form>
+          </div>
         </div>
 
-        <div className="section-container w-full lg:w-1/2 py-3">
+        <div className="card w-full lg:w-1/2 py-3">
           <SectionHeader as="h2">Wallet configuration</SectionHeader>
+          <div className="section-container">
           {status?.config_exists ? (
             <>
               <WalletConfig
@@ -503,7 +506,7 @@ export function SettingsTab() {
               {walletAccounts && walletAccounts.length > 0 && status?.wallet_name && (
                 <div className="mt-2">
                   {selectedAccount === 'all' ? (
-                    <p className="text-sm text-level-5">All accounts — viewing combined data from every account.</p>
+                    <p className="text-caption">All accounts — viewing combined data from every account.</p>
                   ) : (
                     (() => {
                       const acc = walletAccounts.find((a) => a.index === selectedAccount);
@@ -557,7 +560,7 @@ export function SettingsTab() {
                   <ul className="space-y-2 list-none">
                     {walletAccounts.map((a) => (
                       <li key={a.index} className="flex flex-wrap items-center gap-2">
-                        <span className="text-sm text-level-4 min-w-[8rem]">
+                        <span className="text-muted min-w-[8rem]">
                           Account {a.index}
                           {a.path ? ` (${a.path})` : ''}
                         </span>
@@ -577,9 +580,9 @@ export function SettingsTab() {
                     ))}
                   </ul>
                   {hasAccountLabelPendingChanges && (
-                    <div className="rounded-lg border border-level-3 bg-level-2 p-3 mt-3">
+                    <div className="panel mt-3">
                       <SectionHeader>Pending Changes</SectionHeader>
-                      <ul className="text-sm text-level-4 space-y-1 list-disc list-inside">
+                      <ul className="list-muted">
                         {accountLabelPendingChanges.map((c, i) => (
                           <li key={i}>
                             {c.field}: {c.from !== null && c.from !== undefined ? `${c.from} → ` : ''}{c.to ?? ''}
@@ -635,7 +638,7 @@ export function SettingsTab() {
                         setAccountLabelInputs(labels);
                         setAccountLabelsMessage(null);
                       }}
-                      className="text-sm text-level-4 hover:text-level-5 underline underline-offset-2 transition-colors"
+                      className="link-muted"
                     >
                       Reset
                     </button>
@@ -646,8 +649,9 @@ export function SettingsTab() {
               )}
             </>
           ) : (
-            <p className="text-sm text-level-4">Save node configuration first to choose a default wallet.</p>
+            <p className="text-muted">Save node configuration first to choose a default wallet.</p>
           )}
+          </div>
         </div>
       </div>
     </div>

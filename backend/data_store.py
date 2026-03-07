@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-SQLite store for block and network history.
+SQLite store for dashboard data: blocks, network history, block stats, BTC price history.
 Used by block monitor (writer) and API (reader). Thread-safe via a single lock.
 """
 
@@ -70,6 +70,12 @@ def init_schema(db_path: Optional[str] = None) -> None:
                     id INTEGER PRIMARY KEY CHECK (id = 1),
                     avg_block_time_seconds REAL,
                     updated_at TEXT NOT NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS btc_price_history (
+                    date TEXT NOT NULL PRIMARY KEY,
+                    price_usd REAL NOT NULL,
+                    created_at TEXT NOT NULL
                 );
             """)
             conn.commit()
@@ -274,6 +280,49 @@ def get_network_history(limit: int, db_path: Optional[str] = None) -> List[Dict[
             "difficulty": round(row["difficulty"], 2) if row["difficulty"] is not None else None,
         })
     return out
+
+
+def insert_btc_price_history(
+    entries: List[tuple],
+    db_path: Optional[str] = None,
+) -> None:
+    """Upsert (date, price_usd) pairs into btc_price_history. Each entry is (date_str, price_float)."""
+    with _lock:
+        conn = _get_connection(db_path)
+        try:
+            now = datetime.utcnow().isoformat() + "Z"
+            for date_str, price in entries:
+                conn.execute(
+                    """
+                    INSERT INTO btc_price_history (date, price_usd, created_at)
+                    VALUES (?, ?, ?)
+                    ON CONFLICT(date) DO UPDATE SET price_usd = excluded.price_usd, created_at = excluded.created_at
+                    """,
+                    (date_str, float(price), now),
+                )
+            conn.commit()
+        finally:
+            conn.close()
+
+
+def get_btc_price_history(db_path: Optional[str] = None) -> List[Dict[str, Any]]:
+    """Return all btc_price_history rows ordered by date ascending. Shape: [{ date, priceUsd }, ...]."""
+    with _lock:
+        conn = _get_connection(db_path)
+        try:
+            conn.row_factory = sqlite3.Row
+            cur = conn.execute(
+                """
+                SELECT date, price_usd AS priceUsd
+                FROM btc_price_history
+                ORDER BY date ASC
+                """
+            )
+            rows = cur.fetchall()
+        finally:
+            conn.close()
+
+    return [{"date": row["date"], "priceUsd": round(row["priceUsd"], 2)} for row in rows]
 
 
 def get_distribution(db_path: Optional[str] = None) -> Dict[str, Any]:
