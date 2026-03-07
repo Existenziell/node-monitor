@@ -1,6 +1,7 @@
 import {
   GITHUB_REPO_URL,
   BITCOIN_CORE_GITHUB_URL,
+  BITCOIN_CONF_DOCS_URL,
   BITCOIN_RPC_DOCS_URL,
   MEMPOOL_SPACE_BASE_URL,
   BLOCKCHAIN_EXPLORER_URL,
@@ -73,6 +74,63 @@ export function DocsTab() {
             <li><strong>Docs</strong> — this page.</li>
             <li><strong>Settings</strong> — RPC and API configuration.</li>
           </ul>
+        </section>
+
+        <section className="mb-6">
+          <h3 className="section-heading">
+            bitcoin.conf
+          </h3>
+          <p className="text-level-5 mb-2 max-w-prose">
+            Your Bitcoin node is configured via <code>bitcoin.conf</code>. The following options are relevant for running this dashboard. Changes take effect after restarting the node.
+          </p>
+          <p className="text-level-5 mb-1 mt-4"><strong>File location</strong></p>
+          <ul className="list-disc list-inside text-level-5 space-y-1 mb-4">
+            <li>Linux: <code>~/.bitcoin/bitcoin.conf</code></li>
+            <li>macOS: <code>~/Library/Application Support/Bitcoin/bitcoin.conf</code></li>
+            <li>Windows: <code>%APPDATA%\Bitcoin\bitcoin.conf</code></li>
+          </ul>
+
+          <p className="text-level-5 mb-1 mt-4"><strong>RPC (required)</strong></p>
+          <p className="text-level-5 mb-2 max-w-prose">
+            The dashboard talks to your node over RPC. Enable the RPC server and choose either cookie-based auth (recommended) or username/password. After editing, run <code>python3 backend/config_service.py --setup</code> so the dashboard can connect.
+          </p>
+          <pre className="code-block"><code>{`# Enable JSON-RPC server
+server=1
+
+# Option A: cookie auth (default; node writes .cookie in datadir)
+# No extra options needed; config_service discovers the cookie.
+
+# Option B: legacy username/password
+# rpcuser=myuser
+# rpcpassword=mypassword
+
+# If the dashboard runs on another host, bind and allow that IP (default port 8332)
+# rpcbind=0.0.0.0
+# rpcallowip=192.168.1.0/24`}</code></pre>
+
+          <p className="text-level-5 mb-1 mt-4"><strong>ZMQ (recommended for real-time blocks)</strong></p>
+          <p className="text-level-5 mb-2 max-w-prose">
+            With ZMQ enabled, the block monitor gets new-block notifications instantly instead of polling. Add these lines (then restart the node). The dashboard subscribes to <code>hashblock</code>; the other topics are optional for future use.
+          </p>
+          <pre className="code-block"><code>{`zmqpubhashblock=tcp://0.0.0.0:28332
+zmqpubhashtx=tcp://0.0.0.0:28333
+zmqpubrawblock=tcp://0.0.0.0:28334
+zmqpubrawtx=tcp://0.0.0.0:28335`}</code></pre>
+
+          <p className="text-level-5 mb-1 mt-4"><strong>Tor (optional)</strong></p>
+          <p className="text-level-5 mb-2 max-w-prose">
+            To route your node’s traffic over Tor, install and start Tor, then add the following. With <code>listen=1</code> and <code>onion=...</code>, the node can also accept incoming connections from other Tor nodes.
+          </p>
+          <pre className="code-block"><code>{`# Use Tor for outbound connections
+proxy=127.0.0.1:9050
+
+# Optional: accept incoming connections over Tor
+listen=1
+onion=127.0.0.1:8336`}</code></pre>
+
+          <p className="text-level-5 mb-2 mt-4">
+            For the full list of options, see the <Link href={BITCOIN_CONF_DOCS_URL} external className="link-accent">Bitcoin Core bitcoin.conf reference</Link>.
+          </p>
         </section>
 
         <section className="mb-6">

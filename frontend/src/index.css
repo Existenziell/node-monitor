@@ -135,6 +135,11 @@
     @apply text-base font-semibold text-level-5 mb-1;
   }
 
+  /* Code block (e.g. docs bitcoin.conf examples) */
+  .code-block {
+    @apply text-level-5 text-sm font-mono rounded p-3 overflow-x-auto mb-2 bg-level-3 shadow;
+  }
+
   /* Table cell and row (e.g. PeersTable) */
   .table-cell {
     @apply p-2 text-level-5;
