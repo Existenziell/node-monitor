@@ -5,7 +5,6 @@ import { useRefreshState } from '@/contexts/RefreshContext';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { TabNav } from '@/components/TabNav';
-import { TABS } from '@/data/tabs';
 import { NodeTab } from '@/components/tabs/NodeTab';
 import { NetworkTab } from '@/components/tabs/NetworkTab';
 import { BlocksTab } from '@/components/tabs/BlocksTab';
@@ -81,15 +80,7 @@ export default function App() {
         onCloseMobileMenu={() => setMobileMenuOpen(false)}
       />
       <section className="min-h-[200px] flex-1">
-        {TABS.map(({ id }) => (
-          <div
-            key={id}
-            hidden={activeTab !== id}
-            aria-hidden={activeTab !== id}
-          >
-            <TabContent tab={id} />
-          </div>
-        ))}
+        <TabContent tab={activeTab} />
       </section>
       <Footer />
     </div>

@@ -39,7 +39,7 @@ export function PoolDistributionChart({
   }
 
   return (
-    <div className="w-full h-[240px]" role="img" aria-label="Pool distribution by block share">
+    <div className="w-full h-[240px] min-h-[240px] min-w-[1px]" role="img" aria-label="Pool distribution by block share">
       <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={240}>
         <PieChart margin={{ top: 8, right: 140, bottom: 8, left: 8 }}>
           <Pie
