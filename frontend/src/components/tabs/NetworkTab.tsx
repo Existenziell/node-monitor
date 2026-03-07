@@ -1,6 +1,7 @@
+import { useCallback } from 'react';
 import { useApi } from '@/contexts/ApiContext';
-import type { NetworkTabData, Peer } from '@/types';
-import { useRefreshState, useRefreshDone } from '@/contexts/RefreshContext';
+import type { BlocksData, NodeData, NetworkData, BtcPrices, Peer } from '@/types';
+import { useRefreshState, useRefreshDoneMulti } from '@/contexts/RefreshContext';
 import { useApiData } from '@/hooks/useApiData';
 import { useTabData } from '@/hooks/useTabData';
 import { NetworkHistoryChart } from '@/components/network/NetworkHistoryChart';
@@ -9,21 +10,46 @@ import { SummaryCard } from '@/components/network/SummaryCard';
 import { formatPrice } from '@/utils';
 import { LoadingOverlay } from '@/components/LoadingOverlay';
 import { LoadingErrorGate } from '@/components/LoadingErrorGate';
+import { Spinner } from '@/components/Spinner';
 import { SectionHeader } from '@/components/SectionHeader';
 import { BITCOIN_HALVING_INTERVAL, BITCOIN_RETARGET_INTERVAL } from '@/constants';
 import { formatDifficulty, formatTimeSince } from '@/utils';
 
 export function NetworkTab() {
-  const { fetchNetworkTab } = useApi();
-  const { data, loading, error, load } = useApiData<NetworkTabData>(fetchNetworkTab);
+  const { fetchNode, fetchNetwork, fetchPrice, fetchBlocks } = useApi();
+  const nodeState = useApiData<NodeData>(fetchNode);
+  const networkState = useApiData<NetworkData>(fetchNetwork);
+  const priceState = useApiData<BtcPrices>(fetchPrice);
+  const blocksState = useApiData<BlocksData>(fetchBlocks);
 
-  useTabData(load, 'network', data !== null && data !== undefined);
-  useRefreshDone(loading, 'network');
+  const loadAll = useCallback(
+    () =>
+      Promise.all([
+        nodeState.load(),
+        networkState.load(),
+        priceState.load(),
+        blocksState.load(),
+      ]),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- depend only on stable load refs
+    [nodeState.load, networkState.load, priceState.load, blocksState.load]
+  );
 
-  const nodeData = data?.node;
-  const networkData = data?.network;
-  const priceData = data?.price;
-  const blocksData = data?.blocks;
+  const hasAnyData =
+    (nodeState.data !== null && nodeState.data !== undefined) ||
+    (networkState.data !== null && networkState.data !== undefined) ||
+    (priceState.data !== null && priceState.data !== undefined) ||
+    (blocksState.data !== null && blocksState.data !== undefined);
+
+  useTabData(loadAll, 'network', hasAnyData);
+  useRefreshDoneMulti(
+    [nodeState.loading, networkState.loading, priceState.loading, blocksState.loading],
+    'network'
+  );
+
+  const nodeData = nodeState.data;
+  const networkData = networkState.data;
+  const priceData = priceState.data;
+  const blocksData = blocksState.data;
 
   const blockchain = (nodeData?.blockchain ?? {}) as Record<string, unknown>;
   const blocks = typeof blockchain.blocks === 'number' ? blockchain.blocks : null;
@@ -99,43 +125,62 @@ export function NetworkTab() {
   const hashrateSubLinesFinal = hashrateSubLines.length ? hashrateSubLines : undefined;
 
   const { refreshTabId } = useRefreshState();
-  const isRefreshing = loading && !!data && refreshTabId === 'network';
+  const anyLoading =
+    nodeState.loading || networkState.loading || priceState.loading || blocksState.loading;
+  const isRefreshing = anyLoading && hasAnyData && refreshTabId === 'network';
+
+  const criticalError = nodeState.error && (nodeState.data === null || nodeState.data === undefined);
+  const criticalData = nodeState.data;
 
   return (
-    <LoadingErrorGate loading={loading} error={error} data={data} loadingLabel="network">
+    <LoadingErrorGate
+      loading={false}
+      error={criticalError ? nodeState.error : null}
+      data={criticalData}
+      loadingLabel="network"
+    >
       <div className="relative space-y-4">
         <LoadingOverlay show={isRefreshing} />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <SummaryCard
             title="Block height"
-            value={blocks !== null ? blocks.toLocaleString() : 'N/A'}
+            value={blocks !== null ? blocks.toLocaleString() : '—'}
             subLines={blockHeightSubLines.length ? blockHeightSubLines : undefined}
+            loading={nodeState.loading && (nodeData === null || nodeData === undefined)}
           />
           <SummaryCard
             title="Network difficulty"
-            value={difficulty !== null ? formatDifficulty(difficulty) : 'N/A'}
+            value={difficulty !== null ? formatDifficulty(difficulty) : '—'}
             subLines={difficultySubLines.length ? difficultySubLines : undefined}
+            loading={nodeState.loading && (nodeData === null || nodeData === undefined)}
           />
           <SummaryCard
             title="BTC price"
             value={formatPrice(btcPriceUsd)}
             subLines={btcPriceSubLines}
+            loading={priceState.loading && (priceData === null || priceData === undefined)}
           />
           <SummaryCard
             title="Network hashrate"
             value={
               hashrate !== null && hashrate !== undefined && Number.isFinite(hashrate)
                 ? `${(hashrate / 1e18).toFixed(2)} EH/s`
-                : 'N/A'
+                : '—'
             }
             subLines={hashrateSubLinesFinal}
             compactSubLines
+            loading={nodeState.loading && (nodeData === null || nodeData === undefined)}
           />
         </div>
         <PeersTable peers={peers} />
         <div className="section-container">
           <SectionHeader>Network History</SectionHeader>
-          {(networkData?.network_history?.length ?? 0) === 0 ? (
+          {networkState.loading && (networkData === null || networkData === undefined) ? (
+            <div className="flex items-center justify-center gap-2 min-h-[240px] text-level-4 text-sm" role="status" aria-live="polite">
+              <Spinner size="sm" aria-hidden={false} className="flex-shrink-0" />
+              <span>Loading network history…</span>
+            </div>
+          ) : (networkData?.network_history?.length ?? 0) === 0 ? (
             <p className="text-sm text-level-4">
               No network history yet. Data is recorded over time when the block monitor is running.
             </p>

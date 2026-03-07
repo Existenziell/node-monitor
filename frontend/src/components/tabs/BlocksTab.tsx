@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useApi } from '@/contexts/ApiContext';
 import type { BlockRow, MiningInfo } from '@/types';
 import { formatBytes, formatDifficulty, formatTimeSince, formatWeight } from '@/utils';
-import { useRefreshState, useRefreshDone } from '@/contexts/RefreshContext';
+import { useRefreshState, useRefreshDoneMulti } from '@/contexts/RefreshContext';
 import { useApiData } from '@/hooks/useApiData';
 import { useTabData } from '@/hooks/useTabData';
 import { useTableSort } from '@/hooks/useTableSort';
@@ -73,16 +73,13 @@ export function BlocksTab() {
     }
   }, [fetchBlocksPage, blocks.length, totalBlocks, loadingMore]);
 
-  useTabData(load, 'blocks', initialLoadDone);
-  useRefreshDone(loading, 'blocks');
+  const loadAll = useCallback(
+    () => Promise.all([load().catch(() => {}), loadPools().catch(() => {}), loadDistribution().catch(() => {})]),
+    [load, loadPools, loadDistribution]
+  );
 
-  useEffect(() => {
-    loadPools().catch(() => { });
-  }, [loadPools]);
-
-  useEffect(() => {
-    loadDistribution().catch(() => { });
-  }, [loadDistribution]);
+  useTabData(loadAll, 'blocks', initialLoadDone);
+  useRefreshDoneMulti([loading, poolsLoading, distributionLoading], 'blocks');
 
   useEffect(() => {
     const sentinel = loadMoreSentinelRef.current;
@@ -161,27 +158,49 @@ export function BlocksTab() {
   const nextBlockHeight = chainHeight !== null && chainHeight !== undefined ? chainHeight + 1 : null;
   const avgBlockTimeSeconds = metadata?.avg_block_time_seconds;
 
-  const gateData = loading && blocks.length === 0 ? undefined : blocks;
+  const hasBlocksData = blocks.length > 0 || metadata !== null;
+  const gateData = error && !hasBlocksData ? undefined : (hasBlocksData ? blocks : []);
 
   return (
-    <LoadingErrorGate loading={loading} error={error} data={gateData} loadingLabel="blocks">
+    <LoadingErrorGate loading={false} error={error} data={gateData} loadingLabel="blocks">
       <div className="relative space-y-4">
-        <LoadingOverlay show={loading && (blocks.length > 0 || metadata !== null) && refreshTabId === 'blocks'} />
+        <LoadingOverlay show={loading && hasBlocksData && refreshTabId === 'blocks'} />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div className="section-container">
             <SectionHeader>Next Block</SectionHeader>
             <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
               <dt className="text-level-4">Block height</dt>
-              <dd className="text-level-5 font-medium tabular-nums">
-                {nextBlockHeight !== null ? `${nextBlockHeight.toLocaleString()}` : '-'}
+              <dd className="text-level-5 font-medium tabular-nums flex items-center gap-2">
+                {loading && !metadata ? (
+                  <>
+                    <span>—</span>
+                    <Spinner size="sm" className="flex-shrink-0" />
+                  </>
+                ) : (
+                  nextBlockHeight !== null ? `${nextBlockHeight.toLocaleString()}` : '—'
+                )}
               </dd>
               <dt className="text-level-4">Time since last block</dt>
-              <dd className="text-level-5 tabular-nums">{timeSinceLastFormatted}</dd>
+              <dd className="text-level-5 tabular-nums flex items-center gap-2">
+                {loading && !metadata ? (
+                  <>
+                    <span>—</span>
+                    <Spinner size="sm" className="flex-shrink-0" />
+                  </>
+                ) : (
+                  timeSinceLastFormatted
+                )}
+              </dd>
               <dt className="text-level-4">Average block time</dt>
-              <dd className="text-level-5 tabular-nums">
-                {avgBlockTimeSeconds !== null && avgBlockTimeSeconds !== undefined && Number.isFinite(avgBlockTimeSeconds)
+              <dd className="text-level-5 tabular-nums flex items-center gap-2">
+                {loading && !metadata ? (
+                  <>
+                    <span>—</span>
+                    <Spinner size="sm" className="flex-shrink-0" />
+                  </>
+                ) : avgBlockTimeSeconds !== null && avgBlockTimeSeconds !== undefined && Number.isFinite(avgBlockTimeSeconds)
                   ? formatTimeSince(Math.floor(avgBlockTimeSeconds))
-                  : '-'}
+                  : '—'}
               </dd>
               {metadata?.mining !== null && metadata?.mining !== undefined && (
                 <>
@@ -258,6 +277,17 @@ export function BlocksTab() {
                 </tr>
               </thead>
               <tbody>
+                {loading && blocks.length === 0 ? (
+                  <tr>
+                    <td colSpan={10} className="p-4 text-center text-level-4 text-sm" role="status" aria-live="polite">
+                      <span className="inline-flex items-center justify-center gap-2">
+                        <Spinner size="sm" aria-hidden={false} className="flex-shrink-0" />
+                        <span>Loading blocks…</span>
+                      </span>
+                    </td>
+                  </tr>
+                ) : (
+                  <>
                 {blocksSort.sortedData.map((block) => (
                   <tr
                     key={block.block_height}
@@ -284,6 +314,7 @@ export function BlocksTab() {
                         identifier={block.mining_pool}
                         poolByIdentifier={poolByIdentifier}
                         iconSize={POOL_ICON_SIZE}
+                        loading={poolsLoading}
                       />
                     </td>
                     <td className="p-2 text-level-5">{block.transaction_count ?? '-'}</td>
@@ -300,6 +331,8 @@ export function BlocksTab() {
                       {loadingMore ? 'Loading more…' : ''}
                     </td>
                   </tr>
+                )}
+                  </>
                 )}
               </tbody>
             </table>
