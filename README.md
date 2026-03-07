@@ -18,11 +18,12 @@ A suite of tools for monitoring Bitcoin blockchain activity.
 
 ## Screenshots
 
-![Dashboard](frontend/public/screenshots/01.webp)
-![Node](frontend/public/screenshots/02.webp)
+![Node](frontend/public/screenshots/01.webp)
+![Network](frontend/public/screenshots/02.webp)
 ![Blocks](frontend/public/screenshots/03.webp)
-![Network](frontend/public/screenshots/04.webp)
-![Wallet](frontend/public/screenshots/05.webp)
+![Wallet](frontend/public/screenshots/04.webp)
+![Console](frontend/public/screenshots/05.webp)
+![Settings](frontend/public/screenshots/06.webp)
 
 ---
 
