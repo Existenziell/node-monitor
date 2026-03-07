@@ -1,14 +1,15 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useApi } from '@/contexts/ApiContext';
 import type { BtcPrices, UtxoEntry, WalletData, WalletTransaction } from '@/types';
 import { API_SERVER_HINT } from '@/constants';
 import { formatHash, formatPrice, formatTxTime, getErrorMessage } from '@/utils';
-import { useRefreshState, useRefreshDone } from '@/contexts/RefreshContext';
+import { useRefreshState, useRefreshDoneMulti } from '@/contexts/RefreshContext';
 import { useApiData } from '@/hooks/useApiData';
 import { useTabData } from '@/hooks/useTabData';
 import { useTableSort } from '@/hooks/useTableSort';
 import { LoadingOverlay } from '@/components/LoadingOverlay';
 import { LoadingErrorGate } from '@/components/LoadingErrorGate';
+import { Spinner } from '@/components/Spinner';
 import { SectionHeader } from '@/components/SectionHeader';
 import { SortableTh } from '@/components/SortableTh';
 import { WalletConfig } from '@/components/WalletConfig';
@@ -17,11 +18,17 @@ import { EyeIcon, EyeSlashIcon } from '@/components/Icons';
 export function WalletTab() {
   const { fetchWallet, fetchPrice, callRpc, saveWalletName } = useApi();
   const { data, loading, error, load } = useApiData<WalletData>(fetchWallet);
-  const { data: priceData, load: loadPrice } = useApiData<BtcPrices>(fetchPrice);
+  const { data: priceData, loading: priceLoading, load: loadPrice } = useApiData<BtcPrices>(fetchPrice);
 
-  useEffect(() => {
-    if (data !== null && data !== undefined) loadPrice();
-  }, [data, loadPrice]);
+  const loadAll = useCallback(
+    () => Promise.all([load(), loadPrice()]),
+    [load, loadPrice]
+  );
+
+  const hasData = data !== null && data !== undefined;
+  useTabData(loadAll, 'wallet', hasData);
+  useRefreshDoneMulti([loading, priceLoading], 'wallet');
+
   const { refreshTabId } = useRefreshState();
   const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -31,10 +38,6 @@ export function WalletTab() {
   const [balanceVisible, setBalanceVisible] = useState(true);
   /** Selected BIP44/BIP84 account index, or 'all' when multiple accounts. */
   const [selectedAccount, setSelectedAccount] = useState<number | 'all'>('all');
-
-  useTabData(load, 'wallet', data !== null && data !== undefined);
-
-  useRefreshDone(loading, 'wallet');
 
   const accounts = useMemo(
     () => (Array.isArray(data?.accounts) ? data.accounts : []),
@@ -171,7 +174,7 @@ export function WalletTab() {
 
   return (
     <LoadingErrorGate
-      loading={loading}
+      loading={false}
       error={error}
       data={data}
       loadingLabel="wallet"
@@ -254,7 +257,7 @@ export function WalletTab() {
       })()
     ) : (
     <div className="relative space-y-4">
-      <LoadingOverlay show={loading && !!data && refreshTabId === 'wallet'} />
+      <LoadingOverlay show={(loading || priceLoading) && !!data && refreshTabId === 'wallet'} />
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="section-container">
           <SectionHeader>Balance</SectionHeader>
@@ -262,21 +265,35 @@ export function WalletTab() {
             <div className="flex items-start justify-between gap-2">
               <div className="tabular-nums text-accent min-w-0">
                 {balanceVisible ? (
-                  <>
-                    <div className="text-2xl md:text-3xl lg:text-4xl font-medium">
-                      {Number(balance).toFixed(8)} BTC
+                  loading || !data ? (
+                    <div className="flex items-center gap-2 text-level-4">
+                      <Spinner size="sm" className="flex-shrink-0" />
+                      <span>Loading…</span>
                     </div>
-                    <div className="text-base md:text-lg text-level-4 mt-0.5">
-                      {Math.round(balance * 100_000_000).toLocaleString()} sats
-                    </div>
-                    <div className="text-base md:text-lg text-level-4 mt-0.5">
-                      {formatPrice(
-                        priceData?.USD !== null && priceData?.USD !== undefined && Number.isFinite(priceData.USD)
-                          ? balance * priceData.USD
-                          : undefined
-                      )}
-                    </div>
-                  </>
+                  ) : (
+                    <>
+                      <div className="text-2xl md:text-3xl lg:text-4xl font-medium">
+                        {Number(balance).toFixed(8)} BTC
+                      </div>
+                      <div className="text-base md:text-lg text-level-4 mt-0.5">
+                        {Math.round(balance * 100_000_000).toLocaleString()} sats
+                      </div>
+                      <div className="text-base md:text-lg text-level-4 mt-0.5 flex items-center gap-2">
+                        {priceLoading && (priceData === null || priceData === undefined) ? (
+                          <>
+                            <Spinner size="sm" className="flex-shrink-0" />
+                            <span>Loading…</span>
+                          </>
+                        ) : (
+                          formatPrice(
+                            priceData?.USD !== null && priceData?.USD !== undefined && Number.isFinite(priceData.USD)
+                              ? balance * priceData.USD
+                              : undefined
+                          )
+                        )}
+                      </div>
+                    </>
+                  )
                 ) : (
                   <>
                     <div className="text-2xl md:text-3xl lg:text-4xl font-medium">****</div>
@@ -421,7 +438,16 @@ export function WalletTab() {
               </tr>
             </thead>
             <tbody>
-              {unspent.length === 0 ? (
+              {loading || !data ? (
+                <tr>
+                  <td colSpan={hasMultipleAccounts && selectedAccount === 'all' ? 9 : 8} className="p-4 text-center text-level-4 text-sm" role="status" aria-live="polite">
+                    <span className="inline-flex items-center justify-center gap-2">
+                      <Spinner size="sm" aria-hidden={false} className="flex-shrink-0" />
+                      <span>Loading UTXOs…</span>
+                    </span>
+                  </td>
+                </tr>
+              ) : unspent.length === 0 ? (
                 <tr className="border-t border-level-3">
                   <td colSpan={hasMultipleAccounts && selectedAccount === 'all' ? 9 : 8} className="p-4 text-center text-level-4">
                     No UTXOs
@@ -480,7 +506,16 @@ export function WalletTab() {
               </tr>
             </thead>
             <tbody>
-              {transactions.length === 0 ? (
+              {loading || !data ? (
+                <tr>
+                  <td colSpan={hasMultipleAccounts && selectedAccount === 'all' ? 7 : 6} className="p-4 text-center text-level-4 text-sm" role="status" aria-live="polite">
+                    <span className="inline-flex items-center justify-center gap-2">
+                      <Spinner size="sm" aria-hidden={false} className="flex-shrink-0" />
+                      <span>Loading transactions…</span>
+                    </span>
+                  </td>
+                </tr>
+              ) : transactions.length === 0 ? (
                 <tr className="border-t border-level-3">
                   <td colSpan={hasMultipleAccounts && selectedAccount === 'all' ? 7 : 6} className="p-4 text-center text-level-4">
                     No transactions
