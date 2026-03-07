@@ -1,8 +1,8 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useApi } from '@/contexts/ApiContext';
-import type { UtxoEntry, WalletData, WalletTransaction } from '@/types';
+import type { BtcPrices, UtxoEntry, WalletData, WalletTransaction } from '@/types';
 import { API_SERVER_HINT } from '@/constants';
-import { formatHash, formatTxTime, getErrorMessage } from '@/utils';
+import { formatHash, formatPrice, formatTxTime, getErrorMessage } from '@/utils';
 import { useRefreshState, useRefreshDone } from '@/contexts/RefreshContext';
 import { useApiData } from '@/hooks/useApiData';
 import { useTabData } from '@/hooks/useTabData';
@@ -15,8 +15,13 @@ import { WalletConfig } from '@/components/WalletConfig';
 import { EyeIcon, EyeSlashIcon } from '@/components/Icons';
 
 export function WalletTab() {
-  const { fetchWallet, callRpc, saveWalletName } = useApi();
+  const { fetchWallet, fetchPrice, callRpc, saveWalletName } = useApi();
   const { data, loading, error, load } = useApiData<WalletData>(fetchWallet);
+  const { data: priceData, load: loadPrice } = useApiData<BtcPrices>(fetchPrice);
+
+  useEffect(() => {
+    if (data !== null && data !== undefined) loadPrice();
+  }, [data, loadPrice]);
   const { refreshTabId } = useRefreshState();
   const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -264,10 +269,18 @@ export function WalletTab() {
                     <div className="text-base md:text-lg text-level-4 mt-0.5">
                       {Math.round(balance * 100_000_000).toLocaleString()} sats
                     </div>
+                    <div className="text-base md:text-lg text-level-4 mt-0.5">
+                      {formatPrice(
+                        priceData?.USD !== null && priceData?.USD !== undefined && Number.isFinite(priceData.USD)
+                          ? balance * priceData.USD
+                          : undefined
+                      )}
+                    </div>
                   </>
                 ) : (
                   <>
                     <div className="text-2xl md:text-3xl lg:text-4xl font-medium">****</div>
+                    <div className="text-base md:text-lg text-level-4">****</div>
                     <div className="text-base md:text-lg text-level-4">****</div>
                   </>
                 )}
