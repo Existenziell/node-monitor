@@ -6,6 +6,7 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
+  DefaultTooltipContent,
   Line,
   ReferenceLine,
 } from 'recharts';
@@ -140,6 +141,14 @@ export function BtcPriceChart({
   const tooltipContent = useMemo(() => {
     return (
       <Tooltip
+        content={(props) => {
+          const { active, payload } = props;
+          if (!active || !payload?.length) return null;
+          if (showPurchases && !payload.some((p) => (p.payload as ChartPoint)?.isPurchase)) {
+            return null;
+          }
+          return <DefaultTooltipContent {...props} />;
+        }}
         contentStyle={{
           backgroundColor: 'var(--tooltip-bg, rgba(255,255,255,0.95))',
           border: '1px solid var(--tooltip-border, #e5e7eb)',
@@ -153,19 +162,20 @@ export function BtcPriceChart({
             dateStyle: 'medium',
           })
         }
-        formatter={(value: number, _name, props) => {
+        formatter={(value, _name, props) => {
           const payload = props?.payload as ChartPoint | undefined;
           if (payload?.isPurchase && payload.amount !== null && payload.amount !== undefined) {
             const sats = Math.round(payload.amount * 1e8);
-            const line1 = `${payload.amount.toFixed(8)} BTC (${sats.toLocaleString()} sats)`;
-            const line2 = `Price: $${payload.priceAtTime?.toLocaleString() ?? value}`;
-            return [`${line1}\n${line2}`, 'Purchase'];
+            const priceStr = payload.priceAtTime?.toLocaleString() ?? String(value);
+            const line = `Purchase : ${payload.amount.toFixed(8)} BTC (${sats.toLocaleString()} sats) Price: $${priceStr}`;
+            return [line, 'Purchase'];
           }
-          return [`$${Number(value).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, 'BTC price'];
+          const num = typeof value === 'number' ? value : Number(value);
+          return [`$${Number(num).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, 'BTC price'];
         }}
       />
     );
-  }, []);
+  }, [showPurchases]);
 
   if (loading) {
     return (
@@ -181,12 +191,12 @@ export function BtcPriceChart({
 
   return (
     <div className="w-full">
-      <div className="flex flex-wrap items-center gap-3 mb-2">
+      <div className="flex flex-wrap items-center gap-3 mb-2 min-w-[280px]">
         <span className="text-caption">Halvings:</span>
         <button
           type="button"
           onClick={() => setShowHalvings((v) => !v)}
-          className={showHalvings ? 'toggle-pill-active' : 'toggle-pill'}
+          className={`min-w-[3rem] ${showHalvings ? 'toggle-pill-active' : 'toggle-pill'}`}
         >
           {showHalvings ? 'On' : 'Off'}
         </button>
@@ -194,7 +204,7 @@ export function BtcPriceChart({
         <button
           type="button"
           onClick={() => setShowPurchases((v) => !v)}
-          className={showPurchases ? 'toggle-pill-active' : 'toggle-pill'}
+          className={`min-w-[3rem] ${showPurchases ? 'toggle-pill-active' : 'toggle-pill'}`}
         >
           {showPurchases ? 'On' : 'Off'}
         </button>
@@ -202,7 +212,7 @@ export function BtcPriceChart({
         <button
           type="button"
           onClick={() => setYScale((s) => (s === 'linear' ? 'log' : 'linear'))}
-          className={yScale === 'log' ? 'toggle-pill-active' : 'toggle-pill'}
+          className={`min-w-[4.5rem] ${yScale === 'log' ? 'toggle-pill-active' : 'toggle-pill'}`}
         >
           {yScale === 'linear' ? 'Linear' : 'Log'}
         </button>
