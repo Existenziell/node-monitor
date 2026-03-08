@@ -49,6 +49,10 @@
 }
 
 @layer base {
+  html {
+    scrollbar-gutter: stable;
+  }
+
   body {
     @apply font-sans bg-level-1 text-level-4 min-h-screen text-base antialiased;
   }

@@ -454,7 +454,7 @@ export function SettingsTab() {
           </div>
         </div>
 
-        <div className="card w-full lg:w-1/2 py-3">
+        <div className="card w-full lg:w-1/2">
           <SectionHeader as="h2">Wallet configuration</SectionHeader>
           <div className="section-container">
           {status?.config_exists ? (
