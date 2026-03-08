@@ -282,6 +282,17 @@ def get_network_history(limit: int, db_path: Optional[str] = None) -> List[Dict[
     return out
 
 
+def drop_btc_price_history_table(db_path: Optional[str] = None) -> None:
+    """Drop the btc_price_history table. Used before refetching with a different granularity."""
+    with _lock:
+        conn = _get_connection(db_path)
+        try:
+            conn.execute("DROP TABLE IF EXISTS btc_price_history")
+            conn.commit()
+        finally:
+            conn.close()
+
+
 def insert_btc_price_history(
     entries: List[tuple],
     db_path: Optional[str] = None,
