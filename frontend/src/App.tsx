@@ -12,6 +12,7 @@ import { WalletTab } from '@/components/tabs/WalletTab';
 import { ConsoleTab } from '@/components/tabs/ConsoleTab';
 import { DocsTab } from '@/components/tabs/DocsTab';
 import { SettingsTab } from '@/components/tabs/SettingsTab';
+import { TABS } from '@/data/tabs';
 import type { TabId } from '@/types';
 
 function TabContent({ tab }: { tab: TabId }) {
@@ -80,7 +81,15 @@ export default function App() {
         onCloseMobileMenu={() => setMobileMenuOpen(false)}
       />
       <section className="min-h-[200px] flex-1">
-        <TabContent tab={activeTab} />
+        {TABS.map(({ id }) => (
+          <div
+            key={id}
+            className={activeTab !== id ? 'hidden' : ''}
+            aria-hidden={activeTab !== id}
+          >
+            <TabContent tab={id} />
+          </div>
+        ))}
       </section>
       <Footer />
     </div>

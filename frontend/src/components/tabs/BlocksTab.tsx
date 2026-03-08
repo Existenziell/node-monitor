@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useApi } from '@/contexts/ApiContext';
 import type { BlockRow, MiningInfo } from '@/types';
 import { formatBytes, formatDifficulty, formatTimeSince, formatWeight } from '@/utils';
+import { useActiveTab } from '@/contexts/TabContext';
 import { useRefreshState, useRefreshDoneMulti } from '@/contexts/RefreshContext';
 import { useApiData } from '@/hooks/useApiData';
 import { useTabData } from '@/hooks/useTabData';
@@ -27,6 +28,7 @@ type BlocksMetadata = {
 };
 
 export function BlocksTab() {
+  const { activeTab } = useActiveTab();
   const { fetchBlocksPage, fetchPools, fetchDistribution } = useApi();
   const { data: pools, loading: poolsLoading, load: loadPools } = useApiData(fetchPools);
   const { data: distribution, loading: distributionLoading, load: loadDistribution } = useApiData(fetchDistribution);
@@ -124,11 +126,13 @@ export function BlocksTab() {
     setTick(0);
   }, [blockTimeStr, apiSecondsSince]);
 
+  // Run "time since last block" tick only when this tab is visible to reduce work when hidden
   useEffect(() => {
+    if (activeTab !== 'blocks') return;
     if ((blockTimeStr === null || blockTimeStr === undefined) && !useApiSeconds) return;
     const id = setInterval(() => setTick((t) => t + 1), 1000);
     return () => clearInterval(id);
-  }, [blockTimeStr, useApiSeconds]);
+  }, [activeTab, blockTimeStr, useApiSeconds]);
 
   const elapsedSeconds =
     blockTimestamp !== null ? Math.max(0, (Date.now() - blockTimestamp) / 1000) : null;
